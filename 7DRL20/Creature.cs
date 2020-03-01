@@ -19,8 +19,8 @@ namespace RoguelikeEngine
         public Element(string name)
         {
             Name = name;
-            Resistance = new Stat($"{Name} Resistance");
-            DamageRate = new Stat($"{Name} Damage Rate");
+            Resistance = new Stat($"{Name} Resistance", 0);
+            DamageRate = new Stat($"{Name} Damage Rate", 1);
         }
 
         public override string ToString()
@@ -48,10 +48,12 @@ namespace RoguelikeEngine
     class Stat
     {
         public string Name;
+        public double DefaultStat;
 
-        public Stat(string name)
+        public Stat(string name, double defaultStat)
         {
             Name = name;
+            DefaultStat = defaultStat;
         }
 
         public override string ToString()
@@ -59,12 +61,12 @@ namespace RoguelikeEngine
             return Name;
         }
 
-        public static Stat HP = new Stat("HP");
-        public static Stat Attack = new Stat("Attack");
-        public static Stat Defense = new Stat("Defense");
-        public static Stat AlchemyPower = new Stat("Alchemy Power");
+        public static Stat HP = new Stat("HP", 0);
+        public static Stat Attack = new Stat("Attack", 0);
+        public static Stat Defense = new Stat("Defense", 0);
+        public static Stat AlchemyPower = new Stat("Alchemy Power", 0);
 
-        public static Stat DamageRate = new Stat("Damage Rate");
+        public static Stat DamageRate = new Stat("Damage Rate", 1);
 
         public static Stat[] Stats = new Stat[] { HP, Attack, Defense, AlchemyPower, DamageRate };
     }
@@ -226,13 +228,14 @@ namespace RoguelikeEngine
             }
         }
 
+        public SceneGame World;
         public ReusableID ObjectID {
             get;
             private set;
         }
         public Mask Mask = new Mask();
         public string EffectsString => string.Join(",\n", GetEffects<Effect>().Select(x => x.ToString()));
-        public string StatString => string.Join(",\n", GetEffects<Effect>().OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).Select(stat => $"{stat.Key} {CalculateStat(stat)}"));
+        public string StatString => string.Join(",\n", this.GetStats().Select(stat => $"{stat.Key} {stat.Value}"));
 
         public Tile Tile
         {
@@ -265,21 +268,26 @@ namespace RoguelikeEngine
 
         public bool Walking = false;
 
-        public Creature()
+        public Creature(SceneGame world)
         {
+            World = world;
             ObjectID = EffectManager.NewID();
             Render = new CreaturePaperdollRender(SpriteLoader.Instance.AddSprite("content/paperdoll_crusader"), SpriteLoader.Instance.AddSprite("content/paperdoll_helmet_a"));
             VisualFacing = () => Facing;
             Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+
+            World.Entities.Add(this);
         }
 
-        public Func<Vector2> Slide(Vector2 start, Vector2 end, int time)
+        public Func<Vector2> Slide(Vector2 start, Vector2 end, LerpHelper.Delegate lerp, int time)
         {
             int startTime = Frame;
             return () =>
             {
                 float slide = Math.Min(1, (Frame - startTime) / (float)time);
-                return Vector2.Lerp(start, end, slide);
+                return Vector2.Lerp(start, end, (float)lerp(0,1,slide));
             };
         }
 
@@ -345,7 +353,7 @@ namespace RoguelikeEngine
             if (tile == null)
                 return;
             SetMask(tile);
-            VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, 10);
+            VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, 10);
             VisualCamera = VisualPosition;
         }
 
@@ -370,45 +378,33 @@ namespace RoguelikeEngine
             {
                 foreach(var creature in tile.Creatures)
                 {
-                    AttackMelee(creature);
+                    AttackMelee(creature, dx, dy);
                 }
             }
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, 10);
+            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
             VisualPose = FlickPose(Action.Attack, Action.Stand, 5);
             yield return new WaitFrames(this,10);
         }
 
-        public void AttackMelee(Creature target)
+        public IEnumerable<Wait> RoutineHit(int dx, int dy, Attack attack)
         {
-            Effect.Apply(new EffectDamage(target,1,Element.Bludgeon));
+            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
+            VisualPose = StaticPose(Action.Stand);
+            yield return new WaitFrames(this, 10);
+            foreach (var damage in attack.FinalDamage)
+            {
+                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{damage.Value}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 20);
+            }
         }
 
-        public void ClearStatusEffects()
+        public void AttackMelee(Creature target, int dx, int dy)
         {
-            foreach (var effect in GetEffects<EffectStatusEffect>())
-                effect.Remove();
-        }
-
-        public void AddStatusEffect(StatusEffect statusEffect)
-        {
-            statusEffect.Creature = this;
-            var statusEffects = GetEffects<Effects.EffectStatusEffect>();
-            var combineable = statusEffects.Select(x => x.StatusEffect).Where(x => x.CanCombine(statusEffect)).ToList();
-            if (combineable.Any())
-            {
-                var combined = combineable.SelectMany(x => x.Combine(statusEffect)).Distinct().ToList();
-                var added = combined.Except(combineable).ToList();
-                var removed = combineable.Except(combined).ToHashSet();
-                foreach (var effect in added)
-                    effect.Apply();
-                foreach (var effect in statusEffects.Where(x => removed.Contains(x.StatusEffect)))
-                    effect.Remove();
-            }
-            else
-            {
-                statusEffect.Apply();
-            }
+            Attack attack = new Attack(this, target);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            attack.Start();
+            target.CurrentAction = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
         }
 
         public void Equip(Item item, EquipSlot slot)
@@ -432,25 +428,6 @@ namespace RoguelikeEngine
             }
         }
 
-        public double GetStat(Stat stat)
-        {
-            return CalculateStat(GetEffects<Effect>().Where(effect => effect is IStat statEffect && statEffect.Stat == stat));
-        }
-
-        private double CalculateStat(IEnumerable<Effect> effects)
-        {
-            var groups = effects.ToTypeLookup();
-            var baseStat = groups.Get<EffectStat>().Where(stat => stat.Holder == this).Sum(stat => stat.Amount);
-            var add = groups.Get<EffectStat>().Where(stat => stat.Holder != this).Sum(stat => stat.Amount);
-            var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
-            var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0,(seed, stat) => seed * stat.Multiplier);
-            var locks = groups.Get<EffectStatLock>();
-            var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
-            var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
-
-            return Math.Max(min, Math.Min((baseStat + percentage * baseStat + add) * multiplier, max));
-        }
-
         public IEnumerable<T> GetEffects<T>() where T : Effect
         {
             var list = new List<T>();
@@ -463,6 +440,22 @@ namespace RoguelikeEngine
             var tileEffects = tiles.SelectMany(tile => tile.Effects.OfType<T>()).Distinct();
             list.AddRange(tileEffects);
             return list;
+        }
+
+        public void OnAttack(Attack attack)
+        {
+            foreach(var onAttack in GetEffects<OnAttack>())
+            {
+                onAttack.Trigger(attack);
+            }
+        }
+
+        public void OnStartAttack(Attack attack)
+        {
+            foreach (var onStartAttack in GetEffects<OnStartAttack>())
+            {
+                onStartAttack.Trigger(attack);
+            }
         }
 
         public virtual void AddTooltip(ref string tooltip)

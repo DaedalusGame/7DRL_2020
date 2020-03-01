@@ -42,8 +42,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActionQueue.cs" />
+    <Compile Include="Attack.cs" />
     <Compile Include="ColorMatrix.cs" />
     <Compile Include="Coroutine.cs" />
+    <Compile Include="DrawPass.cs" />
     <Compile Include="EffectSingleton.cs" />
     <Compile Include="Effects\Effect.cs" />
     <Compile Include="Effects\EffectDamage.cs" />
@@ -56,11 +58,16 @@
     <Compile Include="Effects\EffectStat.cs" />
     <Compile Include="Effects\EffectStatPercent.cs" />
     <Compile Include="Effects\IStat.cs" />
+    <Compile Include="Effects\OnDefend.cs" />
+    <Compile Include="Effects\OnStartDefend.cs" />
+    <Compile Include="Effects\OnStartAttack.cs" />
+    <Compile Include="Effects\OnAttack.cs" />
     <Compile Include="Effects\OnTile.cs" />
     <Compile Include="FontUtil.cs" />
     <Compile Include="FrameCounter.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="IEffectHolder.cs" />
+    <Compile Include="IGameObject.cs" />
     <Compile Include="InputTwinState.cs" />
     <Compile Include="Item.cs" />
     <Compile Include="Lerp.cs" />
@@ -78,6 +85,7 @@
     <Compile Include="StatusEffect.cs" />
     <Compile Include="Tile.cs" />
     <Compile Include="Utilities.cs" />
+    <Compile Include="VisualEffect.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MonoGame.Framework">

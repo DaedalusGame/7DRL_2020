@@ -117,6 +117,13 @@ namespace RoguelikeEngine
         {
             ColorTransform = ColorMatrix.TwoColorLight(new Color(35*2, 86*2, 79*2), new Color(234, 252, 253));
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddFullEffect(new OnStartAttack(this, attack =>
+            {
+                //if (attack.Defender.IsUndead)
+                {
+                    attack.Damage *= 1.5f;
+                }
+            }));
         }
     }
 

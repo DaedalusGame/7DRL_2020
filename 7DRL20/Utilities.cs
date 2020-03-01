@@ -28,9 +28,9 @@ namespace RoguelikeEngine
 
         public IEnumerable<TGet> Get<TGet>() where TGet : T
         {
-            IEnumerable<T> rValue = Enumerable.Empty<T>();
-            Content.TryGetValue(typeof(T), out rValue);
-            return rValue.OfType<TGet>();
+            IEnumerable<T> rValue;
+            bool success = Content.TryGetValue(typeof(T), out rValue);
+            return success ? rValue.OfType<TGet>() : Enumerable.Empty<TGet>();
         }
     }
 
@@ -112,6 +112,19 @@ namespace RoguelikeEngine
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
         {
             return new HashSet<T>(enumerable);
+        }
+
+        public static void DrawPass(this ILookup<DrawPass, IGameObject> drawPasses, SceneGame scene, DrawPass pass)
+        {
+            foreach(var obj in drawPasses[pass].OrderBy(x => x.DrawOrder))
+            {
+                obj.Draw(scene, pass);
+            }
+        }
+
+        public static void Destroy(this IGameObject obj)
+        {
+            obj.Remove = true;
         }
 
         public static string EnglishJoin(string seperator, string finalSeperator, IEnumerable<string> values)

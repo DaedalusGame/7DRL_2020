@@ -143,6 +143,78 @@ namespace RoguelikeEngine
             }
         }
 
+        public static double GetStat(this IEffectHolder holder, Stat stat)
+        {
+            return CalculateStat(holder,holder.GetEffects<Effect>().Where(effect => effect is IStat statEffect && statEffect.Stat == stat),stat.DefaultStat);
+        }
+
+        public static Dictionary<Stat,double> GetStats(this IEffectHolder holder)
+        {
+            return holder.GetEffects<Effect>().OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).ToDictionary(group => group.Key, group => CalculateStat(holder, group, group.Key.DefaultStat));
+        }
+
+        public static double CalculateStat(IEffectHolder holder, IEnumerable<Effect> effects, double defaultStat)
+        {
+            var groups = effects.ToTypeLookup();
+            var baseStat = defaultStat + groups.Get<EffectStat>().Where(stat => stat.Holder == holder).Sum(stat => stat.Amount);
+            var add = groups.Get<EffectStat>().Where(stat => stat.Holder != holder).Sum(stat => stat.Amount);
+            var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
+            var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
+            var locks = groups.Get<EffectStatLock>();
+            var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
+            var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
+
+            return Math.Max(min, Math.Min((baseStat + percentage * baseStat + add) * multiplier, max));
+        }
+
+        public static void TakeDamage(this IEffectHolder holder, double damage, Element element)
+        {
+            Effect.Apply(new EffectDamage(holder, damage, element));
+        }
+
+        public static void OnDefend(this IEffectHolder holder, Attack attack)
+        {
+            foreach (var onDefend in holder.GetEffects<OnDefend>())
+            {
+                onDefend.Trigger(attack);
+            }
+        }
+
+        public static void OnStartDefend(this IEffectHolder holder, Attack attack)
+        {
+            foreach (var onStartDefend in holder.GetEffects<OnStartDefend>())
+            {
+                onStartDefend.Trigger(attack);
+            }
+        }
+
+        public static void ClearStatusEffects(this IEffectHolder holder)
+        {
+            foreach (var effect in holder.GetEffects<EffectStatusEffect>())
+                effect.Remove();
+        }
+
+        public static void AddStatusEffect(this IEffectHolder holder, StatusEffect statusEffect)
+        {
+            statusEffect.Creature = holder;
+            var statusEffects = holder.GetEffects<EffectStatusEffect>();
+            var combineable = statusEffects.Select(x => x.StatusEffect).Where(x => x.CanCombine(statusEffect)).ToList();
+            if (combineable.Any())
+            {
+                var combined = combineable.SelectMany(x => x.Combine(statusEffect)).Distinct().ToList();
+                var added = combined.Except(combineable).ToList();
+                var removed = combineable.Except(combined).ToHashSet();
+                foreach (var effect in added)
+                    effect.Apply();
+                foreach (var effect in statusEffects.Where(x => removed.Contains(x.StatusEffect)))
+                    effect.Remove();
+            }
+            else
+            {
+                statusEffect.Apply();
+            }
+        }
+
         public static ReusableID NewID()
         {
             if (ReusableIDs.Count > 0)

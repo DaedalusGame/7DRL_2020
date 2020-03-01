@@ -1,0 +1,34 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RoguelikeEngine
+{
+    interface IGameObject
+    {
+        SceneGame World
+        {
+            get;
+            set;
+        }
+
+        double DrawOrder
+        {
+            get;
+        }
+
+        bool Remove
+        {
+            set;
+            get;
+        }
+
+        void Update();
+
+        IEnumerable<DrawPass> GetDrawPasses();
+
+        void Draw(SceneGame scene, DrawPass pass);
+    }
+}

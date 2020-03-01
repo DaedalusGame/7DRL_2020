@@ -9,10 +9,10 @@ namespace RoguelikeEngine.Effects
     class EffectStatusEffect : Effect
     {
         public StatusEffect StatusEffect;
-        public Creature Creature;
+        public IEffectHolder Creature;
         public IEnumerable<Effect> Effects => StatusEffect.GetEffects<Effect>();
 
-        public EffectStatusEffect(StatusEffect statusEffect, Creature creature)
+        public EffectStatusEffect(StatusEffect statusEffect, IEffectHolder creature)
         {
             StatusEffect = statusEffect;
             Creature = creature;

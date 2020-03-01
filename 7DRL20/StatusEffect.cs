@@ -9,7 +9,7 @@ namespace RoguelikeEngine
 {
     abstract class StatusEffect : IEffectHolder
     {
-        public Creature Creature;
+        public IEffectHolder Creature;
         public ReusableID ObjectID
         {
             get;

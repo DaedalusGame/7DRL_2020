@@ -46,7 +46,7 @@ namespace RoguelikeEngine
         public Viewport Viewport => GraphicsDevice.Viewport;
         public Microsoft.Xna.Framework.Graphics.Effect Shader => Game.Shader;
 
-        protected Matrix WorldTransform;
+        public Matrix WorldTransform;
         protected Matrix Projection;
 
         Stack<DrawStackFrame> SpriteBatchStack = new Stack<DrawStackFrame>();
