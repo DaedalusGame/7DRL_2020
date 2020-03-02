@@ -15,6 +15,7 @@ namespace RoguelikeEngine
 
         Random random = new Random();
 
+        public PlayerUI Menu;
         public ActionQueue ActionQueue = new ActionQueue();
         public Wait Wait = Wait.NoWait;
 
@@ -22,13 +23,16 @@ namespace RoguelikeEngine
         public RenderTarget2D CameraTargetA;
         public RenderTarget2D CameraTargetB;
 
+        public RenderTarget2D Lava;
+        public RenderTarget2D Water;
+
         public Vector2 Camera => Player.VisualCamera() + new Vector2(8,8);
         public Vector2 CameraSize => new Vector2(Viewport.Width / 2, Viewport.Height / 2);
         public Vector2 CameraPosition => FitCamera(Camera - CameraSize / 2, new Vector2(Map.Width * 16, Map.Height * 16));
 
         public Creature Player;
-        public List<Creature> Entities = new List<Creature>();
-        public List<Item> Items = new List<Item>();
+        public IEnumerable<Creature> Entities => GameObjects.OfType<Creature>();
+        public IEnumerable<Item> Items => GameObjects.OfType<Item>();
         public IEnumerable<VisualEffect> VisualEffects => GameObjects.OfType<VisualEffect>();
 
         public List<IGameObject> GameObjects = new List<IGameObject>();
@@ -38,6 +42,7 @@ namespace RoguelikeEngine
 
         public SceneGame(Game game) : base(game)
         {
+            Menu = new PlayerUI(this);
             Map = new Map(500, 500);
 
             Player = new Creature(this)
@@ -56,9 +61,20 @@ namespace RoguelikeEngine
             enemy.MoveTo(Map.GetTile(255, 250));
             ActionQueue.TurnTakers.Add(enemy);
 
-            Item testItem = ToolBlade.Create(Material.Karmesine, Material.Ovium, Material.Jauxum);
+            Item testItem = ToolBlade.Create(this, Material.Karmesine, Material.Ovium, Material.Jauxum);
             testItem.MoveTo(Map.GetTile(250, 255));
-            Items.Add(testItem);
+
+            new Ore(this, Material.Dilithium, 1000).MoveTo(Map.GetTile(251, 255));
+            new Ore(this, Material.Tiberium, 1000).MoveTo(Map.GetTile(251, 256));
+            new Ore(this, Material.Basalt, 1000).MoveTo(Map.GetTile(251, 257));
+            new Ore(this, Material.Triberium, 1000).MoveTo(Map.GetTile(251, 258));
+            new Ore(this, Material.Jauxum, 1000).MoveTo(Map.GetTile(252, 255));
+            new Ore(this, Material.Ovium, 1000).MoveTo(Map.GetTile(252, 256));
+            new Ore(this, Material.Karmesine, 1000).MoveTo(Map.GetTile(252, 257));
+            new Ore(this, Material.Meteorite, 1000).MoveTo(Map.GetTile(253, 255));
+            new Ore(this, Material.Obsidiorite, 1000).MoveTo(Map.GetTile(253, 256));
+
+            Map.GetTile(245, 250).Replace(new Smelter());
         }
 
         private Vector2 FitCamera(Vector2 camera, Vector2 size)
@@ -102,47 +118,13 @@ namespace RoguelikeEngine
 
                 if (creature == Player && creature.CurrentAction.Done)
                 {
-                    if (state.IsKeyPressed(Keys.W, 20, 5))
-                    {
-                        creature.Facing = Facing.North;
-                        creature.ResetTurn();
-                        creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineMove(0, -1));
-                    }
-                    if (state.IsKeyPressed(Keys.S, 20, 5))
-                    {
-                        Player.Facing = Facing.South;
-                        creature.ResetTurn();
-                        creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineMove(0, 1));
-                    }
-                    if (state.IsKeyPressed(Keys.A, 20, 5))
-                    {
-                        creature.Facing = Facing.West;
-                        creature.ResetTurn();
-                        creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineMove(-1, 0));
-                    }
-                    if (state.IsKeyPressed(Keys.D, 20, 5))
-                    {
-                        creature.Facing = Facing.East;
-                        creature.ResetTurn();
-                        creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineMove(1, 0));
-                    }
-                    if (state.IsKeyPressed(Keys.Space))
-                    {
-                        var offset = creature.Facing.ToOffset();
-                        creature.ResetTurn();
-                        Wait = creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineAttack(offset.X, offset.Y));
-                    }
+                    Menu.HandleInput(this);
                 }
                 else if(creature != null && creature.CurrentAction.Done)
                 {
                     //creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineMove(1, 0));
                     creature.ResetTurn();
                 }
-            }
-
-            foreach (var entity in Entities)
-            {
-                entity.Update();
             }
 
             foreach (var obj in GameObjects.GetAndClean(x => x.Remove))
@@ -155,6 +137,8 @@ namespace RoguelikeEngine
             int tileY = Util.FloorDiv((int)worldPos.Y,16);
 
             TileCursor = new Point(tileX, tileY);
+            if (Menu.IsMouseOver(InputState.MouseX, InputState.MouseY))
+                TileCursor = null;
 
             Tooltip = string.Empty;
             if(TileCursor.HasValue)
@@ -162,8 +146,32 @@ namespace RoguelikeEngine
             Tooltip = Tooltip.Trim();
         }
 
+        public void DrawLava(Rectangle rectangle)
+        {
+            SpriteBatch.Draw(Lava, rectangle, new Rectangle(0,0,rectangle.Width,rectangle.Height), Color.White);
+        }
+
+        private void DrawTextures()
+        {
+            SpriteReference lava = SpriteLoader.Instance.AddSprite("content/lava");
+            if (Lava == null || Lava.IsContentLost)
+                Lava = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
+            GraphicsDevice.SetRenderTarget(Lava);
+            GraphicsDevice.Clear(Color.Transparent);
+            PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
+                new Vector2(-Frame / 30f, -Frame / 30f + MathHelper.PiOver4),
+                new Vector2(0.2f, 0.2f),
+                new Vector4(0.1f, 0.0f, 0.1f, 0.0f),
+                Matrix.Identity
+                ));
+            SpriteBatch.Draw(lava.Texture, new Rectangle(0, 0, Lava.Width, Lava.Height), new Rectangle(0, 0, Lava.Width, Lava.Height), Color.White);
+            PopSpriteBatch();
+        }
+
         public override void Draw(GameTime gameTime)
         {
+            DrawTextures();
+
             if (CameraTargetA == null || CameraTargetA.IsContentLost)
                 CameraTargetA = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
 
@@ -180,18 +188,9 @@ namespace RoguelikeEngine
             PushSpriteBatch(samplerState: SamplerState.PointClamp, blendState: NonPremultiplied, transform: WorldTransform);
             DrawMap(Map);
 
-            foreach (var item in Items)
-            {
-                Tile tile = item.Tile;
-                item.DrawIcon(this, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8));
-            }
-
-            foreach (var entity in Entities)
-            {
-                entity.Draw(this);
-            }
-
             drawPasses.DrawPass(this, DrawPass.Tile);
+            drawPasses.DrawPass(this, DrawPass.Item);
+            drawPasses.DrawPass(this, DrawPass.Creature);
             PopSpriteBatch();
 
             GraphicsDevice.SetRenderTarget(null);
@@ -206,7 +205,8 @@ namespace RoguelikeEngine
             SpriteReference cursor_tile = SpriteLoader.Instance.AddSprite("content/cursor_tile");
 
             SetupNormal(Matrix.Identity);
-            SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transformMatrix: WorldTransform);
+            //SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transformMatrix: WorldTransform);
+            PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap, transform: WorldTransform);
 
             if (TileCursor.HasValue)
             {
@@ -215,16 +215,21 @@ namespace RoguelikeEngine
 
             drawPasses.DrawPass(this, DrawPass.UIWorld);
 
-            SpriteBatch.End();
+            //SpriteBatch.End();
+            PopSpriteBatch();
 
-            SetupNormal(Matrix.Identity);
-            SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap);
+            //SetupNormal(Matrix.Identity);
+            //SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap);
+
+            PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap);
 
             drawPasses.DrawPass(this, DrawPass.UI);
 
+            Menu.Draw(this);
+
             DrawTooltip();
 
-            SpriteBatch.End();
+            PopSpriteBatch();
         }
 
         private void DrawTooltip()
@@ -233,9 +238,9 @@ namespace RoguelikeEngine
             {
                 SpriteReference ui_tooltip = SpriteLoader.Instance.AddSprite("content/ui_box");
                 TextParameters tooltipParameters = new TextParameters().SetColor(Color.White, Color.Black);
-                string fitTooltip = FontUtil.FitString(Tooltip, tooltipParameters);
-                int tooltipWidth = FontUtil.GetStringWidth(Tooltip, tooltipParameters);
-                int tooltipHeight = FontUtil.GetStringHeight(Tooltip);
+                string fitTooltip = FontUtil.FitString(FontUtil.StripFormat(Tooltip), tooltipParameters);
+                int tooltipWidth = FontUtil.GetStringWidth(fitTooltip, tooltipParameters);
+                int tooltipHeight = FontUtil.GetStringHeight(fitTooltip);
                 int tooltipX = InputState.MouseX + 4;
                 int tooltipY = Math.Max(0, InputState.MouseY - 4 - tooltipHeight);
                 DrawUI(ui_tooltip, new Rectangle(tooltipX, tooltipY, tooltipWidth, tooltipHeight), Color.White);

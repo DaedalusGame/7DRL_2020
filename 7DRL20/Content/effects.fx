@@ -35,6 +35,11 @@ float threshold;
 float4x4 threshold_color_matrix;
 float4 threshold_color_add;
 
+float wave_time_horizontal, wave_time_vertical;
+float wave_distance_horizontal, wave_distance_vertical;
+float wave_split_horizontal, wave_split_vertical;
+float4 wave_components;
+
 struct VertexShaderInput
 {
     float4 Position : SV_POSITION;
@@ -65,6 +70,27 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	output.ScreenCoords = input.Position.xy;
 	
 	return output;
+}
+
+VertexShaderOutput WaveVS(in VertexShaderInput input)
+{
+	VertexShaderOutput output = (VertexShaderOutput) 0;
+
+	float4 projected = mul(input.Position, WorldViewProjection);
+	output.Position = projected;
+	output.Color = input.Color;
+	output.TextureCoordinates = input.TextureCoordinates;
+	output.ScreenCoords = input.Position.xy;
+
+	return output;
+}
+
+float4 WavePS(VertexShaderOutput input) : COLOR
+{
+	float x = input.ScreenCoords.x > wave_split_horizontal ? input.ScreenCoords.x : 2 * wave_split_horizontal - input.ScreenCoords.x;
+	float y = input.ScreenCoords.y > wave_split_vertical ? input.ScreenCoords.y : 2 * wave_split_vertical - input.ScreenCoords.y;
+	float4 components = float4(y, x, x, y) * wave_components;
+	return texture_main.Sample(sampler_main, input.TextureCoordinates + float2(sin(wave_time_horizontal + components.x + components.y) * 0.5 * wave_distance_horizontal, sin(wave_time_vertical + components.z + components.w) * 0.5 * wave_distance_vertical)) * input.Color;
 }
 
 float4 GradientPS(VertexShaderOutput input) : COLOR
@@ -131,6 +157,14 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 	return input.Color;
 }
 
+technique Wave
+{
+	pass P0
+	{
+		VertexShader = compile VS_SHADERMODEL WaveVS();
+		PixelShader = compile PS_SHADERMODEL WavePS();
+	}
+};
 technique BasicColorDrawing
 {
 	pass P0

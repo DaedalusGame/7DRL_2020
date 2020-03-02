@@ -95,6 +95,36 @@ namespace RoguelikeEngine
             Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
         }
 
+        public void SetupWave(Vector2 waveTime, Vector2 waveDistance, Vector4 components)
+        {
+            SetupWave(waveTime, waveDistance, components, WorldTransform);
+        }
+
+        public void SetupWave(Vector2 waveTime, Vector2 waveDistance, Vector4 components, Matrix transform)
+        {
+            Shader.CurrentTechnique = Shader.Techniques["Wave"];
+            Shader.Parameters["wave_time_horizontal"].SetValue(waveTime.X);
+            Shader.Parameters["wave_time_vertical"].SetValue(waveTime.Y);
+            Shader.Parameters["wave_distance_horizontal"].SetValue(waveDistance.X);
+            Shader.Parameters["wave_distance_vertical"].SetValue(waveDistance.Y);
+            Shader.Parameters["wave_components"].SetValue(components);
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
+        }
+
+        public void SetupDistortion(Texture2D map, Vector2 offset, Matrix mapTransform)
+        {
+            SetupDistortion(map, offset, mapTransform, WorldTransform);
+        }
+
+        public void SetupDistortion(Texture2D map, Vector2 offset, Matrix mapTransform, Matrix transform)
+        {
+            Shader.CurrentTechnique = Shader.Techniques["Distort"];
+            Shader.Parameters["distort_offset"].SetValue(offset);
+            Shader.Parameters["texture_map"].SetValue(map);
+            Shader.Parameters["map_transform"].SetValue(mapTransform);
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
+        }
+
         public void PushSpriteBatch(SpriteSortMode? sortMode = null, BlendState blendState = null, SamplerState samplerState = null, Matrix? transform = null, Microsoft.Xna.Framework.Graphics.Effect shader = null, Action<Matrix> shaderSetup = null)
         {
             var lastState = SpriteBatchStack.Any() ? SpriteBatchStack.Peek() : null;

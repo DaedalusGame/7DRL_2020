@@ -42,6 +42,10 @@ namespace RoguelikeEngine
         public string Name;
         public string Description;
 
+        public bool MeltingRequired = true;
+        public double MeltingTemperature = double.PositiveInfinity;
+        public double FuelTemperature = 0;
+
         public Part BladeBlade = "cut";
         public Part BladeGuard = "guard";
         public Part BladeHandle = "handle";
@@ -50,7 +54,7 @@ namespace RoguelikeEngine
 
         public Material(string name, string description)
         {
-            ObjectID = EffectManager.NewID();
+            ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
         }
@@ -94,6 +98,8 @@ namespace RoguelikeEngine
     {
         public Wood() : base("Wood", string.Empty)
         {
+            MeltingRequired = false;
+            FuelTemperature = 100;
             ColorTransform = ColorMatrix.Tint(new Color(177, 135, 103));
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
         }

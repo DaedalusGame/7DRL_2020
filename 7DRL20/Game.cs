@@ -115,6 +115,14 @@ namespace RoguelikeEngine
             }
 
             FontUtil.CharInfo[' '] = new CharInfo(0, 4, true);
+            FontUtil.CharInfo[FORMAT_BOLD] = new CharInfo(0, 0, true);
+            FontUtil.CharInfo[FORMAT_ITALIC] = new CharInfo(0, 0, true);
+            FontUtil.CharInfo[FORMAT_UNDERLINE] = new CharInfo(0, 0, true);
+            FontUtil.CharInfo[FORMAT_SUBSCRIPT] = new CharInfo(0, 0, true);
+            FontUtil.CharInfo[FORMAT_SUPERSCRIPT] = new CharInfo(0, 0, true);
+            FontUtil.CharInfo[FORMAT_BLANK] = new CharInfo(0, 0, true);
+            for (char i = FORMAT_DYNAMIC_BEGIN; i < FORMAT_DYNAMIC_END; i++)
+                FontUtil.CharInfo[i] = new CharInfo(0, 0, true);
         }
 
         private void LoadFontPart(SpriteReference sprite, int index)
@@ -188,6 +196,11 @@ namespace RoguelikeEngine
         public const char FORMAT_SUBSCRIPT = (char)(FORMAT_CODES_BEGIN + 3);
         public const char FORMAT_SUPERSCRIPT = (char)(FORMAT_CODES_BEGIN + 4);
         public const char FORMAT_ICON = (char)(FORMAT_CODES_BEGIN + 5);
+        public const char FORMAT_COLOR = (char)(FORMAT_CODES_BEGIN + 6);
+        public const char FORMAT_BORDER = (char)(FORMAT_CODES_BEGIN + 7);
+        public const char FORMAT_BLANK = (char)(FORMAT_CODES_BEGIN + 8);
+        public const char FORMAT_DYNAMIC_BEGIN = (char)(FORMAT_CODES_BEGIN + 1024);
+        public const char FORMAT_DYNAMIC_END = (char)(FORMAT_DYNAMIC_BEGIN + 512);
 
         public static string ConvertToPixelText(string text)
         {
@@ -223,11 +236,45 @@ namespace RoguelikeEngine
             return convertedText.ToString();
         }
 
+        public static string FormatIcon(IEffectHolder effectHolder)
+        {
+            int objectID = effectHolder.ObjectID;
+            byte[] bufferObjectID = BitConverter.GetBytes(objectID);
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_ICON);
+            for(int i = 0; i < bufferObjectID.Length; i += sizeof(char))
+                builder.Append(BitConverter.ToChar(bufferObjectID, i));
+            return builder.ToString();
+        }
+
+        public static string FormatColor(Color color)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_COLOR);
+            builder.Append((char)color.R);
+            builder.Append((char)color.G);
+            builder.Append((char)color.B);
+            builder.Append((char)color.A);
+            return builder.ToString();
+        }
+
+        public static string FormatBorder(Color color)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_BORDER);
+            builder.Append((char)color.R);
+            builder.Append((char)color.G);
+            builder.Append((char)color.B);
+            builder.Append((char)color.A);
+            return builder.ToString();
+        }
+
         public void DrawText(string str, Vector2 drawpos, Alignment alignment, TextParameters parameters)
         {
             parameters = parameters.Copy();
             int lineoffset = 0;
             int totalindex = 0;
+            str = FontUtil.FormatText(str);
             str = FontUtil.FitString(str, parameters);
 
             foreach (string line in str.Split('\n'))
@@ -260,25 +307,47 @@ namespace RoguelikeEngine
                 if (totalindex > parameters.DialogIndex)
                     break;
                 char chrTrue = chr;
-                switch (chr)
+                FormatCodeIcon icon = null;
+
+                if (FontUtil.DynamicFormat.ContainsKey(chr))
                 {
-                    case (FORMAT_BOLD):
-                        parameters.Bold = !parameters.Bold;
-                        break;
-                    case (FORMAT_UNDERLINE):
-                        parameters.Underline = !parameters.Underline;
-                        break;
-                    case (FORMAT_SUBSCRIPT):
-                        parameters.ScriptOffset += 8;
-                        break;
-                    case (FORMAT_SUPERSCRIPT):
-                        parameters.ScriptOffset -= 8;
-                        break;
-                    case (FORMAT_ICON):
-                        break;
-                    default:
-                        //chrTrue = FontUtil.GetSimilarChar(chr,FontUtil.GibberishStandard);
-                        break;
+                    FormatCode code = FontUtil.DynamicFormat[chr];
+                    if(code is FormatCodeColor codeColor)
+                    {
+                        if (codeColor.Color != null)
+                            parameters.Color = codeColor.Color;
+                        if (codeColor.Border != null)
+                            parameters.Border = codeColor.Border;
+                        chrTrue = FORMAT_BLANK;
+                    }
+                    if(code is FormatCodeIcon codeIcon)
+                    {
+                        icon = codeIcon;
+                        chrTrue = FORMAT_ICON;
+                    } 
+                }
+                else
+                {
+                    switch (chr)
+                    {
+                        case (FORMAT_BOLD):
+                            parameters.Bold = !parameters.Bold;
+                            break;
+                        case (FORMAT_UNDERLINE):
+                            parameters.Underline = !parameters.Underline;
+                            break;
+                        case (FORMAT_SUBSCRIPT):
+                            parameters.ScriptOffset += 8;
+                            break;
+                        case (FORMAT_SUPERSCRIPT):
+                            parameters.ScriptOffset -= 8;
+                            break;
+                        case (FORMAT_ICON):
+                            break;
+                        default:
+                            //chrTrue = FontUtil.GetSimilarChar(chr,FontUtil.GibberishStandard);
+                            break;
+                    }
                 }
 
                 Texture2D tex = FontSprites[chrTrue / FontUtil.CharsPerPage].Texture;
@@ -311,13 +380,18 @@ namespace RoguelikeEngine
                 if (parameters.Bold)
                     SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset + 1, parameters.ScriptOffset), FontUtil.GetCharRect(index), color);
 
-                if (chr == FORMAT_ICON)
+                if (icon != null)
                 {
-                    //parameters.Icons[parameters.IconIndex].Draw(drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset) + new Vector2(8, 8));
-                    //parameters.IconIndex++;
+                    var holder = EffectManager.GetHolder(icon.ObjectID);
+                    if(holder is Item item)
+                    {
+                        item.DrawIcon(item.World, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset) + new Vector2(8,8));
+                    }
                 }
 
-                pos += width + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+                pos += width;
+                if(width > 0)
+                    pos += parameters.CharSeperator + (parameters.Bold ? 1 : 0);
                 totalindex++;
             }
         }

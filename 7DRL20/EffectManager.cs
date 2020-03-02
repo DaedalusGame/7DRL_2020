@@ -114,6 +114,7 @@ namespace RoguelikeEngine
         static ReusableID CurrentID = new ReusableID();
         static Queue<ReusableID> ReusableIDs = new Queue<ReusableID>();
         static Dictionary<Type, Drawer> Drawers = new Dictionary<Type, Drawer>();
+        static Dictionary<int, IEffectHolder> Holders = new Dictionary<int, IEffectHolder>();
 
         public static IEnumerable<T> GetEffects<T>(this IEffectHolder holder) where T : Effect
         {
@@ -188,6 +189,31 @@ namespace RoguelikeEngine
             }
         }
 
+        public static StatusEffect GetStatusEffect(this IEffectHolder holder, StatusEffect statusEffect)
+        {
+            foreach (var checkEffect in holder.GetEffects<EffectStatusEffect>())
+            {
+                if (checkEffect.StatusEffect == statusEffect || checkEffect.StatusEffect.CanCombine(statusEffect))
+                    return checkEffect.StatusEffect;
+            }
+            return null;
+        }
+
+        public static StatusEffect GetStatusEffect<T>(this IEffectHolder holder) where T : StatusEffect
+        {
+            foreach(var checkEffect in holder.GetEffects<EffectStatusEffect>())
+            {
+                if (checkEffect.StatusEffect is T)
+                    return checkEffect.StatusEffect;
+            }
+            return null;
+        }
+
+        public static IEnumerable<StatusEffect> GetStatusEffects(this IEffectHolder holder)
+        {
+            return holder.GetEffects<EffectStatusEffect>().Select(x => x.StatusEffect);
+        }
+
         public static void ClearStatusEffects(this IEffectHolder holder)
         {
             foreach (var effect in holder.GetEffects<EffectStatusEffect>())
@@ -215,12 +241,34 @@ namespace RoguelikeEngine
             }
         }
 
-        public static ReusableID NewID()
+        public static void ClearPosition(this IEffectHolder subject)
+        {
+            foreach (var position in subject.GetEffects<Effect>().Where(x => x is IPosition position && position.Subject == subject))
+            {
+                position.Remove();
+            }
+        }
+
+        private static ReusableID NewID()
         {
             if (ReusableIDs.Count > 0)
                 return ReusableIDs.Dequeue();
             CurrentID = CurrentID.Next;
             return CurrentID;
+        }
+
+        public static ReusableID NewID(IEffectHolder holder)
+        {
+            ReusableID objectID = NewID();
+            Holders.Add(objectID, holder);
+            return objectID;
+        }
+
+        public static IEffectHolder GetHolder(int id)
+        {
+            IEffectHolder holder;
+            Holders.TryGetValue(id, out holder);
+            return holder;
         }
 
         public static void DeleteHolder(IEffectHolder holder)

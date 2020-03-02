@@ -25,6 +25,23 @@ namespace RoguelikeEngine
         }
     }
 
+    public class WaitAll : Wait
+    {
+        IEnumerable<Wait> Waits;
+
+        public override bool Done => Waits.All(wait => wait.Done);
+
+        public WaitAll(IEnumerable<Wait> waits)
+        {
+            Waits = waits;
+        }
+
+        public override void Update()
+        {
+            //NOOP
+        }
+    }
+
     public class WaitTime : Wait
     {
         int Frames;

@@ -139,7 +139,7 @@ namespace RoguelikeEngine
         West,
     }
 
-    class Creature : IEffectHolder, ITurnTaker
+    class Creature : IEffectHolder, ITurnTaker, IGameObject
     {
         public enum Action
         {
@@ -228,7 +228,10 @@ namespace RoguelikeEngine
             }
         }
 
-        public SceneGame World;
+        public SceneGame World { get; set; }
+        public double DrawOrder => VisualPosition().Y;
+        bool IGameObject.Remove { get; set; }
+
         public ReusableID ObjectID {
             get;
             private set;
@@ -271,14 +274,13 @@ namespace RoguelikeEngine
         public Creature(SceneGame world)
         {
             World = world;
-            ObjectID = EffectManager.NewID();
+            World.GameObjects.Add(this);
+            ObjectID = EffectManager.NewID(this);
             Render = new CreaturePaperdollRender(SpriteLoader.Instance.AddSprite("content/paperdoll_crusader"), SpriteLoader.Instance.AddSprite("content/paperdoll_helmet_a"));
             VisualFacing = () => Facing;
             Mask.Add(Point.Zero);
 
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
-
-            World.Entities.Add(this);
         }
 
         public Func<Vector2> Slide(Vector2 start, Vector2 end, LerpHelper.Delegate lerp, int time)
@@ -319,18 +321,16 @@ namespace RoguelikeEngine
             return true;
         }
 
+        IEnumerable<Point> Zero = new Point[] { Point.Zero };
+
         private void SetMask(Tile primary)
         {
-            foreach (var point in Mask)
+            primary.AddPrimary(this);
+            foreach (var point in Mask.Except(Zero))
             {
-                if (point == Point.Zero)
-                    primary.AddPrimary(this);
-                else
-                {
-                    Tile neighbor = primary.GetNeighbor(point.X, point.Y);
-                    if(neighbor != null)
-                        neighbor.Add(this);
-                }
+                Tile neighbor = primary.GetNeighbor(point.X, point.Y);
+                if (neighbor != null)
+                    neighbor.Add(this);
             }
         }
 
@@ -374,17 +374,19 @@ namespace RoguelikeEngine
         public IEnumerable<Wait> RoutineAttack(int dx, int dy)
         {
             var frontier = Mask.GetFrontier(dx, dy);
+            List<Wait> waitForDamage = new List<Wait>();
             foreach(var tile in frontier.Select(o => Tile.GetNeighbor(o.X,o.Y)))
             {
                 foreach(var creature in tile.Creatures)
                 {
-                    AttackMelee(creature, dx, dy);
+                    waitForDamage.Add(AttackMelee(creature, dx, dy));
                 }
             }
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
             VisualPose = FlickPose(Action.Attack, Action.Stand, 5);
             yield return new WaitFrames(this,10);
+            yield return new WaitAll(waitForDamage);
         }
 
         public IEnumerable<Wait> RoutineHit(int dx, int dy, Attack attack)
@@ -395,16 +397,30 @@ namespace RoguelikeEngine
             yield return new WaitFrames(this, 10);
             foreach (var damage in attack.FinalDamage)
             {
-                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{damage.Value}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 20);
+                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{damage.Key} {damage.Value}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 30);
+                yield return new WaitFrames(this, 15);
+            }
+            foreach (var statusEffect in attack.StatusEffects)
+            {
+                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{statusEffect.Name} {statusEffect.BuildupText}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 30);
+                yield return new WaitFrames(this, 15);
+                StatusEffect existingEffect = this.GetStatusEffect(statusEffect);
+                if(existingEffect != null && existingEffect.LastChange != 0)
+                {
+                    existingEffect.LastChange = 0;
+                    new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{existingEffect.Name} {existingEffect.StackText}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 30);
+                    yield return new WaitFrames(this, 15);
+                }
             }
         }
 
-        public void AttackMelee(Creature target, int dx, int dy)
+        public Wait AttackMelee(Creature target, int dx, int dy)
         {
             Attack attack = new Attack(this, target);
             attack.Elements.Add(Element.Bludgeon, 1.0);
+            attack.StatusEffects.Add(new DefenseDown() { Buildup = 0.15 });
             attack.Start();
-            target.CurrentAction = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
+            return target.CurrentAction = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
         }
 
         public void Equip(Item item, EquipSlot slot)
@@ -460,11 +476,20 @@ namespace RoguelikeEngine
 
         public virtual void AddTooltip(ref string tooltip)
         {
-            tooltip += Game.FORMAT_BOLD + Name + Game.FORMAT_BOLD + "\n";
-            tooltip += Description + "\n";
+            tooltip += $"{Game.FORMAT_BOLD}{Game.FormatColor(Color.Yellow)}{Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}\n";
+            tooltip += $"{Description}\n";
+            foreach(StatusEffect statusEffect in this.GetStatusEffects())
+            {
+                tooltip += $"{statusEffect.Name} {statusEffect.BuildupTooltip}\n";
+            }
         }
 
-        public void Draw(SceneGame scene)
+        public IEnumerable<DrawPass> GetDrawPasses() 
+        {
+            yield return DrawPass.Creature;
+        }
+
+        public void Draw(SceneGame scene, DrawPass pass)
         {
             Render.Draw(scene, this);
         }

@@ -8,12 +8,10 @@ namespace RoguelikeEngine.Effects
 {
     enum EquipSlot
     {
-        Head,
         Body,
-        Legs,
-        Arms,
-        Hands,
-        Feet,
+        Offhand,
+        Mainhand,
+        Quiver,
     }
 
     class EffectItemEquipped : Effect

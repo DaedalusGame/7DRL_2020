@@ -121,8 +121,43 @@ namespace RoguelikeEngine
         }
     }
 
+    class FormatCode
+    {
+
+    }
+
+    class FormatCodeColor : FormatCode
+    {
+        public TextColorFunction Color;
+        public TextColorFunction Border;
+
+        public FormatCodeColor(TextColorFunction color, TextColorFunction border)
+        {
+            Color = color;
+            Border = border;
+        }
+    }
+
+    class FormatCodeIcon : FormatCode
+    {
+        public int ObjectID;
+
+        public FormatCodeIcon(int objectID)
+        {
+            ObjectID = objectID;
+        }
+    }
+
     class FontUtil
     {
+        enum FormatState
+        {
+            None,
+            Color,
+            Border,
+            Icon,
+        }
+
         public class Gibberish
         {
             public Dictionary<int, List<char>> ByWidth;
@@ -157,6 +192,8 @@ namespace RoguelikeEngine
         public static Gibberish GibberishAlquimy = new Gibberish(x => (x > 40960 && x <= 40960 + 1024 + 128) || (x > 40960 + 1024 + 256 && x <= 40960 + 1024 + 256 + 256));
         public static Gibberish GibberishRune = new Gibberish(x => (x >= 6144 + 32 && x <= 6144 + 120 - 1) || (x >= 6144 + 128 && x <= 6144 + 128 + 32 + 10));
         public static Random Random = new Random();
+
+        public static Dictionary<char, FormatCode> DynamicFormat = new Dictionary<char, FormatCode>();
 
         public static char GetSimilarChar(char chr, Gibberish gibberish)
         {
@@ -198,7 +235,10 @@ namespace RoguelikeEngine
 
                 foreach (char chr in line)
                 {
-                    n += GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+                    int width = GetCharWidth(chr);
+                    n += width;
+                    if (width > 0)
+                        n += parameters.CharSeperator + (parameters.Bold ? 1 : 0);
 
                     switch (chr)
                     {
@@ -241,6 +281,136 @@ namespace RoguelikeEngine
 
             if (!CharInfo[chr].Predefined)
                 CharInfo[chr] = new CharInfo(left, empty ? 0 : right - left + 1, false);
+        }
+        
+        public static string FormatText(string str)
+        {
+            StringBuilder builder = new StringBuilder();
+            FormatState state = FormatState.None;
+            DynamicFormat.Clear();
+            char dynamicCode = Game.FORMAT_DYNAMIC_BEGIN;
+
+            int indexObjectID = 0;
+            byte[] bufferObjectID = new byte[sizeof(Int32)];
+
+            int indexColor = 0;
+            int[] bufferColor = new int[4];
+
+            foreach (char c in str)
+            {
+                switch (state)
+                {
+                    case FormatState.None:
+                        switch (c)
+                        {
+                            case (Game.FORMAT_COLOR):
+                                state = FormatState.Color;
+                                indexColor = 0;
+                                break;
+                            case (Game.FORMAT_BORDER):
+                                state = FormatState.Border;
+                                indexColor = 0;
+                                break;
+                            case (Game.FORMAT_ICON):
+                                state = FormatState.Icon;
+                                indexObjectID = 0;
+                                break;
+                            default:
+                                builder.Append(c);
+                                break;
+                        }
+                        break;
+                    case FormatState.Color:
+                    case FormatState.Border:
+                        bufferColor[indexColor] = c;
+                        indexColor++;
+                        if (indexColor >= bufferColor.Length)
+                        {
+                            Color color = new Color(bufferColor[0], bufferColor[1], bufferColor[2], bufferColor[3]);
+                            switch (state)
+                            {
+                                case FormatState.Color:
+                                    builder.Append(dynamicCode);
+                                    DynamicFormat.Add(dynamicCode++, new FormatCodeColor(index => color, null));
+                                    break;
+                                case FormatState.Border:
+                                    builder.Append(dynamicCode);
+                                    DynamicFormat.Add(dynamicCode++, new FormatCodeColor(null, index => color));
+                                    break;
+                            }
+                            state = FormatState.None;
+                        }
+                        break;
+                    case FormatState.Icon:
+                        BitConverter.GetBytes(c).CopyTo(bufferObjectID, indexObjectID);
+                        indexObjectID += sizeof(char);
+                        if (indexObjectID >= bufferObjectID.Length)
+                        {
+                            int objectID = BitConverter.ToInt32(bufferObjectID, 0);
+                            builder.Append(dynamicCode);
+                            DynamicFormat.Add(dynamicCode++, new FormatCodeIcon(objectID));
+                            state = FormatState.None;
+                        }
+                        break;
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        public static string StripFormat(string str)
+        {
+            StringBuilder builder = new StringBuilder();
+            FormatState state = FormatState.None;
+
+            int indexColor = 0;
+            int indexObjectID = 0;
+
+            foreach (char c in str)
+            {
+                switch (state)
+                {
+                    case FormatState.None:
+                        switch (c)
+                        {
+                            case (Game.FORMAT_COLOR):
+                                state = FormatState.Color;
+                                indexColor = 0;
+                                break;
+                            case (Game.FORMAT_BORDER):
+                                state = FormatState.Border;
+                                indexColor = 0;
+                                break;
+                            case (Game.FORMAT_ICON):
+                                state = FormatState.Icon;
+                                indexObjectID = 0;
+                                break;
+                            default:
+                                builder.Append(c);
+                                break;
+                        }
+                        break;
+                    case FormatState.Color:
+                    case FormatState.Border:
+                        indexColor++;
+                        if (indexColor >= 4)
+                        {
+                            builder.Append(Game.FORMAT_BLANK);
+                            state = FormatState.None;
+                        }
+                        break;
+                    case FormatState.Icon:
+                        indexObjectID += sizeof(char);
+                        if (indexObjectID >= sizeof(int))
+                        {
+                            builder.Append(Game.FORMAT_ICON);
+                            state = FormatState.None;
+                        }
+                        break;
+                }
+            }
+
+            return builder.ToString();
         }
 
         public static string FitString(string str, TextParameters parameters)

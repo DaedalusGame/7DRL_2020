@@ -9,8 +9,12 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
-    abstract class Item : IEffectHolder
+    abstract class Item : IEffectHolder, IGameObject
     {
+        public SceneGame World { get; set; }
+        public double DrawOrder => 0;
+        bool IGameObject.Remove { get; set; }
+
         public ReusableID ObjectID
         {
             get;
@@ -31,14 +35,21 @@ namespace RoguelikeEngine
             }
         }
 
-        public string Name;
+        public virtual string Name
+        {
+            get;
+            set;
+        }
+        public virtual string InventoryName => Name;
         public string Description;
 
         List<Effect> EquipEffects = new List<Effect>();
 
-        public Item(string name, string description)
+        public Item(SceneGame world, string name, string description)
         {
-            ObjectID = EffectManager.NewID();
+            World = world;
+            World.GameObjects.Add(this);
+            ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
         }
@@ -46,6 +57,11 @@ namespace RoguelikeEngine
         public void MoveTo(Tile tile)
         {
             tile.AddPrimary(this);
+        }
+
+        public void Update()
+        {
+            //NOOP
         }
 
         public void AddEquipEffect(Effect effect)
@@ -68,8 +84,26 @@ namespace RoguelikeEngine
 
         public virtual void AddTooltip(ref string tooltip)
         {
-            tooltip += Game.FORMAT_BOLD + Name + Game.FORMAT_BOLD + "\n";
+            tooltip += $"{Game.FormatIcon(this)}{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
             tooltip += Description + "\n";
+        }
+
+        public virtual void AddStatBlock(ref string statBlock)
+        {
+            if(!string.IsNullOrWhiteSpace(Description))
+                statBlock += $"{Description}\n";
+        }
+
+        public IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Item;
+        }
+
+        public void Draw(SceneGame scene, DrawPass pass)
+        {
+            Tile tile = Tile;
+            if(tile != null)
+                DrawIcon(scene, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8));
         }
 
         public abstract void DrawIcon(SceneGame scene, Vector2 position);
@@ -80,32 +114,83 @@ namespace RoguelikeEngine
         }
     }
 
-    class Ore : Item
+    interface IOre
     {
-        Material Material;
-        int Amount;
-
-        public Ore() : base("Ore", string.Empty)
+        Material Material
         {
+            get;
         }
-
-        public override void DrawIcon(SceneGame scene, Vector2 position)
+        int Amount
         {
-            throw new NotImplementedException();
+            get;
         }
     }
 
-    class Ingot : Item
+    class Ore : Item, IOre
     {
-        Material Material;
+        public override string Name { get => $"{Material.Name} Ore"; set {} }
+        public override string InventoryName => $"{Name} [{Amount}]";
 
-        public Ingot() : base("Ingot", string.Empty)
+        public Material Material
         {
+            get;
+            set;
+        }
+        public int Amount
+        {
+            get;
+            set;
+        }
+
+        public Ore(SceneGame world, Material material, int amount) : base(world, "Ore", string.Empty)
+        {
+            Material = material;
+            Amount = amount;
+        }
+
+        public override void AddStatBlock(ref string statBlock)
+        {
+            statBlock += $"{Amount} Pieces";
+            base.AddStatBlock(ref statBlock);
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)
         {
-            throw new NotImplementedException();
+            var ore = SpriteLoader.Instance.AddSprite("content/item_ore");
+
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(Material.ColorTransform, matrix);
+            });
+            scene.DrawSprite(ore, 0, position - ore.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+    }
+
+    class Ingot : Item, IOre
+    {
+        public Material Material
+        {
+            get;
+            set;
+        }
+        public int Amount => 200;
+
+        public Ingot(SceneGame world, Material material) : base(world, "Ingot", string.Empty)
+        {
+            Material = material;
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            var ingot = SpriteLoader.Instance.AddSprite("content/item_ingot");
+
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(Material.ColorTransform, matrix);
+            });
+            scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
         }
     }
 
@@ -113,10 +198,12 @@ namespace RoguelikeEngine
     {
         Material[] Materials;
 
-        public ToolCore(string name, string description, int parts) : base(name, description)
+        public ToolCore(SceneGame world, string name, string description, int parts) : base(world, name, description)
         {
             Materials = new Material[parts];
         }
+
+        public abstract string GetPartName(int part);
 
         public Material GetMaterial(int part)
         {
@@ -126,6 +213,13 @@ namespace RoguelikeEngine
         public void SetMaterial(int part, Material material)
         {
             Materials[part] = material;
+        }
+
+        public override void AddStatBlock(ref string statBlock)
+        {
+            base.AddStatBlock(ref statBlock);
+            for(int i = 0; i < Materials.Length; i++)
+                statBlock += $"{Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
         }
 
         protected void PushMaterialBatch(SceneGame scene, Material material)
@@ -143,18 +237,33 @@ namespace RoguelikeEngine
         public const int GUARD = 1;
         public const int HANDLE = 2;
 
-        public ToolBlade() : base("Blade",string.Empty,3)
+        public ToolBlade(SceneGame world) : base(world, "Blade",string.Empty,3)
         {
             
         }
 
-        public static ToolBlade Create(Material blade, Material guard, Material handle)
+        public static ToolBlade Create(SceneGame world, Material blade, Material guard, Material handle)
         {
-            ToolBlade tool = new ToolBlade();
+            ToolBlade tool = new ToolBlade(world);
             tool.SetMaterial(BLADE, blade);
             tool.SetMaterial(GUARD, guard);
             tool.SetMaterial(HANDLE, handle);
             return tool;
+        }
+
+        public override string GetPartName(int part)
+        {
+            switch(part)
+            {
+                case (BLADE):
+                    return "Blade";
+                case (GUARD):
+                    return "Guard";
+                case (HANDLE):
+                    return "Handle";
+                default:
+                    return string.Empty;
+            }
         }
 
         public override IEnumerable<Effect> GetEquipEffects()
@@ -195,18 +304,33 @@ namespace RoguelikeEngine
         public const int BINDING = 1;
         public const int HANDLE = 2;
 
-        public ToolAdze() : base("Adze", string.Empty, 3)
+        public ToolAdze(SceneGame world) : base(world, "Adze", string.Empty, 3)
         {
 
         }
 
-        public static ToolAdze Create(Material head, Material binding, Material handle)
+        public static ToolAdze Create(SceneGame world, Material head, Material binding, Material handle)
         {
-            ToolAdze tool = new ToolAdze();
+            ToolAdze tool = new ToolAdze(world);
             tool.SetMaterial(HEAD, head);
             tool.SetMaterial(BINDING, binding);
             tool.SetMaterial(HANDLE, handle);
             return tool;
+        }
+
+        public override string GetPartName(int part)
+        {
+            switch (part)
+            {
+                case (HEAD):
+                    return "Head";
+                case (BINDING):
+                    return "Binding";
+                case (HANDLE):
+                    return "Handle";
+                default:
+                    return string.Empty;
+            }
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)

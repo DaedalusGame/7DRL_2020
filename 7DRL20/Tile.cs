@@ -31,7 +31,7 @@ namespace RoguelikeEngine
 
         public Tile(string name)
         {
-            ObjectID = EffectManager.NewID();
+            ObjectID = EffectManager.NewID(this);
             Name = name;
         }
 
@@ -48,7 +48,7 @@ namespace RoguelikeEngine
 
         public void Replace(Tile newTile)
         {
-            Parent.Set(NewTile);
+            Parent.Set(newTile);
         }
 
         public void SetParent(MapTile parent)
@@ -61,6 +61,11 @@ namespace RoguelikeEngine
             return Map.GetTile(X + dx, Y + dy);
         }
 
+        public IEnumerable<Tile> GetAdjacentNeighbors()
+        {
+            return new[] { GetNeighbor(1, 0), GetNeighbor(0, 1), GetNeighbor(-1, 0), GetNeighbor(0, -1) }.Shuffle();
+        }
+
         public void AddPrimary(IEffectHolder holder)
         {
             Effect.Apply(new Effects.OnTile.Primary(Parent, holder));
@@ -69,6 +74,18 @@ namespace RoguelikeEngine
         public void Add(IEffectHolder holder)
         {
             Effect.Apply(new Effects.OnTile(Parent, holder));
+        }
+
+        public void AddActions(Creature player, MenuTextSelection selection)
+        {
+            foreach (Item item in Items)
+            {
+                selection.Add(new ActAction($"Pick up {Game.FormatIcon(item)}{item.Name}", () =>
+                {
+                    Effect.Apply(new EffectItemInventory(item, player));
+                    selection.Close();
+                }));
+            }
         }
 
         public virtual void AddTooltip(ref string tooltip)
@@ -125,9 +142,29 @@ namespace RoguelikeEngine
         {
         }
 
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            tooltip += "\n";
+            base.AddTooltip(ref tooltip);
+        }
+
         public override void Draw(SceneGame scene)
         {
+            var smelter = SpriteLoader.Instance.AddSprite("content/smelter_receptacle");
+            var smelter_overlay = SpriteLoader.Instance.AddSprite("content/smelter_receptacle_overlay");
+
+            Material material = Material.Triberium;
+
+            scene.DrawSprite(smelter, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(material.ColorTransform, matrix);
+            });
+            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16));
+            scene.PopSpriteBatch();
             
+            scene.DrawSprite(smelter_overlay, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
         }
     }
 }

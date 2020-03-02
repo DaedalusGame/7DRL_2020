@@ -23,7 +23,7 @@ namespace RoguelikeEngine
 
         public MapTile(Map map, int x, int y, Tile tile)
         {
-            ObjectID = EffectManager.NewID();
+            ObjectID = EffectManager.NewID(this);
             Map = map;
             X = x;
             Y = y;

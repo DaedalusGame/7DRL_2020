@@ -4,14 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RoguelikeEngine
+namespace RoguelikeEngine.Effects
 {
-    enum DrawPass
+    interface IPosition
     {
-        Tile,
-        Item,
-        Creature,
-        UIWorld,
-        UI,
+        IEffectHolder Subject
+        {
+            get;
+        }
     }
 }

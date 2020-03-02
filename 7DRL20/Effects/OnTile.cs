@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    class OnTile : Effect
+    class OnTile : Effect, IPosition
     {
+        public IEffectHolder Subject => Holder;
+
         MapTile MapTile;
         public Tile Tile => MapTile.Tile;
         public IEffectHolder Holder;
@@ -34,6 +36,12 @@ namespace RoguelikeEngine.Effects
         {
             public Primary(MapTile tile, IEffectHolder holder) : base(tile, holder)
             {
+            }
+
+            public override void Apply()
+            {
+                Subject.ClearPosition();
+                base.Apply();
             }
 
             public override string ToString()
