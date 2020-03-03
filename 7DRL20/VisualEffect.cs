@@ -21,6 +21,11 @@ namespace RoguelikeEngine
             World.GameObjects.Add(this);
         }
 
+        public void OnDestroy()
+        {
+            //NOOP
+        }
+
         public virtual void Update()
         {
             Frame += 1;

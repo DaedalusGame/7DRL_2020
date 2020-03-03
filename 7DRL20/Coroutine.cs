@@ -42,6 +42,20 @@ namespace RoguelikeEngine
         }
     }
 
+    public class WaitForInput : Wait
+    {
+        public override bool Done => false;
+
+        public WaitForInput()
+        {
+        }
+
+        public override void Update()
+        {
+            //NOOP
+        }
+    }
+
     public class WaitTime : Wait
     {
         int Frames;

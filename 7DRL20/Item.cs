@@ -54,6 +54,22 @@ namespace RoguelikeEngine
             Description = description;
         }
 
+        public void OnDestroy()
+        {
+            this.ClearEffects();
+            EffectManager.DeleteHolder(this);
+        }
+
+        public virtual Item Split(int count)
+        {
+            return null;
+        }
+
+        public virtual bool Merge(Item item)
+        {
+            return false;
+        }
+
         public void MoveTo(Tile tile)
         {
             tile.AddPrimary(this);
@@ -85,7 +101,8 @@ namespace RoguelikeEngine
         public virtual void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FormatIcon(this)}{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
-            tooltip += Description + "\n";
+            if(!string.IsNullOrWhiteSpace(Description))
+                tooltip += Description + "\n";
         }
 
         public virtual void AddStatBlock(ref string statBlock)
@@ -124,9 +141,26 @@ namespace RoguelikeEngine
         {
             get;
         }
+        int Reduce(int amount);
     }
 
-    class Ore : Item, IOre
+    interface IFuel
+    {
+        Material Material
+        {
+            get;
+        }
+        double Temperature
+        {
+            get;
+        }
+        int Amount
+        {
+            get;
+        }
+    }
+
+    class Ore : Item, IOre, IFuel
     {
         public override string Name { get => $"{Material.Name} Ore"; set {} }
         public override string InventoryName => $"{Name} [{Amount}]";
@@ -141,6 +175,7 @@ namespace RoguelikeEngine
             get;
             set;
         }
+        public double Temperature => Material.FuelTemperature;
 
         public Ore(SceneGame world, Material material, int amount) : base(world, "Ore", string.Empty)
         {
@@ -154,6 +189,25 @@ namespace RoguelikeEngine
             base.AddStatBlock(ref statBlock);
         }
 
+        public override bool Merge(Item item)
+        {
+            if(item != this && item is Ore ore && ore.Material == Material)
+            {
+                Amount += ore.Amount;
+                return true;
+            }
+            return false;
+        }
+
+        public override Item Split(int count)
+        {
+            count = Math.Min(count, Amount);
+            Reduce(count);
+            if (Amount <= 0)
+                this.Destroy();
+            return new Ore(World, Material, count);
+        }
+
         public override void DrawIcon(SceneGame scene, Vector2 position)
         {
             var ore = SpriteLoader.Instance.AddSprite("content/item_ore");
@@ -165,20 +219,51 @@ namespace RoguelikeEngine
             scene.DrawSprite(ore, 0, position - ore.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
         }
+
+        public int Reduce(int amount)
+        {
+            Amount -= amount;
+            return Amount;
+        }
     }
 
-    class Ingot : Item, IOre
+    class Ingot : Item, IOre, IFuel
     {
+        public override string Name { get => $"{Material.Name} Ingot"; set { } }
+        public override string InventoryName => $"{Name} [{Count}]";
+
         public Material Material
         {
             get;
             set;
         }
-        public int Amount => 200;
+        public int Count;
+        public int Amount => Count * 200;
+        public double Temperature => Material.FuelTemperature;
 
-        public Ingot(SceneGame world, Material material) : base(world, "Ingot", string.Empty)
+        public Ingot(SceneGame world, Material material, int count) : base(world, "Ingot", string.Empty)
         {
             Material = material;
+            Count = count;
+        }
+
+        public override bool Merge(Item item)
+        {
+            if (item != this && item is Ingot ingot && ingot.Material == Material)
+            {
+                Count += ingot.Count;
+                return true;
+            }
+            return false;
+        }
+
+        public override Item Split(int count)
+        {
+            count = Math.Min(count, Count);
+            Count -= count;
+            if (Amount <= 0)
+                this.Destroy();
+            return new Ingot(World, Material, count);
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)
@@ -191,6 +276,12 @@ namespace RoguelikeEngine
             });
             scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+        }
+
+        public int Reduce(int amount)
+        {
+            Count -= Amount / amount;
+            return Amount;
         }
     }
 

@@ -259,6 +259,11 @@ namespace RoguelikeEngine
         public double TurnSpeed => 1;
         public double TurnBuildup { get; set; }
         public bool TurnReady => TurnBuildup > 1;
+        public bool RemoveFromQueue
+        {
+            get;
+            set;
+        }
         public Wait CurrentAction = Wait.NoWait;
 
         public CreatureRender Render;
@@ -281,6 +286,12 @@ namespace RoguelikeEngine
             Mask.Add(Point.Zero);
 
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+        }
+
+        public void OnDestroy()
+        {
+            this.ClearEffects();
+            EffectManager.DeleteHolder(this);
         }
 
         public Func<Vector2> Slide(Vector2 start, Vector2 end, LerpHelper.Delegate lerp, int time)
@@ -315,10 +326,10 @@ namespace RoguelikeEngine
             Frame++;
         }
 
-        public bool TakeTurn(ActionQueue queue)
+        public Wait TakeTurn(ActionQueue queue)
         {
             this.ResetTurn();
-            return true;
+            return Wait.NoWait;
         }
 
         IEnumerable<Point> Zero = new Point[] { Point.Zero };
@@ -421,6 +432,20 @@ namespace RoguelikeEngine
             attack.StatusEffects.Add(new DefenseDown() { Buildup = 0.15 });
             attack.Start();
             return target.CurrentAction = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
+        }
+
+        public void Pickup(Item item)
+        {
+            foreach(Item existing in this.GetInventory())
+            {
+                bool merged = existing.Merge(item);
+                if (merged)
+                {
+                    item.Destroy();
+                    return;
+                }
+            }
+            Effect.Apply(new EffectItemInventory(item, this));
         }
 
         public void Equip(Item item, EquipSlot slot)

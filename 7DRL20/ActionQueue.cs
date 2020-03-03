@@ -21,14 +21,23 @@ namespace RoguelikeEngine
         {
             get;
         }
+        bool RemoveFromQueue
+        {
+            get;
+        }
 
-        bool TakeTurn(ActionQueue queue);
+        Wait TakeTurn(ActionQueue queue);
     }
 
     class ActionQueue
     {
         public List<ITurnTaker> TurnTakers = new List<ITurnTaker>();
         public ITurnTaker CurrentTurnTaker;
+
+        public void Add(ITurnTaker turnTaker)
+        {
+            TurnTakers.Add(turnTaker);
+        }
 
         public void Cleanup()
         {
@@ -44,11 +53,15 @@ namespace RoguelikeEngine
                 while (CurrentTurnTaker == null)
                 {
                     TurnTakers.ForEach(x => x.IncrementTurn());
-                    var fastest = TurnTakers.Aggregate((a, b) => a.TurnBuildup > b.TurnBuildup ? a : b);
+                    var fastest = TurnTakers.OrderByDescending(x => x.TurnBuildup); //TurnTakers.Aggregate((a, b) => a.TurnBuildup > b.TurnBuildup ? a : b);
 
-                    if (fastest.TurnReady)
+                    foreach(var turnTaker in fastest)
                     {
-                        CurrentTurnTaker = fastest;
+                        if (turnTaker.TurnReady)
+                        {
+                            CurrentTurnTaker = turnTaker;
+                            break;
+                        }
                     }
                 }
             }
@@ -97,7 +110,8 @@ namespace RoguelikeEngine
             {
                 while (true)
                 {
-                    characters.ForEach(x => x.IncrementTurn());
+                    foreach (var character in TurnTakers.GetAndClean(x => x.RemoveFromQueue))
+                        character.IncrementTurn();
                     var fastest = characters.Aggregate((a, b) => a.TurnBuildup > b.TurnBuildup ? a : b);
                     if (fastest.TurnReady)
                     {

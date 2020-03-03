@@ -51,7 +51,7 @@ namespace RoguelikeEngine
                 Description = "This is you.",
             };
             Player.MoveTo(Map.GetTile(250, 250));
-            ActionQueue.TurnTakers.Add(Player);
+            ActionQueue.Add(Player);
 
             var enemy = new Creature(this)
             {
@@ -59,11 +59,12 @@ namespace RoguelikeEngine
                 Description = "?????",
             };
             enemy.MoveTo(Map.GetTile(255, 250));
-            ActionQueue.TurnTakers.Add(enemy);
+            ActionQueue.Add(enemy);
 
             Item testItem = ToolBlade.Create(this, Material.Karmesine, Material.Ovium, Material.Jauxum);
             testItem.MoveTo(Map.GetTile(250, 255));
 
+            new Ore(this, Material.Dilithium, 500).MoveTo(Map.GetTile(251, 250));
             new Ore(this, Material.Dilithium, 1000).MoveTo(Map.GetTile(251, 255));
             new Ore(this, Material.Tiberium, 1000).MoveTo(Map.GetTile(251, 256));
             new Ore(this, Material.Basalt, 1000).MoveTo(Map.GetTile(251, 257));
@@ -74,7 +75,7 @@ namespace RoguelikeEngine
             new Ore(this, Material.Meteorite, 1000).MoveTo(Map.GetTile(253, 255));
             new Ore(this, Material.Obsidiorite, 1000).MoveTo(Map.GetTile(253, 256));
 
-            Map.GetTile(245, 250).Replace(new Smelter());
+            Map.GetTile(245, 250).Replace(new Smelter(this));
         }
 
         private Vector2 FitCamera(Vector2 camera, Vector2 size)
@@ -110,20 +111,22 @@ namespace RoguelikeEngine
         {
             InputTwinState state = Game.InputState;
 
-            if (Wait.Done)
+            while (Wait.Done)
             {
                 ActionQueue.Step();
 
-                Creature creature = ActionQueue.CurrentTurnTaker as Creature;
+                ITurnTaker turnTaker = ActionQueue.CurrentTurnTaker;
+                Creature creature = turnTaker as Creature;
 
-                if (creature == Player && creature.CurrentAction.Done)
+                if (creature == Player)
                 {
-                    Menu.HandleInput(this);
+                    if(creature.CurrentAction.Done)
+                        Menu.HandleInput(this);
+                    break;
                 }
-                else if(creature != null && creature.CurrentAction.Done)
+                else if(turnTaker != null)
                 {
-                    //creature.CurrentAction = Scheduler.Instance.RunAndWait(creature.RoutineMove(1, 0));
-                    creature.ResetTurn();
+                    Wait = turnTaker.TakeTurn(ActionQueue);
                 }
             }
 
@@ -154,8 +157,13 @@ namespace RoguelikeEngine
         private void DrawTextures()
         {
             SpriteReference lava = SpriteLoader.Instance.AddSprite("content/lava");
+            SpriteReference water = SpriteLoader.Instance.AddSprite("content/water");
+
             if (Lava == null || Lava.IsContentLost)
                 Lava = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
+            if (Water == null || Water.IsContentLost)
+                Water = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
+
             GraphicsDevice.SetRenderTarget(Lava);
             GraphicsDevice.Clear(Color.Transparent);
             PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
@@ -165,6 +173,17 @@ namespace RoguelikeEngine
                 Matrix.Identity
                 ));
             SpriteBatch.Draw(lava.Texture, new Rectangle(0, 0, Lava.Width, Lava.Height), new Rectangle(0, 0, Lava.Width, Lava.Height), Color.White);
+            PopSpriteBatch();
+
+            GraphicsDevice.SetRenderTarget(Water);
+            GraphicsDevice.Clear(Color.Transparent);
+            PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
+                new Vector2(-Frame / 30f, -Frame / 30f + MathHelper.PiOver4),
+                new Vector2(0.2f, 0.2f),
+                new Vector4(0.1f, 0.0f, 0.1f, 0.0f),
+                Matrix.Identity
+                ));
+            SpriteBatch.Draw(water.Texture, new Rectangle(0, 0, Water.Width, Water.Height), new Rectangle(0, 0, Water.Width, Water.Height), Color.White);
             PopSpriteBatch();
         }
 

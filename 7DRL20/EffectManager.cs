@@ -11,6 +11,7 @@ namespace RoguelikeEngine
     {
         public int ID;
         public int Generation;
+        public bool Valid => EffectManager.HasHolder(this);
 
         public ReusableID(int id, int generation)
         {
@@ -93,15 +94,20 @@ namespace RoguelikeEngine
             public bool Has(IEffectHolder holder)
             {
                 EffectList list;
-                return Effects.Capacity > holder.ObjectID && (list = Effects[holder.ObjectID]) != null && holder.ObjectID.Generation == list.Generation;
+                return Effects.Capacity > holder.ObjectID && (list = Effects[holder.ObjectID]) != null && holder.ObjectID.Generation == list.Generation && holder.ObjectID.Valid;
             }
 
             public void Add(IEffectHolder holder, Effect effect)
             {
                 if (Has(holder))
                     Effects[holder.ObjectID].Add(effect);
-                else
+                else 
+                {
+                    if (Effects.Capacity > holder.ObjectID && Effects[holder.ObjectID] != null)
+                        foreach (var straggler in Effects[holder.ObjectID])
+                            straggler.Remove();
                     Effects[holder.ObjectID] = new EffectList(holder.ObjectID.Generation) { effect };
+                }
             }
 
             public void Remove(IEffectHolder holder, Effect effect)
@@ -142,6 +148,12 @@ namespace RoguelikeEngine
             {
                 GetDrawer(type).Remove(holder, effect);
             }
+        }
+
+        public static void ClearEffects(this IEffectHolder holder)
+        {
+            foreach (var effect in holder.GetEffects<Effect>())
+                effect.Remove();
         }
 
         public static double GetStat(this IEffectHolder holder, Stat stat)
@@ -187,6 +199,11 @@ namespace RoguelikeEngine
             {
                 onStartDefend.Trigger(attack);
             }
+        }
+
+        public static IEnumerable<Item> GetInventory(this IEffectHolder holder)
+        {
+            return holder.GetEffects<EffectItemInventory>().Select(effect => effect.Item);
         }
 
         public static StatusEffect GetStatusEffect(this IEffectHolder holder, StatusEffect statusEffect)
@@ -264,6 +281,12 @@ namespace RoguelikeEngine
             return objectID;
         }
 
+        public static bool HasHolder(int id)
+        {
+            IEffectHolder holder;
+            return Holders.TryGetValue(id, out holder);
+        }
+
         public static IEffectHolder GetHolder(int id)
         {
             IEffectHolder holder;
@@ -274,6 +297,7 @@ namespace RoguelikeEngine
         public static void DeleteHolder(IEffectHolder holder)
         {
             ReusableIDs.Enqueue(holder.ObjectID.NextGeneration);
+            Holders.Remove(holder.ObjectID);
         }
     }
 }

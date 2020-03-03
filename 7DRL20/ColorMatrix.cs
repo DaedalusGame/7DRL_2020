@@ -82,6 +82,26 @@ namespace RoguelikeEngine
             return test;
         }
 
+        public static ColorMatrix Lerp(IDictionary<ColorMatrix,float> colors)
+        {
+            float totalLerp = colors.Sum(x => x.Value);
+            ColorMatrix result = new ColorMatrix(new Matrix(
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0), new Vector4(0, 0, 0, 0));
+
+            foreach(var pair in colors)
+            {
+                result.Matrix += pair.Key.Matrix * pair.Value;
+                result.Add += pair.Key.Add * pair.Value;
+            }
+
+            result.Matrix /= totalLerp;
+            result.Add /= totalLerp;
+            return result;
+        }
+
         public static ColorMatrix Lerp(ColorMatrix a, ColorMatrix b, float s)
         {
             return new ColorMatrix(Matrix.Lerp(a.Matrix, b.Matrix, s), Vector4.Lerp(a.Add, b.Add, s));

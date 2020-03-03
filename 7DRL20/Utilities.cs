@@ -125,6 +125,15 @@ namespace RoguelikeEngine
         public static void Destroy(this IGameObject obj)
         {
             obj.Remove = true;
+            obj.OnDestroy();
+        }
+
+        public static void Operate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue val, Func<TValue, TValue, TValue> op)
+        {
+            if (dictionary.ContainsKey(key))
+                dictionary[key] = op(dictionary[key],val);
+            else
+                dictionary.Add(key, val);
         }
 
         public static string EnglishJoin(string seperator, string finalSeperator, IEnumerable<string> values)

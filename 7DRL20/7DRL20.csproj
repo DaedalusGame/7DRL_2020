@@ -44,6 +44,7 @@
     <Compile Include="ActionQueue.cs" />
     <Compile Include="Attack.cs" />
     <Compile Include="ColorMatrix.cs" />
+    <Compile Include="Container.cs" />
     <Compile Include="Coroutine.cs" />
     <Compile Include="DrawPass.cs" />
     <Compile Include="Effects\Effect.cs" />
