@@ -22,8 +22,9 @@ namespace RoguelikeEngine
             ObjectID = EffectManager.NewID(this);
         }
 
-        public void Add(Item item)
+        public void Add(Item item, bool tryMerge)
         {
+            if(tryMerge)
             foreach (Item existing in this.GetInventory())
             {
                 bool merged = existing.Merge(item);
@@ -34,6 +35,11 @@ namespace RoguelikeEngine
                 }
             }
             Effect.Apply(new EffectItemInventory(item, this));
+        }
+
+        public IEnumerable<T> GetEffects<T>() where T : Effect
+        {
+            return EffectManager.GetEffects<T>(this);
         }
     }
 }

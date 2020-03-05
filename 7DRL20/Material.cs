@@ -47,11 +47,17 @@ namespace RoguelikeEngine
         public double MeltingTemperature = double.PositiveInfinity;
         public double FuelTemperature = 0;
 
-        public bool CanMelt => !double.IsInfinity(MeltingTemperature); 
+        public bool CanMelt => !double.IsInfinity(MeltingTemperature);
 
-        public Part BladeBlade = "cut";
-        public Part BladeGuard = "guard";
-        public Part BladeHandle = "handle";
+        public Dictionary<PartType, Part> Parts = new Dictionary<PartType, Part>()
+        {
+            { ToolBlade.Blade, "cut" },
+            { ToolBlade.Guard, "guard" },
+            { ToolBlade.Handle, "handle" },
+            { ToolAdze.Head, "pick" },
+            { ToolAdze.Binding, "binding" },
+            { ToolAdze.Handle, "handle" },
+        };
 
         public ColorMatrix ColorTransform = ColorMatrix.Identity;
 
@@ -62,25 +68,46 @@ namespace RoguelikeEngine
             Description = description;
         }
 
+        public IEnumerable<T> GetEffects<T>() where T : Effect
+        {
+            return EffectManager.GetEffects<T>(this);
+        }
+
+        public void AddEffect(PartType part, Effect effect)
+        {
+            effect.Apply();
+            Parts[part].Effects.Add(effect);
+        }
+
         public void AddHeadEffect(Effect effect)
         {
             effect.Apply();
-            BladeBlade.Effects.Add(effect);
+            Parts[ToolBlade.Blade].Effects.Add(effect);
+            Parts[ToolAdze.Head].Effects.Add(effect);
         }
 
         public void AddHandleEffect(Effect effect)
         {
             effect.Apply();
-            BladeGuard.Effects.Add(effect);
-            BladeHandle.Effects.Add(effect);
+            Parts[ToolBlade.Guard].Effects.Add(effect);
+            Parts[ToolBlade.Handle].Effects.Add(effect);
+            Parts[ToolAdze.Binding].Effects.Add(effect);
+            Parts[ToolAdze.Handle].Effects.Add(effect);
         }
 
         public void AddFullEffect(Effect effect)
         {
             effect.Apply();
-            BladeBlade.Effects.Add(effect);
-            BladeGuard.Effects.Add(effect);
-            BladeHandle.Effects.Add(effect);
+            Parts[ToolBlade.Blade].Effects.Add(effect);
+            Parts[ToolBlade.Guard].Effects.Add(effect);
+            Parts[ToolBlade.Handle].Effects.Add(effect);
+        }
+
+        public void AddBladeEffect(Effect effect)
+        {
+            effect.Apply();
+            foreach(var part in ToolBlade.Parts)
+                Parts[part].Effects.Add(effect);
         }
 
         public virtual void MakeAlloy(Dictionary<Material, int> materials)
@@ -132,10 +159,13 @@ namespace RoguelikeEngine
         {
             MeltingRequired = false;
             ColorTransform = ColorMatrix.TwoColor(new Color(100, 92, 66), new Color(255, 255, 255));
-            BladeBlade = "cleave";
-            BladeGuard = "boneguard";
-            BladeHandle = "bone";
+            Parts[ToolBlade.Blade] = "cleave";
+            Parts[ToolBlade.Guard] = "boneguard";
+            Parts[ToolBlade.Handle] = "bone";
+            Parts[ToolAdze.Head] = "reap";
+            Parts[ToolAdze.Binding] = "grip";
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddFullEffect(new Trait(this, "Splintering", "Deals some damage to surrounding enemies."));
         }
     }
 
@@ -154,6 +184,7 @@ namespace RoguelikeEngine
                     attack.Damage *= 1.5f;
                 }
             }));
+            AddFullEffect(new Trait(this, "Holy", "Extra damage to undead."));
         }
     }
 
@@ -164,6 +195,7 @@ namespace RoguelikeEngine
             MeltingTemperature = 260;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(92, 156, 65), new Color(238, 251, 77));
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddFullEffect(new Trait(this, "Unstable", "Causes random explosions."));
         }
     }
 
@@ -174,10 +206,12 @@ namespace RoguelikeEngine
             MeltingTemperature = 500;
             ColorTransform = ColorMatrix.TwoColor(new Color(89, 89, 89), new Color(239, 236, 233));
 
-            BladeBlade = "cleave";
-            BladeGuard = "binding";
+            Parts[ToolBlade.Blade] = "cleave";
+            Parts[ToolBlade.Guard] = "binding";
+            Parts[ToolAdze.Head] = "sledge";
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddEffect(ToolAdze.Head, new Trait(this, "Softy", "Breaking rock restores some HP."));
         }
     }
 
@@ -189,6 +223,7 @@ namespace RoguelikeEngine
             MeltingTemperature = 760;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(92, 156, 65), new Color(187, 253, 204));
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddEffect(ToolAdze.Head, new Trait(this, "Fragile", "Cracks nearby rock."));
         }
 
         public override void MakeAlloy(Dictionary<Material, int> materials)
@@ -196,8 +231,21 @@ namespace RoguelikeEngine
             int basalt = materials.ContainsKey(Basalt) ? materials[Basalt] : 0;
             int tiberium = materials.ContainsKey(Tiberium) ? materials[Tiberium] : 0;
             int dilithium = materials.ContainsKey(Dilithium) ? materials[Dilithium] : 0;
+            int minor = basalt + dilithium;
+            int triberium = Math.Min(minor, tiberium);
 
-            
+            if (triberium > 0)
+            {
+                var result = new[] { basalt, dilithium }.ProportionalSplit(triberium);
+
+                materials[Basalt] -= result[0];
+                materials[Dilithium] -= result[1];
+                materials[Tiberium] -= triberium;
+                if (materials.ContainsKey(Triberium))
+                    materials[Triberium] += triberium * 1;
+                else
+                    materials.Add(Triberium, triberium * 1);
+            }
         }
     }
 
@@ -208,7 +256,11 @@ namespace RoguelikeEngine
             MeltingTemperature = 600;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(69, 75, 54), new Color(157, 167, 143));
 
-            BladeBlade = "rip";
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new Trait(this, "Crumbling", "Destroys lower level rock faster."));
+            AddEffect(ToolAdze.Head, new Trait(this, "Pulverizing", "No mining drops."));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
         }
@@ -221,8 +273,12 @@ namespace RoguelikeEngine
             MeltingTemperature = 1100;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(69 / 2, 54 / 2, 75 / 2), new Color(157, 143, 167));
 
-            BladeBlade = "disembowel";
-            BladeGuard = "binding";
+            Parts[ToolBlade.Blade] = "disembowel";
+            Parts[ToolBlade.Guard] = "binding";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddFullEffect(new EffectStat.Randomized(this, Stat.Attack, -5, 20));
+            AddFullEffect(new Trait(this, "Alien", "Randomize stats."));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
         }
@@ -236,6 +292,8 @@ namespace RoguelikeEngine
             ColorTransform = ColorMatrix.TwoColorLight(new Color(198, 77, 55), new Color(242, 214, 208));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddHeadEffect(new Trait(this, "Sharp", "Causes bleeding."));
+            AddFullEffect(new Trait(this, "Stiff", "Reduce damage taken."));
         }
     }
 
@@ -247,6 +305,7 @@ namespace RoguelikeEngine
             ColorTransform = ColorMatrix.TwoColorLight(new Color(94, 101, 170), new Color(215, 227, 253));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddFullEffect(new Trait(this, "Fuming", "Sometimes produces smoke cloud."));
         }
     }
 
@@ -258,6 +317,7 @@ namespace RoguelikeEngine
             ColorTransform = ColorMatrix.TwoColorLight(new Color(105, 142, 64), new Color(208, 251, 121));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddHeadEffect(new Trait(this, "Poxic", "Sometimes turns enemies into slime."));
         }
     }
 
@@ -270,6 +330,7 @@ namespace RoguelikeEngine
             ColorTransform = ColorMatrix.TwoColorLight(new Color(82, 96, 101), new Color(254, 250, 222));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddHeadEffect(new Trait(this, "Slaughtering", "More drops, but no experience."));
         }
 
         public override void MakeAlloy(Dictionary<Material, int> materials)

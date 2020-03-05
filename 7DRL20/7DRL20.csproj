@@ -65,6 +65,12 @@
     <Compile Include="Effects\OnStartAttack.cs" />
     <Compile Include="Effects\OnAttack.cs" />
     <Compile Include="Effects\OnTile.cs" />
+    <Compile Include="Effects\Trait.cs" />
+    <Compile Include="FibonacciHeap\Constants.cs" />
+    <Compile Include="FibonacciHeap\FibonacciHeap.cs" />
+    <Compile Include="FibonacciHeap\FibonacciHeapDoubleKey.cs" />
+    <Compile Include="FibonacciHeap\FibonacciHeapNode.cs" />
+    <Compile Include="FibonacciHeap\FibonacciHeapNodeDoubleKey.cs" />
     <Compile Include="FontUtil.cs" />
     <Compile Include="FrameCounter.cs" />
     <Compile Include="Game.cs" />
@@ -74,6 +80,7 @@
     <Compile Include="Item.cs" />
     <Compile Include="Lerp.cs" />
     <Compile Include="Map.cs" />
+    <Compile Include="MapGenerator.cs" />
     <Compile Include="MapTile.cs" />
     <Compile Include="Material.cs" />
     <Compile Include="Menu.cs" />
@@ -441,6 +448,9 @@
   <ItemGroup>
     <MonoGameContentReference Include="Content\Content.mgcb" />
     <None Include="app.manifest" />
+    <None Include="FibonacciHeap\License">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Content\bin\Windows\Content\" />

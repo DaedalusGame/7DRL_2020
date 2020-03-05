@@ -15,6 +15,7 @@ namespace RoguelikeEngine
         public Dictionary<Element, double> Elements = new Dictionary<Element, double>();
         public List<StatusEffect> StatusEffects = new List<StatusEffect>();
 
+        public int ReactionLevel;
         public double Damage;
         public Dictionary<Element, double> FinalDamage = new Dictionary<Element, double>();
 

@@ -1,11 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
@@ -237,26 +234,121 @@ namespace RoguelikeEngine
         }
     }
 
-    class MenuAnvil : Menu, IInventory
+    class MenuAnvil : Menu
     {
-        class MenuCraftingSelection : MenuAct
+        class MenuCraftingSelection : MenuAct, IInventory
         {
             MenuAnvil MenuAnvil;
-            public Item[] Parts;
-            public int CurrentPart;
-            InventoryItemList ItemMenu;
-
-            public MenuCraftingSelection(MenuAnvil menuAnvil, Vector2 position, string blueprintName, int parts) : base(blueprintName, position, 256, 8)
-            {
-                MenuAnvil = menuAnvil;
-                Parts = new Item[parts];
-            }
+            Anvil Anvil => MenuAnvil.Anvil;
+            SceneGame Scene => MenuAnvil.Scene;
 
             public override int SelectionCount => Parts.Length + 2;
+            public Creature Holder => MenuAnvil.Holder;
+           
+            public Item[] Parts;
+            public int CurrentPart;
+            public PartType[] PartTypes;
+            public Func<Material[], ToolCore> Create;
+            public ToolCore Result;
+
+
+            InventoryItemList ItemMenu;
+            InfoBox InfoWindow;
+
+            public MenuCraftingSelection(MenuAnvil menuAnvil, Vector2 position, string blueprintName, PartType[] parts) : base(blueprintName, position, 256, 8)
+            {
+                MenuAnvil = menuAnvil;
+                PartTypes = parts;
+                Parts = new Item[parts.Length];
+                InfoWindow = new InfoBox(() => "Preview", () => GetResultDescription(), new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
+                DefaultSelection = SelectionCount - 1;
+            }
+
+            private string GetResultDescription()
+            {
+                if(Result != null)
+                {
+                    string statBlock = string.Empty;
+                    statBlock += $"{Game.FormatIcon(Result)}{Game.FORMAT_BOLD}{Result.Name}{Game.FORMAT_BOLD}\n";
+                    Result.AddStatBlock(ref statBlock);
+                    return statBlock;
+                }
+                else
+                {
+                    return "Invalid Part Combination";
+                }
+            }
+
+            public void Reset()
+            {
+                if (Result != null)
+                {
+                    Result.Destroy();
+                    Result = null;
+                }
+                if (Parts.All(x => x is IOre))
+                {
+                    Result = Create(Parts.OfType<IOre>().Select(x => x.Material).ToArray());
+                }
+            }
+
+            public override void HandleInput(SceneGame scene)
+            {
+                InfoWindow.HandleInput(scene);
+                if (ItemMenu != null)
+                {
+                    ItemMenu.HandleInput(scene);
+                    if (ItemMenu.ShouldClose)
+                        ItemMenu = null;
+                }
+                else
+                {
+                    base.HandleInput(scene);
+                }
+            }
+
+            public override void Draw(SceneGame scene)
+            {
+                base.Draw(scene);
+
+                if(ItemMenu != null)
+                    ItemMenu.Draw(scene);
+               
+                InfoWindow.Draw(scene);
+            }
 
             public override void DrawLine(SceneGame scene, Vector2 linePos, int e)
             {
-                throw new NotImplementedException();
+                SpriteReference cursor = SpriteLoader.Instance.AddSprite("content/cursor");
+                if (Selection == e)
+                    scene.SpriteBatch.Draw(cursor.Texture, linePos, cursor.GetFrameRect(0), Color.White);
+                if(e < Parts.Length)
+                {
+                    IOre ore = Parts[e] as IOre;
+                    Material material = ore?.Material;
+                    string partName = $"{material?.Name ?? "No"} {PartTypes.GetName(e)}";
+                    if(material != null)
+                    {
+                        var partSprite = PartTypes.GetSprite(e, material);
+                        scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+                        {
+                            scene.SetupColorMatrix(material.ColorTransform, matrix);
+                        });
+                        scene.DrawSprite(partSprite, 0, linePos + new Vector2(16, 0), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+                        scene.PopSpriteBatch();
+                        
+                    }
+                    scene.DrawText(partName, linePos + new Vector2(32, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 48, 16).SetBold(true).SetColor(Color.White, Color.Black));
+                }
+                else if (e == Parts.Length)
+                {
+                    scene.DrawText("Build", linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
+                }
+                else if (e == Parts.Length + 1)
+                {
+                    scene.DrawText("Cancel", linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
+                }
+
             }
 
             public override void Select(int selection)
@@ -264,45 +356,113 @@ namespace RoguelikeEngine
                 if (selection < Parts.Length)
                 {
                     CurrentPart = selection;
+                    ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 3 / 4), 256, 8) {
+                        Filter = (item) => item is IOre ore && ore.CanUseInAnvil,
+                    };
                 }
                 else if(selection == Parts.Length)
                 {
-                    //TODO: Build tool
+                    Result.MoveTo(Anvil);
+                    foreach (var part in Parts)
+                        part.Destroy();
                     Close();
                 }
                 else if(selection == Parts.Length+1)
                 {
+                    foreach(Item item in Parts)
+                    {
+                        if(item != null)
+                            Holder.Pickup(item);
+                    }
                     Close();
                 }
+            }
+
+            public void SelectItem(Item item)
+            {
+                if (Parts[CurrentPart] != null) //Return existing
+                {
+                    Holder.Pickup(Parts[CurrentPart]);
+                    Parts[CurrentPart] = null;
+                }
+                if (Parts[CurrentPart] == null)
+                {
+                    Item partMaterial = null;
+                    if (item is Ore ore)
+                    {
+                        partMaterial = ore.Split(200);
+                    }
+                    if (item is Ingot ingot)
+                    {
+                        partMaterial = ingot.Split(1);
+                    }
+                    if (partMaterial != null)
+                    {
+                        Parts[CurrentPart] = partMaterial;
+                        Anvil.Container.Add(partMaterial, false);
+                    }
+                    Reset();
+                }
+                ItemMenu.Reset();
             }
         }
 
         PlayerUI UI;
         SceneGame Scene => UI.Scene;
-        public Creature Holder
-        {
-            get;
-            set;
-        }
+        Creature Holder;
         Anvil Anvil;
        
         MenuTextSelection BlueprintMenu;
+        MenuCraftingSelection CraftingMenu;
 
         public MenuAnvil(PlayerUI ui, Creature holder, Anvil anvil)
         {
             UI = ui;
             Holder = holder;
             Anvil = anvil;
+            BlueprintMenu = new MenuTextSelection("Anvil", new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 1 / 4), 256, 8);
+            BlueprintMenu.Add(new ActAction("Blade", () =>
+            {
+                string[] partNames = new[] { "Blade", "Guard", "Handle" };
+                string[] partSprites = new[] { "Blade", "Guard", "Handle" };
+                OpenBlueprintMenu("Blade", ToolBlade.Parts, (materials) => ToolBlade.Create(Scene, materials[0], materials[1], materials[2]));
+            }));
+            BlueprintMenu.AddDefault(new ActAction("Cancel", () =>
+            {
+                BlueprintMenu.Close();
+            }));
+        }
+
+        private void OpenBlueprintMenu(string name, PartType[] parts, Func<Material[],ToolCore> create)
+        {
+            CraftingMenu = new MenuCraftingSelection(this, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 2 / 4), name, parts)
+            {
+                Create = create,
+            };
+        }
+
+        public override void HandleInput(SceneGame scene)
+        {
+            if (CraftingMenu != null)
+            {
+                CraftingMenu.HandleInput(scene);
+                if (CraftingMenu.ShouldClose)
+                    CraftingMenu = null;
+            }
+            else if (BlueprintMenu != null)
+            {
+                BlueprintMenu.HandleInput(scene);
+                if (BlueprintMenu.ShouldClose)
+                    Close();
+            }
         }
 
         public override void Draw(SceneGame scene)
         {
-            throw new NotImplementedException();
-        }
-
-        public void SelectItem(Item item)
-        {
-            throw new NotImplementedException();
+            if (BlueprintMenu != null)
+                BlueprintMenu.Draw(scene);
+            if (CraftingMenu != null)
+                CraftingMenu.Draw(scene);
         }
     }
 
@@ -386,7 +546,7 @@ namespace RoguelikeEngine
                         case (SmelterSelection.Fuel):
                             ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20)
                             {
-                                Filter = (item) => item is IFuel fuel && fuel.Temperature > 0,
+                                Filter = (item) => item is IFuel fuel && fuel.FuelTemperature > 0,
                             };
                             break;
                         case (SmelterSelection.Empty):
@@ -453,13 +613,27 @@ namespace RoguelikeEngine
             switch (Selection)
             {
                 case (SmelterSelection.Ore):
-                    Smelter.OreContainer.Add(item);
+                    Smelter.OreContainer.Add(TakeOneIngot(item), true);
                     break;
                 case (SmelterSelection.Fuel):
-                    Smelter.FuelContainer.Add(item);
+                    Smelter.FuelContainer.Add(TakeOneIngot(item), true);
                     break;
             }
             ItemMenu.Reset();
+        }
+
+        private Item TakeOneIngot(Item item)
+        {
+            Item partMaterial = null;
+            if (item is Ore ore)
+            {
+                partMaterial = ore.Split(200);
+            }
+            if (item is Ingot ingot)
+            {
+                partMaterial = ingot.Split(1);
+            }
+            return partMaterial;
         }
     }
 
@@ -474,12 +648,14 @@ namespace RoguelikeEngine
         }
         InventoryItemList ItemMenu;
         MenuTextSelection ItemActionMenu;
+        InfoBox ItemInfo;
 
         public MenuInventory(PlayerUI ui, Creature holder)
         {
             UI = ui;
             Holder = holder;
             ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height / 2), 256, 20);
+            ItemInfo = new InfoBox(() => GetName(ItemMenu.SelectedItem), () => GetDescription(ItemMenu.SelectedItem), new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
         }
 
         public override bool IsMouseOver(int x, int y)
@@ -498,13 +674,8 @@ namespace RoguelikeEngine
 
         public void SelectItem(Item item)
         {
-            ItemActionMenu = new MenuTextSelection($"{Game.FormatIcon(item)}{item.Name}", new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height / 2), 128, 6);
-            ItemActionMenu.Add(new ActAction("Throw Away", () =>
-            {
-                item.MoveTo(Holder.Tile);
-                ItemActionMenu.Close();
-                ItemMenu.Reset();
-            }));
+            ItemActionMenu = new MenuTextSelection($"{Game.FormatIcon(item)}{item.Name}", new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height / 2), 256, 6);
+            item.AddItemActions(ItemMenu, Holder, ItemActionMenu);
             ItemActionMenu.AddDefault(new ActAction("Cancel", () =>
             {
                 ItemActionMenu.Close();
@@ -515,6 +686,7 @@ namespace RoguelikeEngine
         {
             InputTwinState state = scene.InputState;
 
+            ItemInfo.HandleInput(scene);
             if (ItemActionMenu != null)
             {
                 ItemActionMenu.HandleInput(scene);
@@ -529,6 +701,11 @@ namespace RoguelikeEngine
             }
         }
 
+        private string GetName(Item item)
+        {
+            return item != null ? $"{Game.FormatIcon(item)}{item.Name}\n" : $"No Item";
+        }
+
         private string GetDescription(Item item)
         {
             string description = string.Empty;
@@ -540,17 +717,67 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene)
         {
             ItemMenu.Draw(scene);
+            ItemInfo.Draw(scene);
             if (ItemActionMenu != null)
                 ItemActionMenu.Draw(scene);
+            
 
-            SpriteReference textbox = SpriteLoader.Instance.AddSprite("content/ui_box");
+            /*SpriteReference textbox = SpriteLoader.Instance.AddSprite("content/ui_box");
             int widthDescription = 256;
             int heightDescription = 20 * 16;
             Rectangle rectDescription = new Rectangle(Scene.Viewport.Width * 3 / 4 - widthDescription / 2, Scene.Viewport.Height / 2 - heightDescription / 2, widthDescription, heightDescription);
             Item item = ItemMenu.SelectedItem;
             DrawLabelledUI(scene, textbox, rectDescription, item != null ? $"{Game.FormatIcon(item)}{item.Name}\n" : $"No Item");
             string desc = GetDescription(item);
-            scene.DrawText(desc, new Vector2(rectDescription.X, rectDescription.Y), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(rectDescription));
+            scene.DrawText(desc, new Vector2(rectDescription.X, rectDescription.Y), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(rectDescription));*/
+        }
+    }
+
+    class InfoBox : Menu
+    {
+        public Func<string> Name;
+        public Func<string> Text;
+
+        public Vector2 Position;
+        public int Width;
+        public int Height;
+
+        public InfoBox(Func<string> name, Func<string> text, Vector2 position, int width, int height)
+        {
+            Name = name;
+            Text = text;
+            Position = position;
+            Width = width;
+            Height = height;
+        }
+
+        public override bool IsMouseOver(int x, int y)
+        {
+            return new Rectangle((int)Position.X - Width / 2, (int)Position.Y - Height / 2, Width, Height).Contains(x, y);
+        }
+
+        public override void HandleInput(SceneGame scene)
+        {
+            if (scene.InputState.IsKeyPressed(Keys.Enter))
+                Close();
+            if (scene.InputState.IsKeyPressed(Keys.Escape))
+                Close();
+            base.HandleInput(scene);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            SpriteReference textbox = SpriteLoader.Instance.AddSprite("content/ui_box");
+            int x = (int)Position.X - Width / 2;
+            int y = (int)Position.Y - Height / 2;
+            float openCoeff = Math.Min(Ticks / 7f, 1f);
+            float openResize = MathHelper.Lerp(-0.5f, 0.0f, openCoeff);
+            Rectangle rect = new Rectangle(x, y, Width, Height);
+            rect.Inflate(rect.Width * openResize, rect.Height * openResize);
+            if (openCoeff > 0)
+                DrawLabelledUI(scene, textbox, rect, openCoeff >= 1 ? Name() : string.Empty);
+            if (openCoeff >= 1)
+                scene.DrawText(Text(), new Vector2(x, y), Alignment.Left, new TextParameters().SetColor(Color.White,Color.Black).SetConstraints(Width - 16, Height));
         }
     }
 

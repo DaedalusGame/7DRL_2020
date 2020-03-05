@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RoguelikeEngine.Effects;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,6 +29,11 @@ namespace RoguelikeEngine
             X = x;
             Y = y;
             Set(tile);
+        }
+
+        public IEnumerable<T> GetEffects<T>() where T : Effect
+        {
+            return EffectManager.GetEffects<T>(this);
         }
 
         public void Set(Tile tile)

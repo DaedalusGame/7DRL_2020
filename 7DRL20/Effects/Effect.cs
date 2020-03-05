@@ -8,6 +8,21 @@ namespace RoguelikeEngine.Effects
 {
     abstract class Effect
     {
+        class StatEqualityComparer : IEqualityComparer<Effect>
+        {
+            public bool Equals(Effect x, Effect y)
+            {
+                return x.StatEquals(y);
+            }
+
+            public int GetHashCode(Effect obj)
+            {
+                return obj.GetStatHashCode();
+            }
+        }
+
+        public static IEqualityComparer<Effect> StatEquality = new StatEqualityComparer();
+
         public bool Removed = false;
 
         public abstract void Apply();
@@ -20,6 +35,21 @@ namespace RoguelikeEngine.Effects
         public static void Apply(Effect effect)
         {
             effect.Apply();
+        }
+
+        public virtual bool StatEquals(Effect other)
+        {
+            return false;
+        }
+
+        public virtual int GetStatHashCode()
+        {
+            return GetHashCode();
+        }
+
+        public virtual void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
+        {
+            //NOOP
         }
     }
 }

@@ -91,11 +91,30 @@ namespace RoguelikeEngine
             return EquipEffects.GetAndClean(effect => effect.Removed);
         }
 
-        public IEnumerable<T> GetEffects<T>() where T : Effect
+        public virtual IEnumerable<T> GetEffects<T>() where T : Effect
         {
             var list = new List<T>();
             list.AddRange(EffectManager.GetEffects<T>(this));
             return list;
+        }
+
+        public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
+        {
+            selection.Add(new ActAction($"Pick up {Game.FormatIcon(this)}{Name}", () =>
+            {
+                player.Pickup(this);
+                selection.Close();
+            }));
+        }
+
+        public virtual void AddItemActions(InventoryItemList inventory, Creature player, MenuTextSelection selection)
+        {
+            selection.Add(new ActAction("Throw Away", () =>
+            {
+                MoveTo(player.Tile);
+                selection.Close();
+                inventory.Reset();
+            }));
         }
 
         public virtual void AddTooltip(ref string tooltip)
@@ -141,6 +160,11 @@ namespace RoguelikeEngine
         {
             get;
         }
+        bool CanUseInAnvil
+        {
+            get;
+        }
+
         int Reduce(int amount);
     }
 
@@ -150,7 +174,7 @@ namespace RoguelikeEngine
         {
             get;
         }
-        double Temperature
+        double FuelTemperature
         {
             get;
         }
@@ -175,7 +199,8 @@ namespace RoguelikeEngine
             get;
             set;
         }
-        public double Temperature => Material.FuelTemperature;
+        public bool CanUseInAnvil => !Material.MeltingRequired;
+        public double FuelTemperature => Material.FuelTemperature;
 
         public Ore(SceneGame world, Material material, int amount) : base(world, "Ore", string.Empty)
         {
@@ -239,7 +264,8 @@ namespace RoguelikeEngine
         }
         public int Count;
         public int Amount => Count * 200;
-        public double Temperature => Material.FuelTemperature;
+        public bool CanUseInAnvil => true;
+        public double FuelTemperature => Material.FuelTemperature;
 
         public Ingot(SceneGame world, Material material, int count) : base(world, "Ingot", string.Empty)
         {
@@ -285,16 +311,74 @@ namespace RoguelikeEngine
         }
     }
 
+    class PartType
+    {
+        public string Name;
+        public string SpritePrefix;
+
+        public PartType(string name, string prefix)
+        {
+            Name = name;
+            SpritePrefix = prefix;
+        }
+    }
+
     abstract class ToolCore : Item
     {
         Material[] Materials;
-
-        public ToolCore(SceneGame world, string name, string description, int parts) : base(world, name, description)
+        PartType[] Parts;
+        protected abstract IEnumerable<EquipSlot> ValidSlots
         {
-            Materials = new Material[parts];
+            get;
         }
 
-        public abstract string GetPartName(int part);
+        public ToolCore(SceneGame world, string name, string description, PartType[] parts) : base(world, name, description)
+        {
+            Materials = new Material[parts.Length];
+            Parts = parts;
+        }
+
+        public override IEnumerable<T> GetEffects<T>()
+        {
+            var list = (List<T>)base.GetEffects<T>();
+            for(int i = 0; i < Parts.Length; i++)
+            {
+                var part = GetMaterialPart(i);
+                list.AddRange(part.GetEffects().OfType<T>());
+            }
+            return list;
+        }
+
+        public override IEnumerable<Effect> GetEquipEffects()
+        {
+            List<Effect> effects = new List<Effect>();
+            effects.AddRange(base.GetEquipEffects());
+            for(int i = 0; i < Parts.Length; i++)
+            {
+                effects.AddRange(GetMaterialPart(i).GetEffects());
+            }
+            return effects;
+        }
+
+        public PartType GetPart(int part)
+        {
+            return Parts[part];
+        }
+
+        public Material.Part GetMaterialPart(int part)
+        {
+            return Materials[part].Parts[Parts[part]];
+        }
+
+        public string GetPartName(int part)
+        {
+            return Parts.GetName(part);
+        }
+
+        public SpriteReference GetPartSprite(int part, Material material)
+        {
+            return Parts.GetSprite(part, material);
+        }
 
         public Material GetMaterial(int part)
         {
@@ -306,11 +390,46 @@ namespace RoguelikeEngine
             Materials[part] = material;
         }
 
+        public override void AddItemActions(InventoryItemList inventory, Creature player, MenuTextSelection selection)
+        {
+            base.AddItemActions(inventory, player, selection);
+            var currentEquip = GetEffects<EffectItemEquipped>();
+            foreach (var slot in ValidSlots)
+            {
+                if(!currentEquip.Any(x => x.Slot == slot))
+                selection.Add(new ActAction($"Equip ({slot})", () =>
+                {
+                    player.Equip(this, slot);
+                    selection.Close();
+                }));
+            }
+            if(currentEquip.Any())
+                selection.Add(new ActAction($"Unequip", () =>
+                {
+                    foreach(var equip in currentEquip)
+                    {
+                        equip.Remove();
+                    }
+                    selection.Close();
+                }));
+        }
+
         public override void AddStatBlock(ref string statBlock)
         {
             base.AddStatBlock(ref statBlock);
             for(int i = 0; i < Materials.Length; i++)
                 statBlock += $"{Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
+            var effects = GetEffects<Effect>();
+            var statGroups = effects.OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat);
+            foreach(var stat in statGroups)
+            {
+                statBlock += stat.GetStatBonus(stat.Key);
+            }
+            var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
+            foreach(var group in effectGroups)
+            {
+                group.Key.AddStatBlock(ref statBlock, group);
+            }
         }
 
         protected void PushMaterialBatch(SceneGame scene, Material material)
@@ -328,7 +447,15 @@ namespace RoguelikeEngine
         public const int GUARD = 1;
         public const int HANDLE = 2;
 
-        public ToolBlade(SceneGame world) : base(world, "Blade",string.Empty,3)
+        public static PartType Blade = new PartType("Blade", "content/blade_");
+        public static PartType Guard = new PartType("Guard", "content/blade_");
+        public static PartType Handle = new PartType("Handle", "content/blade_");
+
+        public static PartType[] Parts = new[] { Blade, Guard, Handle };
+
+        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Mainhand };
+
+        public ToolBlade(SceneGame world) : base(world, "Blade", string.Empty, Parts)
         {
             
         }
@@ -342,40 +469,15 @@ namespace RoguelikeEngine
             return tool;
         }
 
-        public override string GetPartName(int part)
-        {
-            switch(part)
-            {
-                case (BLADE):
-                    return "Blade";
-                case (GUARD):
-                    return "Guard";
-                case (HANDLE):
-                    return "Handle";
-                default:
-                    return string.Empty;
-            }
-        }
-
-        public override IEnumerable<Effect> GetEquipEffects()
-        {
-            List<Effect> effects = new List<Effect>();
-            effects.AddRange(base.GetEquipEffects());
-            effects.AddRange(GetMaterial(BLADE).BladeBlade.GetEffects());
-            effects.AddRange(GetMaterial(GUARD).BladeGuard.GetEffects());
-            effects.AddRange(GetMaterial(HANDLE).BladeHandle.GetEffects());
-            return effects;
-        }
-
         public override void DrawIcon(SceneGame scene, Vector2 position)
         {
             Material bladeMaterial = GetMaterial(BLADE);
             Material guardMaterial = GetMaterial(GUARD);
             Material handleMaterial = GetMaterial(HANDLE);
 
-            var blade = SpriteLoader.Instance.AddSprite("content/blade_" + bladeMaterial.BladeBlade.Sprite);
-            var guard = SpriteLoader.Instance.AddSprite("content/blade_" + guardMaterial.BladeGuard.Sprite);
-            var handle = SpriteLoader.Instance.AddSprite("content/blade_" + handleMaterial.BladeHandle.Sprite);
+            var blade = GetPartSprite(BLADE, bladeMaterial);
+            var guard = GetPartSprite(GUARD, guardMaterial);
+            var handle = GetPartSprite(HANDLE, handleMaterial);
 
             PushMaterialBatch(scene, guardMaterial);
             scene.DrawSprite(guard, 0, position - guard.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
@@ -395,10 +497,20 @@ namespace RoguelikeEngine
         public const int BINDING = 1;
         public const int HANDLE = 2;
 
-        public ToolAdze(SceneGame world) : base(world, "Adze", string.Empty, 3)
+        public static PartType Head = new PartType("Head", "content/adze_");
+        public static PartType Binding = new PartType("Binding", "content/adze_");
+        public static PartType Handle = new PartType("Handle", "content/adze_");
+
+        public static PartType[] Parts = new[] { Head, Binding, Handle };
+
+        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Mainhand };
+
+        public ToolAdze(SceneGame world) : base(world, "Adze", string.Empty, Parts)
         {
 
         }
+
+        
 
         public static ToolAdze Create(SceneGame world, Material head, Material binding, Material handle)
         {
@@ -409,24 +521,25 @@ namespace RoguelikeEngine
             return tool;
         }
 
-        public override string GetPartName(int part)
-        {
-            switch (part)
-            {
-                case (HEAD):
-                    return "Head";
-                case (BINDING):
-                    return "Binding";
-                case (HANDLE):
-                    return "Handle";
-                default:
-                    return string.Empty;
-            }
-        }
-
         public override void DrawIcon(SceneGame scene, Vector2 position)
         {
-            throw new NotImplementedException();
+            Material headMaterial = GetMaterial(HEAD);
+            Material bindingMaterial = GetMaterial(BINDING);
+            Material handleMaterial = GetMaterial(HANDLE);
+
+            var head = GetPartSprite(HEAD, headMaterial);
+            var binding = GetPartSprite(BINDING, bindingMaterial);
+            var handle = GetPartSprite(HANDLE, handleMaterial);
+
+            PushMaterialBatch(scene, bindingMaterial);
+            scene.DrawSprite(binding, 0, position - binding.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, handleMaterial);
+            scene.DrawSprite(handle, 0, position - handle.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, headMaterial);
+            scene.DrawSprite(head, 0, position - head.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
         }
     }
 }

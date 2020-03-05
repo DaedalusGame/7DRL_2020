@@ -42,5 +42,30 @@ namespace RoguelikeEngine.Effects
         {
             return $"{Stat} {Amount:+0;-#} ({Holder})";
         }
+
+        public class Randomized : EffectStat
+        {
+            Random Random = new Random();
+            int Lower;
+            int Upper;
+
+            public Randomized(IEffectHolder holder, Stat stat, int lower, int upper) : base(holder, stat, 0)
+            {
+                Lower = lower;
+                Upper = upper;
+            }
+
+            public override double Amount
+            {
+                get
+                {
+                    return Lower + Random.Next(Upper - Lower);
+                }
+                set
+                {
+                    //NOOP
+                }
+            }
+        }
     }
 }

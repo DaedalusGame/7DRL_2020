@@ -43,14 +43,14 @@ namespace RoguelikeEngine
         public SceneGame(Game game) : base(game)
         {
             Menu = new PlayerUI(this);
-            Map = new Map(500, 500);
+            Map = new Map(250, 250);
 
             Player = new Creature(this)
             {
                 Name = "You",
                 Description = "This is you.",
             };
-            Player.MoveTo(Map.GetTile(250, 250));
+            Player.MoveTo(Map.GetTile(150, 150));
             ActionQueue.Add(Player);
 
             var enemy = new Creature(this)
@@ -58,24 +58,28 @@ namespace RoguelikeEngine
                 Name = "Gay Bowser",
                 Description = "?????",
             };
-            enemy.MoveTo(Map.GetTile(255, 250));
+            enemy.MoveTo(Map.GetTile(155, 150));
             ActionQueue.Add(enemy);
 
             Item testItem = ToolBlade.Create(this, Material.Karmesine, Material.Ovium, Material.Jauxum);
-            testItem.MoveTo(Map.GetTile(250, 255));
+            testItem.MoveTo(Map.GetTile(150, 155));
 
-            new Ore(this, Material.Dilithium, 500).MoveTo(Map.GetTile(251, 250));
-            new Ore(this, Material.Dilithium, 1000).MoveTo(Map.GetTile(251, 255));
-            new Ore(this, Material.Tiberium, 1000).MoveTo(Map.GetTile(251, 256));
-            new Ore(this, Material.Basalt, 1000).MoveTo(Map.GetTile(251, 257));
-            new Ore(this, Material.Triberium, 1000).MoveTo(Map.GetTile(251, 258));
-            new Ore(this, Material.Jauxum, 1000).MoveTo(Map.GetTile(252, 255));
-            new Ore(this, Material.Ovium, 1000).MoveTo(Map.GetTile(252, 256));
-            new Ore(this, Material.Karmesine, 1000).MoveTo(Map.GetTile(252, 257));
-            new Ore(this, Material.Meteorite, 1000).MoveTo(Map.GetTile(253, 255));
-            new Ore(this, Material.Obsidiorite, 1000).MoveTo(Map.GetTile(253, 256));
+            new Ore(this, Material.Dilithium, 500).MoveTo(Map.GetTile(151, 150));
+            new Ore(this, Material.Dilithium, 1000).MoveTo(Map.GetTile(151, 155));
+            new Ore(this, Material.Tiberium, 1000).MoveTo(Map.GetTile(151, 156));
+            new Ore(this, Material.Basalt, 1000).MoveTo(Map.GetTile(151, 157));
+            new Ore(this, Material.Triberium, 1000).MoveTo(Map.GetTile(151, 158));
+            new Ore(this, Material.Jauxum, 1000).MoveTo(Map.GetTile(152, 155));
+            new Ore(this, Material.Ovium, 1000).MoveTo(Map.GetTile(152, 156));
+            new Ore(this, Material.Karmesine, 1000).MoveTo(Map.GetTile(152, 157));
+            new Ore(this, Material.Meteorite, 1000).MoveTo(Map.GetTile(153, 155));
+            new Ore(this, Material.Obsidiorite, 1000).MoveTo(Map.GetTile(153, 156));
 
-            Map.GetTile(245, 250).Replace(new Smelter(this));
+            Map.GetTile(145, 150).PlaceOn(new Smelter(this));
+            Map.GetTile(147, 150).PlaceOn(new Anvil());
+
+            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, random.Next());
+            generator.Generate();
         }
 
         private Vector2 FitCamera(Vector2 camera, Vector2 size)

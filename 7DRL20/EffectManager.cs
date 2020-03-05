@@ -122,7 +122,7 @@ namespace RoguelikeEngine
         static Dictionary<Type, Drawer> Drawers = new Dictionary<Type, Drawer>();
         static Dictionary<int, IEffectHolder> Holders = new Dictionary<int, IEffectHolder>();
 
-        public static IEnumerable<T> GetEffects<T>(this IEffectHolder holder) where T : Effect
+        public static IEnumerable<T> GetEffects<T>(IEffectHolder holder) where T : Effect
         {
             return GetDrawer(typeof(T)).Get(holder).OfType<T>();
         }
@@ -152,8 +152,13 @@ namespace RoguelikeEngine
 
         public static void ClearEffects(this IEffectHolder holder)
         {
-            foreach (var effect in holder.GetEffects<Effect>())
+            foreach (var effect in GetEffects<Effect>(holder))
                 effect.Remove();
+        }
+
+        public static double GetTotalDamage(this IEffectHolder holder)
+        {
+            return holder.GetEffects<EffectDamage>().Sum(x => x.Amount);
         }
 
         public static double GetStat(this IEffectHolder holder, Stat stat)
@@ -178,6 +183,26 @@ namespace RoguelikeEngine
             var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
 
             return Math.Max(min, Math.Min((baseStat + percentage * baseStat + add) * multiplier, max));
+        }
+
+        public static string GetStatBonus(this IEnumerable<Effect> effects, Stat statName)
+        {
+            string statBlock = string.Empty;
+            var groups = effects.ToTypeLookup();
+            var add = groups.Get<EffectStat>().Sum(stat => stat.Amount);
+            if (add != 0)
+                statBlock += $"{statName.Name} {add.ToString("+0;-#")}\n";
+            var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
+            if (percentage != 0)
+                statBlock += $"{statName.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}\n";
+            var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
+            if (multiplier != 1)
+                statBlock += $"{statName.Name} x{Math.Round(multiplier,2)}\n";
+            var locks = groups.Get<EffectStatLock>();
+            var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
+            var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
+
+            return statBlock;
         }
 
         public static void TakeDamage(this IEffectHolder holder, double damage, Element element)

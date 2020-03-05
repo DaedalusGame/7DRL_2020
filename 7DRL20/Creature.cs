@@ -276,6 +276,8 @@ namespace RoguelikeEngine
 
         public bool Walking = false;
 
+        public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
+
         public Creature(SceneGame world)
         {
             World = world;
@@ -285,6 +287,7 @@ namespace RoguelikeEngine
             VisualFacing = () => Facing;
             Mask.Add(Point.Zero);
 
+            Effect.Apply(new EffectStat(this, Stat.HP, 100));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
         }
 
@@ -503,6 +506,7 @@ namespace RoguelikeEngine
         {
             tooltip += $"{Game.FORMAT_BOLD}{Game.FormatColor(Color.Yellow)}{Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}\n";
             tooltip += $"{Description}\n";
+            tooltip += $"HP {CurrentHP}/{this.GetStat(Stat.HP)}\n";
             foreach(StatusEffect statusEffect in this.GetStatusEffects())
             {
                 tooltip += $"{statusEffect.Name} {statusEffect.BuildupTooltip}\n";

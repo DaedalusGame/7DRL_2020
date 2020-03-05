@@ -28,6 +28,10 @@ namespace RoguelikeEngine.Effects
 
         public override void Remove()
         {
+            foreach (var effect in EffectManager.GetEffects<EffectItemEquipped>(Item).Where(stat => stat.Item == Item))
+            {
+                effect.Remove();
+            }
             base.Remove();
         }
 

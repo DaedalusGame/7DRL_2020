@@ -37,6 +37,11 @@ namespace RoguelikeEngine
             Name = name;
         }
 
+        public IEnumerable<T> GetEffects<T>() where T : Effect
+        {
+            return EffectManager.GetEffects<T>(this);
+        }
+
         public void AddTileEffect(Effect effect)
         {
             effect.Apply();
@@ -53,6 +58,17 @@ namespace RoguelikeEngine
             Parent.Set(newTile);
         }
 
+        public void PlaceOn(Tile newTile)
+        {
+            Parent.SaveUnder();
+            Parent.Set(newTile);
+        }
+
+        public void Scrape()
+        {
+            Parent.RestoreUnder();
+        }
+
         public void SetParent(MapTile parent)
         {
             Parent = parent;
@@ -65,7 +81,7 @@ namespace RoguelikeEngine
 
         public IEnumerable<Tile> GetAdjacentNeighbors()
         {
-            return new[] { GetNeighbor(1, 0), GetNeighbor(0, 1), GetNeighbor(-1, 0), GetNeighbor(0, -1) }.Shuffle();
+            return new[] { GetNeighbor(1, 0), GetNeighbor(0, 1), GetNeighbor(-1, 0), GetNeighbor(0, -1) };
         }
 
         public void AddPrimary(IEffectHolder holder)
@@ -82,11 +98,8 @@ namespace RoguelikeEngine
         {
             foreach (Item item in Items)
             {
-                selection.Add(new ActAction($"Pick up {Game.FormatIcon(item)}{item.Name}", () =>
-                {
-                    player.Pickup(item);
-                    selection.Close();
-                }));
+                item.AddActions(ui, player, selection);
+                
             }
         }
 
@@ -157,6 +170,16 @@ namespace RoguelikeEngine
         public Anvil() : base("Anvil")
         {
             Container = new Container();
+        }
+
+        public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
+        {
+            base.AddActions(ui, player, selection);
+            selection.Add(new ActAction("Anvil", () =>
+            {
+                selection.Close();
+                ui.Open(new MenuAnvil(ui, player, this));
+            }));
         }
 
         public override void Draw(SceneGame scene)
@@ -240,7 +263,7 @@ namespace RoguelikeEngine
                     if (value > 0)
                     {
                         Ore leftovers = new Ore(World, pair.Key, value);
-                        OreContainer.Add(leftovers);
+                        OreContainer.Add(leftovers, true);
                     }
                 }
                 
@@ -335,6 +358,11 @@ namespace RoguelikeEngine
                     allMaterials[fuel.Material] += fuel.Amount;
                 else
                     allMaterials.Add(fuel.Material, fuel.Amount);
+            foreach(var fuel in Fuels)
+                if (allMaterials.ContainsKey(fuel.Key))
+                    allMaterials[fuel.Key] += fuel.Value;
+                else
+                    allMaterials.Add(fuel.Key, fuel.Value);
 
             if (allMaterials.Any())
             {
