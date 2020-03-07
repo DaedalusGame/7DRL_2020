@@ -19,7 +19,7 @@ namespace RoguelikeEngine.Effects
         public Item Item;
         public Creature Wearer;
         public EquipSlot Slot;
-        public IEnumerable<Effect> Effects => Item.GetEquipEffects();
+        public IEnumerable<Effect> Effects => Slot == EquipSlot.Offhand ? Enumerable.Empty<Effect>() : Item.GetEquipEffects();
 
         public EffectItemEquipped(Item item, Creature wearer, EquipSlot slot)
         {

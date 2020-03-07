@@ -19,8 +19,9 @@ namespace RoguelikeEngine
         public int X, Y;
 
         public Tile Tile;
-
         public Tile UnderTile;
+
+        public GeneratorGroup Group;
 
         public MapTile(Map map, int x, int y, Tile tile)
         {

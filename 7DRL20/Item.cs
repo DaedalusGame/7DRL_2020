@@ -13,7 +13,7 @@ namespace RoguelikeEngine
     {
         public SceneGame World { get; set; }
         public double DrawOrder => 0;
-        bool IGameObject.Remove { get; set; }
+        bool IGameObject.Destroyed { get; set; }
 
         public ReusableID ObjectID
         {
@@ -48,7 +48,7 @@ namespace RoguelikeEngine
         public Item(SceneGame world, string name, string description)
         {
             World = world;
-            World.GameObjects.Add(this);
+            World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
@@ -453,7 +453,7 @@ namespace RoguelikeEngine
 
         public static PartType[] Parts = new[] { Blade, Guard, Handle };
 
-        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Mainhand };
+        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Mainhand, EquipSlot.Offhand };
 
         public ToolBlade(SceneGame world) : base(world, "Blade", string.Empty, Parts)
         {
@@ -503,14 +503,12 @@ namespace RoguelikeEngine
 
         public static PartType[] Parts = new[] { Head, Binding, Handle };
 
-        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Mainhand };
+        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Mainhand, EquipSlot.Offhand };
 
         public ToolAdze(SceneGame world) : base(world, "Adze", string.Empty, Parts)
         {
 
         }
-
-        
 
         public static ToolAdze Create(SceneGame world, Material head, Material binding, Material handle)
         {

@@ -41,6 +41,8 @@ namespace RoguelikeEngine
         public static Element Light = new Element("Light");
         public static Element Dark = new Element("Dark");
 
+        public static Element Healing = new Element("Healing");
+
         public static Element[] PhysicalElements = new Element[] { Bludgeon, Slash, Pierce };
         public static Element[] MagicalElements = new Element[] { Fire, Ice, Thunder, Water, Wind, Earth, Light, Dark };
     }
@@ -67,6 +69,9 @@ namespace RoguelikeEngine
         public static Stat AlchemyPower = new Stat("Alchemy Power", 0);
 
         public static Stat DamageRate = new Stat("Damage Rate", 1);
+
+        public static Stat MiningLevel = new Stat("Mining Level", 0);
+        public static Stat MiningSpeed = new Stat("Mining Speed", 1);
 
         public static Stat[] Stats = new Stat[] { HP, Attack, Defense, AlchemyPower, DamageRate };
     }
@@ -139,76 +144,82 @@ namespace RoguelikeEngine
         West,
     }
 
-    class Creature : IEffectHolder, ITurnTaker, IGameObject
+    public enum CreaturePose
     {
-        public enum Action
-        {
-            Stand,
-            Walk,
-            Attack,
-            Cast,
-        }
+        Stand,
+        Walk,
+        Attack,
+        Cast,
+    }
 
-        public abstract class CreatureRender
-        {
-            public abstract void Draw(SceneGame scene, Creature creature);
-        }
+    abstract class CreatureRender
+    {
+        public abstract void Draw(SceneGame scene, Creature creature);
+    }
 
-        public class CreaturePaperdollRender : CreatureRender
-        {
-            SpriteReference Body;
-            SpriteReference Head;
+    class CreaturePaperdollRender : CreatureRender
+    {
+        public SpriteReference Body;
+        public SpriteReference Head;
+        public ColorMatrix BodyColor = ColorMatrix.Identity;
+        public ColorMatrix HeadColor = ColorMatrix.Identity;
 
-            public CreaturePaperdollRender(SpriteReference body, SpriteReference head)
+        public override void Draw(SceneGame scene, Creature creature)
+        {
+            var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
+            int facingOffset = 0;
+            switch (creature.VisualFacing())
             {
-                Body = body;
-                Head = head;
+                case (Facing.North):
+                    facingOffset = 0;
+                    break;
+                case (Facing.East):
+                    facingOffset = 5;
+                    break;
+                case (Facing.South):
+                    facingOffset = 10;
+                    break;
+                case (Facing.West):
+                    facingOffset = 5;
+                    mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally;
+                    break;
             }
 
-            public override void Draw(SceneGame scene, Creature creature)
+            int frameOffset = 0;
+            switch (creature.VisualPose())
             {
-                var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
-                int facingOffset = 0;
-                switch(creature.VisualFacing())
-                {
-                    case (Facing.North):
-                        facingOffset = 0;
-                        break;
-                    case (Facing.East):
-                        facingOffset = 5;
-                        break;
-                    case (Facing.South):
-                        facingOffset = 10;
-                        break;
-                    case (Facing.West):
-                        facingOffset = 5;
-                        mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally;
-                        break;
-                }
-
-                int frameOffset = 0;
-                switch (creature.VisualPose())
-                {
-                    case (Action.Stand):
-                        frameOffset = 1;
-                        break;
-                    case (Action.Walk):
-                        double lerp = LerpHelper.ForwardReverse(0, 2, (creature.Frame / 50.0) % 1);
-                        frameOffset = (int)Math.Round(lerp);
-                        break;
-                    case (Action.Attack):
-                        frameOffset = 3;
-                        break;
-                    case (Action.Cast):
-                        frameOffset = 4;
-                        break;
-                }
-
-                scene.DrawSprite(Body, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
-                scene.DrawSprite(Head, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
+                case (CreaturePose.Stand):
+                    frameOffset = 1;
+                    break;
+                case (CreaturePose.Walk):
+                    double lerp = LerpHelper.ForwardReverse(0, 2, (creature.Frame / 50.0) % 1);
+                    frameOffset = (int)Math.Round(lerp);
+                    break;
+                case (CreaturePose.Attack):
+                    frameOffset = 3;
+                    break;
+                case (CreaturePose.Cast):
+                    frameOffset = 4;
+                    break;
             }
-        }
 
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(BodyColor * ColorMatrix.Tint(creature.VisualColor()), matrix);
+            });
+            scene.DrawSprite(Body, facingOffset + frameOffset, creature.VisualPosition(), mirror, creature.VisualColor(), 0);
+            scene.PopSpriteBatch();
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(HeadColor * ColorMatrix.Tint(creature.VisualColor()), matrix);
+            });
+            scene.DrawSprite(Head, facingOffset + frameOffset, creature.VisualPosition(), mirror, creature.VisualColor(), 0);
+            scene.PopSpriteBatch();
+        }
+    }
+
+    abstract class Creature : IEffectHolder, ITurnTaker, IGameObject
+    {
         public class WaitFrames : Wait
         {
             public Creature Creature;
@@ -230,7 +241,7 @@ namespace RoguelikeEngine
 
         public SceneGame World { get; set; }
         public double DrawOrder => VisualPosition().Y;
-        bool IGameObject.Remove { get; set; }
+        public bool Destroyed { get; set; }
 
         public ReusableID ObjectID {
             get;
@@ -240,6 +251,8 @@ namespace RoguelikeEngine
         public string EffectsString => string.Join(",\n", GetEffects<Effect>().Select(x => x.ToString()));
         public string StatString => string.Join(",\n", this.GetStats().Select(stat => $"{stat.Key} {stat.Value}"));
 
+        public int X => Tile.X;
+        public int Y => Tile.Y;
         public Tile Tile
         {
             get
@@ -256,39 +269,37 @@ namespace RoguelikeEngine
         public string Description;
         public Facing Facing;
 
+        public Item EquipMainhand => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Mainhand)?.Item;
+        public Item EquipOffhand => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Offhand)?.Item;
+        public Item EquipBody => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Body)?.Item;
+
         public double TurnSpeed => 1;
         public double TurnBuildup { get; set; }
         public bool TurnReady => TurnBuildup > 1;
-        public bool RemoveFromQueue
-        {
-            get;
-            set;
-        }
+        public bool RemoveFromQueue => Destroyed;
         public Wait CurrentAction = Wait.NoWait;
+        public Wait CurrentPopups = Wait.NoWait;
 
         public CreatureRender Render;
         public Func<Facing> VisualFacing = () => Facing.South;
-        public Func<Action> VisualPose = () => Action.Walk;
+        public Func<CreaturePose> VisualPose = () => CreaturePose.Walk;
         public Func<Vector2> VisualPosition = () => Vector2.Zero;
         public Func<Vector2> VisualCamera = () => Vector2.Zero;
+        public Func<Color> VisualColor = () => Color.White;
 
         public int Frame;
 
         public bool Walking = false;
 
         public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
+        public bool Dead => CurrentHP <= 0;
 
         public Creature(SceneGame world)
         {
             World = world;
-            World.GameObjects.Add(this);
+            World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
-            Render = new CreaturePaperdollRender(SpriteLoader.Instance.AddSprite("content/paperdoll_crusader"), SpriteLoader.Instance.AddSprite("content/paperdoll_helmet_a"));
             VisualFacing = () => Facing;
-            Mask.Add(Point.Zero);
-
-            Effect.Apply(new EffectStat(this, Stat.HP, 100));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
         }
 
         public void OnDestroy()
@@ -307,12 +318,34 @@ namespace RoguelikeEngine
             };
         }
 
-        public Func<Action> StaticPose(Action pose)
+        public Func<CreaturePose> Static(CreaturePose pose)
         {
             return () => pose;
         }
 
-        public Func<Action> FlickPose(Action flickPose, Action restPose, int time)
+        public Func<Color> Static(Color color)
+        {
+            return () => color;
+        }
+
+        public Func<Vector2> Static(Vector2 pos)
+        {
+            return () => pos;
+        }
+
+        public Func<Color> Flash(Color color1, Color color2, int time)
+        {
+            int startTime = Frame;
+            return () =>
+            {
+                if ((Frame - startTime) % 4 < 2 && (Frame - startTime) < time)
+                    return color1;
+                else
+                    return color2;
+            };
+        }
+
+        public Func<CreaturePose> FlickPose(CreaturePose flickPose, CreaturePose restPose, int time)
         {
             int startTime = Frame;
             return () =>
@@ -326,12 +359,22 @@ namespace RoguelikeEngine
 
         public void Update()
         {
+            ShowPopups();
             Frame++;
         }
 
-        public Wait TakeTurn(ActionQueue queue)
+        private Wait ShowPopups()
+        {
+            if (CurrentPopups.Done)
+                CurrentPopups = Scheduler.Instance.RunAndWait(RoutineShowPopups());
+            return CurrentPopups;
+        }
+
+        public virtual Wait TakeTurn(ActionQueue queue)
         {
             this.ResetTurn();
+            foreach (var statusEffect in this.GetStatusEffects())
+                statusEffect.Update();
             return Wait.NoWait;
         }
 
@@ -374,67 +417,116 @@ namespace RoguelikeEngine
         public void Move(int dx, int dy)
         {
             Tile tile = Tile.GetNeighbor(dx, dy);
+            if (tile == null)
+                return;
             var frontier = Mask.GetFrontier(dx, dy);
+            if (frontier.Select(p => Tile.GetNeighbor(p.X, p.Y)).Any(front => front.Solid || front.Creatures.Any()))
+                return;
             MoveTo(tile);
         }
 
         public IEnumerable<Wait> RoutineMove(int dx, int dy)
         {
             Move(dx, dy);
-            VisualPose = FlickPose(Action.Walk, Action.Stand, 60);
+            VisualPose = FlickPose(CreaturePose.Walk, CreaturePose.Stand, 60);
             yield return new WaitFrames(this, 10);
         }
 
-        public IEnumerable<Wait> RoutineAttack(int dx, int dy)
+        public IEnumerable<Wait> RoutineAttack(int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
         {
             var frontier = Mask.GetFrontier(dx, dy);
             List<Wait> waitForDamage = new List<Wait>();
             foreach(var tile in frontier.Select(o => Tile.GetNeighbor(o.X,o.Y)))
             {
-                foreach(var creature in tile.Creatures)
+                if (tile is IMineable mineable)
                 {
-                    waitForDamage.Add(AttackMelee(creature, dx, dy));
+                    mineable.Mine(new MineEvent(this,EquipMainhand));
+                }
+                else
+                {
+                    foreach (var creature in tile.Creatures)
+                    {
+                        waitForDamage.Add(Attack(creature, dx, dy, attackGenerator));
+                    }
                 }
             }
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
-            VisualPose = FlickPose(Action.Attack, Action.Stand, 5);
+            VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
             yield return new WaitFrames(this,10);
             yield return new WaitAll(waitForDamage);
         }
 
         public IEnumerable<Wait> RoutineHit(int dx, int dy, Attack attack)
         {
-            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
-            VisualPose = StaticPose(Action.Stand);
-            yield return new WaitFrames(this, 10);
-            foreach (var damage in attack.FinalDamage)
+            if (Dead)
             {
-                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{damage.Key} {damage.Value}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 30);
-                yield return new WaitFrames(this, 15);
+                yield return Scheduler.Instance.RunAndWait(RoutineDie(dx, dy));
             }
-            foreach (var statusEffect in attack.StatusEffects)
+            else
             {
-                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{statusEffect.Name} {statusEffect.BuildupText}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 30);
-                yield return new WaitFrames(this, 15);
-                StatusEffect existingEffect = this.GetStatusEffect(statusEffect);
-                if(existingEffect != null && existingEffect.LastChange != 0)
-                {
-                    existingEffect.LastChange = 0;
-                    new DamagePopup(World, VisualPosition() + new Vector2(8, 8), $"{existingEffect.Name} {existingEffect.StackText}", new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 30);
-                    yield return new WaitFrames(this, 15);
-                }
+                var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+                VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
+                VisualPose = Static(CreaturePose.Stand);
+                yield return new WaitFrames(this, 10);
+                yield return ShowPopups();
             }
         }
 
-        public Wait AttackMelee(Creature target, int dx, int dy)
+        public IEnumerable<Wait> RoutineDie(int dx, int dy)
         {
-            Attack attack = new Attack(this, target);
-            attack.Elements.Add(Element.Bludgeon, 1.0);
-            attack.StatusEffects.Add(new DefenseDown() { Buildup = 0.15 });
+            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+            VisualPosition = Slide(pos, pos + new Vector2(dx * 8, dy * 8), LerpHelper.Linear, 20);
+            VisualPose = Static(CreaturePose.Stand);
+            VisualColor = Flash(Color.White, Color.Transparent, 100000);
+            yield return ShowPopups();
+            yield return new WaitFrames(this, 50);
+            VisualColor = Static(Color.Transparent);
+            if (Dead && this != World.Player)
+                this.Destroy();
+        }
+
+        public IEnumerable<Wait> RoutineShowPopups()
+        {
+            var messages = GetEffects<EffectMessage>();
+            yield return new WaitFrames(this, 10);
+            while (messages.Any())
+            {
+                var message = messages.First();
+                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), message.Text, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 60);
+                message.Remove();
+                messages = GetEffects<EffectMessage>();
+                yield return new WaitFrames(this, 30);
+            }
+        }
+
+        public static Attack MeleeAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            if (attacker.EquipMainhand == null) //Barehanded Attack
+            {
+                attack.Elements.Add(Element.Bludgeon, 1.0);
+            }
+            else
+            {
+                foreach (var element in attacker.GetElements())
+                {
+                    attack.Elements.Add(element.Key, element.Value);
+                }
+            }
+            return attack;
+        }
+
+        public Wait Attack(Creature target, int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
+        {
+            Attack attack = attackGenerator(this, target);
             attack.Start();
             return target.CurrentAction = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
+        }
+
+        public Wait WaitSome(int frames)
+        {
+            return new WaitFrames(this, frames);
         }
 
         public void Pickup(Item item)
@@ -509,7 +601,8 @@ namespace RoguelikeEngine
             tooltip += $"HP {CurrentHP}/{this.GetStat(Stat.HP)}\n";
             foreach(StatusEffect statusEffect in this.GetStatusEffects())
             {
-                tooltip += $"{statusEffect.Name} {statusEffect.BuildupTooltip}\n";
+                tooltip += $"{Game.FORMAT_BOLD}{statusEffect.Name}{Game.FORMAT_BOLD} {statusEffect.BuildupTooltip} {statusEffect.DurationText}\n";
+                tooltip += $"{statusEffect.Description}\n";
             }
         }
 
@@ -526,6 +619,25 @@ namespace RoguelikeEngine
         public override string ToString()
         {
             return $"Creature {ObjectID.ID}";
+        }
+    }
+
+    class Hero : Creature
+    {
+        public Hero(SceneGame world) : base(world)
+        {
+            Name = "You";
+            Description = "This is you.";
+
+            Render = new CreaturePaperdollRender()
+            {
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_crusader"),
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_helmet_a"),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 100));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
         }
     }
 }

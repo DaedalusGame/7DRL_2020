@@ -43,13 +43,35 @@ namespace RoguelikeEngine.Effects
             return $"{Stat} {Amount:+0;-#} ({Holder})";
         }
 
+        public class Stackable : EffectStat
+        {
+            double PerStack;
+
+            public Stackable(StatusEffect holder, Stat stat, double perStack) : base(holder, stat, perStack)
+            {
+                PerStack = perStack;
+            }
+
+            public override double Amount
+            {
+                get
+                {
+                    return PerStack * ((StatusEffect)Holder).Stacks;
+                }
+                set
+                {
+                    //NOOP
+                }
+            }
+        }
+
         public class Randomized : EffectStat
         {
             Random Random = new Random();
-            int Lower;
-            int Upper;
+            double Lower;
+            double Upper;
 
-            public Randomized(IEffectHolder holder, Stat stat, int lower, int upper) : base(holder, stat, 0)
+            public Randomized(IEffectHolder holder, Stat stat, double lower, double upper) : base(holder, stat, 0)
             {
                 Lower = lower;
                 Upper = upper;
@@ -59,7 +81,7 @@ namespace RoguelikeEngine.Effects
             {
                 get
                 {
-                    return Lower + Random.Next(Upper - Lower);
+                    return Lower + Random.NextDouble() * (Upper - Lower);
                 }
                 set
                 {

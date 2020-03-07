@@ -64,5 +64,30 @@ namespace RoguelikeEngine.Effects
                 }
             }
         }
+
+        public class Randomized : EffectStatPercent
+        {
+            Random Random = new Random();
+            double Lower;
+            double Upper;
+
+            public Randomized(IEffectHolder holder, Stat stat, double lower, double upper) : base(holder, stat, 0)
+            {
+                Lower = lower;
+                Upper = upper;
+            }
+
+            public override double Percentage
+            {
+                get
+                {
+                    return Lower + Random.NextDouble() * (Upper - Lower);
+                }
+                set
+                {
+                    //NOOP
+                }
+            }
+        }
     }
 }

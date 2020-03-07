@@ -266,7 +266,7 @@ namespace RoguelikeEngine
 
         public static void Destroy(this IGameObject obj)
         {
-            obj.Remove = true;
+            obj.Destroyed = true;
             obj.OnDestroy();
         }
 
@@ -298,6 +298,15 @@ namespace RoguelikeEngine
             if (results.Sum() != n)
                 throw new Exception();
             return results;
+        }
+
+        public static IList<double> ProportionalSplit(this IEnumerable<double> input, double n)
+        {
+            double sum = input.Sum();
+            if (sum <= 0)
+                return input.Select(x => 0.0).ToList();
+            var deltas = input.Select(x => x * n / sum);
+            return deltas.ToList();
         }
 
         public static void Operate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue val, Func<TValue, TValue, TValue> op)

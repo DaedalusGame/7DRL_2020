@@ -8,6 +8,13 @@ using RoguelikeEngine.Effects;
 
 namespace RoguelikeEngine
 {
+    interface IMineable
+    {
+        void Mine(MineEvent mine);
+
+        void Destroy();
+    }
+
     abstract class Tile : IEffectHolder
     {
         protected MapTile Parent;
@@ -24,6 +31,21 @@ namespace RoguelikeEngine
 
         public string Name;
 
+        public bool Opaque;
+        public bool Solid;
+
+        public GeneratorGroup Group
+        {
+            get
+            {
+                return Parent.Group;
+            }
+            set
+            {
+                Parent.Group = value;
+            }
+        }
+
         public Tile NewTile => Parent.Tile;
         public IEnumerable<IEffectHolder> Contents => Parent.GetEffects<Effects.OnTile>().Select(x => x.Holder);
         public IEnumerable<Creature> Creatures => Contents.OfType<Creature>();
@@ -31,10 +53,16 @@ namespace RoguelikeEngine
 
         List<Effect> TileEffects = new List<Effect>();
 
+        
         public Tile(string name)
         {
             ObjectID = EffectManager.NewID(this);
             Name = name;
+        }
+
+        public bool IsVisible()
+        {
+            return !Opaque || (Map.InBounds(X, Y) && GetAllNeighbors().Where(p => Map.InMap(p.X, p.Y)).Any(neighbor => !neighbor.Opaque));
         }
 
         public IEnumerable<T> GetEffects<T>() where T : Effect
@@ -84,6 +112,16 @@ namespace RoguelikeEngine
             return new[] { GetNeighbor(1, 0), GetNeighbor(0, 1), GetNeighbor(-1, 0), GetNeighbor(0, -1) };
         }
 
+        public IEnumerable<Tile> GetAllNeighbors()
+        {
+            return new[] { GetNeighbor(1, 0), GetNeighbor(0, 1), GetNeighbor(-1, 0), GetNeighbor(0, -1), GetNeighbor(1, 1), GetNeighbor(-1, 1), GetNeighbor(-1, -1), GetNeighbor(1, -1) };
+        }
+
+        public IEnumerable<Tile> GetNearby(int radius)
+        {
+            return Map.GetNearby(X, Y, radius);
+        }
+
         public void AddPrimary(IEffectHolder holder)
         {
             Effect.Apply(new Effects.OnTile.Primary(Parent, holder));
@@ -99,7 +137,6 @@ namespace RoguelikeEngine
             foreach (Item item in Items)
             {
                 item.AddActions(ui, player, selection);
-                
             }
         }
 
@@ -132,6 +169,26 @@ namespace RoguelikeEngine
         public abstract void Draw(SceneGame scene);
     }
 
+    struct TileColor
+    {
+        static ColorMatrix FloorBackground = ColorMatrix.Saturate(0.5f) * ColorMatrix.Scale(0.25f);
+        static ColorMatrix FloorForeground = ColorMatrix.Saturate(0.5f) * ColorMatrix.Scale(0.35f);
+
+        public Color Background;
+        public Color Foreground;
+
+        public TileColor(Color background, Color foreground)
+        {
+            Background = background;
+            Foreground = foreground;
+        }
+
+        public TileColor ToFloor()
+        {
+            return new TileColor(FloorBackground.Transform(Background), FloorForeground.Transform(Foreground));
+        }
+    }
+
     class FloorCave : Tile
     {
         public FloorCave() : base("Cave Floor")
@@ -143,23 +200,259 @@ namespace RoguelikeEngine
             var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
-            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.DarkGoldenrod, 0);
-            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.Gray, 0);
+
+            var color = Group.CaveColor.ToFloor();
+            Color glow = Group.GlowColor(scene.Frame);
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
     }
 
-    class WallCave : Tile
+    class WallCave : Tile, IMineable
     {
         public WallCave() : base("Cave Wall")
         {
+            Solid = true;
+            Opaque = true;
         }
 
         public override void Draw(SceneGame scene)
         {
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
-            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.Brown, 0);
-            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.Goldenrod, 0);
+
+            var color = Group.CaveColor;
+            Color glow = Group.GlowColor(scene.Frame);
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+        }
+
+        public void Mine(MineEvent mine)
+        {
+            mine.Setup(this, 1, 0.25, LootGenerator);
+            mine.Start();
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            //NOOP
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class WallOre : Tile, IMineable
+    {
+        static Random Random = new Random();
+        int Frame = Random.Next(1000);
+        Material Material;
+
+        public WallOre(Material material) : base($"{material.Name} Vein")
+        {
+            Material = material;
+            Solid = true;
+            Opaque = true;
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            if (Under != null)
+                Under.Draw(scene);
+            var ore = SpriteLoader.Instance.AddSprite("content/ore");
+
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(Material.ColorTransform, matrix);
+            });
+            scene.DrawSprite(ore, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
+            scene.PopSpriteBatch();
+        }
+
+        public void Mine(MineEvent mine)
+        {
+            mine.Setup(this, 1, 0.1, LootGenerator);
+            mine.Start();
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            new Ore(creature.World, Material, 50).MoveTo(creature.Tile);
+        }
+
+        public void Destroy()
+        {
+            Scrape();
+        }
+    }
+
+    class WallObsidiorite : Tile, IMineable
+    {
+        public WallObsidiorite() : base("Obsidiorite")
+        {
+            Solid = true;
+            Opaque = true;
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(69 / 2, 54 / 2, 75 / 2), 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(157, 143, 167), 0);
+        }
+
+        public void Mine(MineEvent mine)
+        {
+            mine.Setup(this, 2, 0.02, LootGenerator);
+            mine.Start();
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            new Ore(creature.World, Material.Obsidiorite, 50).MoveTo(creature.Tile);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class WallMeteorite : Tile, IMineable
+    {
+        public WallMeteorite() : base("Meteorite")
+        {
+            Solid = true;
+            Opaque = true;
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
+
+            Color glow = Color.Lerp(new Color(16, 4, 1), new Color(255, 64, 16), 0.5f+0.5f*(float)Math.Sin(scene.Frame / 60f));
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16*Parent.X,16*Parent.Y,16,16), glow);
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(69, 75, 54), 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(157, 167, 143), 0);
+        }
+
+        public void Mine(MineEvent mine)
+        {
+            mine.Setup(this, 2, 0.01, LootGenerator);
+            mine.Start();
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            new Ore(creature.World, Material.Meteorite, 50).MoveTo(creature.Tile);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class WallBasalt : Tile, IMineable
+    {
+        public WallBasalt() : base("Basalt")
+        {
+            Solid = true;
+            Opaque = true;
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Color(128, 128, 128));
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(169, 169, 169), 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(239, 236, 233), 0);
+        }
+
+        public void Mine(MineEvent mine)
+        {
+            mine.Setup(this, 1, 0.1, LootGenerator);
+            mine.Start();
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            new Ore(creature.World, Material.Basalt, 50).MoveTo(creature.Tile);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class WallBrick : Tile, IMineable
+    {
+        public WallBrick() : base("Brick Wall")
+        {
+            Solid = true;
+            Opaque = true;
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/brick_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/brick_layer");
+
+            var color = Group.BrickColor;
+            
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+        }
+
+        public void Mine(MineEvent mine)
+        {
+            mine.Setup(this, 1, 0.1, LootGenerator);
+            mine.Start();
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            //NOOP
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
         }
     }
 
@@ -169,7 +462,15 @@ namespace RoguelikeEngine
 
         public Anvil() : base("Anvil")
         {
+            Solid = true;
+
             Container = new Container();
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
         }
 
         public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
@@ -219,6 +520,8 @@ namespace RoguelikeEngine
 
         public Smelter(SceneGame world) : base("Smelter")
         {
+            Solid = true;
+
             World = world;
             World.ActionQueue.Add(this);
             OreContainer = new Container();

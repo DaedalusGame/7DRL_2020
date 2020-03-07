@@ -203,5 +203,10 @@ namespace RoguelikeEngine
               0, 0, 0, color.A / 255f),
               new Vector4(color.R / 255f, color.G / 255f, color.B / 255f, 0));
         }
+
+        public Color Transform(Color color)
+        {
+            return new Color(Vector4.Transform(color.ToVector4(),Matrix)+Add);
+        }
     }
 }

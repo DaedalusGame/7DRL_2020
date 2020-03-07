@@ -76,6 +76,11 @@ namespace RoguelikeEngine
 
         public abstract void Draw(GameTime gameTime);
 
+        public int AnimationFrame(SpriteReference sprite, float frame, float frameEnd)
+        {
+            return (int)MathHelper.Clamp(sprite.SubImageCount * frame / frameEnd, 0, sprite.SubImageCount - 1);
+        }
+
         public void SetupNormal(Matrix transform)
         {
             Shader.CurrentTechnique = Shader.Techniques["BasicColorDrawing"];

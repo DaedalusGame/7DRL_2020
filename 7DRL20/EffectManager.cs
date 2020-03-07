@@ -134,6 +134,14 @@ namespace RoguelikeEngine
             return Drawers[type];
         }
 
+        public static void Reset()
+        {
+            CurrentID = new ReusableID();
+            ReusableIDs.Clear();
+            Drawers.Clear();
+            Holders.Clear();
+        }
+
         public static void AddEffect(this IEffectHolder holder, Effect effect)
         {
             foreach (var type in Util.GetBaseTypes(effect))
@@ -171,6 +179,11 @@ namespace RoguelikeEngine
             return holder.GetEffects<Effect>().OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).ToDictionary(group => group.Key, group => CalculateStat(holder, group, group.Key.DefaultStat));
         }
 
+        public static Dictionary<Element, double> GetElements(this IEffectHolder holder)
+        {
+            return holder.GetEffects<EffectElement>().GroupBy(stat => stat.Element, stat => stat).ToDictionary(group => group.Key, group => group.Sum(element => element.Percentage));
+        }
+
         public static double CalculateStat(IEffectHolder holder, IEnumerable<Effect> effects, double defaultStat)
         {
             var groups = effects.ToTypeLookup();
@@ -194,7 +207,7 @@ namespace RoguelikeEngine
                 statBlock += $"{statName.Name} {add.ToString("+0;-#")}\n";
             var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
             if (percentage != 0)
-                statBlock += $"{statName.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}\n";
+                statBlock += $"{statName.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}%\n";
             var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
             if (multiplier != 1)
                 statBlock += $"{statName.Name} x{Math.Round(multiplier,2)}\n";
@@ -207,8 +220,28 @@ namespace RoguelikeEngine
 
         public static void TakeDamage(this IEffectHolder holder, double damage, Element element)
         {
+            Effect.Apply(new EffectMessage(holder, $"-{damage} {element}"));
             Effect.Apply(new EffectDamage(holder, damage, element));
         }
+
+        public static void Heal(this IEffectHolder holder, double heal)
+        {
+            var damageEffects = holder.GetEffects<EffectDamage>().ToList();
+            var totalDamage = damageEffects.Sum(x => x.Amount);
+            var totalHeal = heal + Math.Max(0, totalDamage - holder.GetStat(Stat.HP));
+            var healAmounts = Util.ProportionalSplit(damageEffects.Select(x => x.Amount), totalHeal);
+            int i = 0;
+            foreach(var damage in damageEffects)
+            {
+                damage.Amount -= healAmounts[i];
+                if (damage.Amount <= 0)
+                    damage.Remove();
+                i++;
+            }
+
+            Effect.Apply(new EffectMessage(holder, $"{Game.FormatColor(new Microsoft.Xna.Framework.Color(128,255,128))}+{heal}{Game.FormatColor(Microsoft.Xna.Framework.Color.White)}"));
+        }
+
 
         public static void OnDefend(this IEffectHolder holder, Attack attack)
         {
@@ -223,6 +256,22 @@ namespace RoguelikeEngine
             foreach (var onStartDefend in holder.GetEffects<OnStartDefend>())
             {
                 onStartDefend.Trigger(attack);
+            }
+        }
+
+        public static void OnMine(this IEffectHolder holder, MineEvent mine)
+        {
+            foreach (var onMine in holder.GetEffects<OnMine>())
+            {
+                onMine.Trigger(mine);
+            }
+        }
+
+        public static void OnStartMine(this IEffectHolder holder, MineEvent mine)
+        {
+            foreach (var onStartMine in holder.GetEffects<OnStartMine>())
+            {
+                onStartMine.Trigger(mine);
             }
         }
 
@@ -249,6 +298,11 @@ namespace RoguelikeEngine
                     return checkEffect.StatusEffect;
             }
             return null;
+        }
+
+        public static bool HasStatusEffect(this IEffectHolder holder, Func<StatusEffect,bool> match)
+        {
+            return holder.GetStatusEffects().Any(match);
         }
 
         public static IEnumerable<StatusEffect> GetStatusEffects(this IEffectHolder holder)

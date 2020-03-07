@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,9 +21,14 @@ namespace RoguelikeEngine
             ShouldClose = true;
         }
 
-        public virtual void HandleInput(SceneGame scene)
+        public virtual void Update(SceneGame scene)
         {
             Ticks++;
+        }
+
+        public virtual void HandleInput(SceneGame scene)
+        {
+            //NOOP
         }
 
         public virtual bool IsMouseOver(int x, int y)
@@ -37,7 +43,7 @@ namespace RoguelikeEngine
             if (!string.IsNullOrWhiteSpace(label))
             {
                 scene.DrawUI(sprite, rectExterior, Color.White);
-                scene.DrawText(label, new Vector2(rectExterior.X, rectExterior.Y), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true).SetConstraints(rectExterior.Width - 16, rectExterior.Height));
+                scene.DrawText(label, new Vector2(rectExterior.X, rectExterior.Y), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true).SetConstraints(rectExterior.Width - 16, rectExterior.Height));
             }
         }
 
@@ -48,6 +54,10 @@ namespace RoguelikeEngine
     {
         public SceneGame Scene;
         Menu SubMenu;
+        InfoBox SkillInfo;
+
+        Slider GameOver = new Slider(100);
+        MenuTextSelection GameOverMenu;
 
         public Creature Player => Scene.Player;
 
@@ -75,11 +85,61 @@ namespace RoguelikeEngine
             return base.IsMouseOver(x, y);
         }
 
+        public override void Update(SceneGame scene)
+        {
+            if (Player.Dead && Player.CurrentAction.Done)
+            {
+                GameOver += 1;
+            }
+
+            if (GameOverMenu != null)
+                GameOverMenu.Update(scene);
+
+            if (SkillInfo != null)
+            {
+                SkillInfo.Update(scene);
+                if (Scene.CurrentSkill == null)
+                    SkillInfo = null;
+            }
+            else if (Scene.CurrentSkill != null)
+            {
+                var skill = Scene.CurrentSkill.Skill;
+                SkillInfo = new InfoBox(() => skill.Name, () => skill.Description, new Vector2(Scene.Viewport.Width / 2, 64), 300, 32);
+            }
+
+            if (SubMenu != null)
+            {
+                SubMenu.Update(scene);
+            }
+
+            base.Update(scene);
+        }
+
         public override void HandleInput(SceneGame scene)
         {
             base.HandleInput(scene);
 
             InputTwinState state = Scene.InputState;
+
+            if (GameOverMenu != null)
+                GameOverMenu.HandleInput(scene);
+
+            if (Player.Dead && Player.CurrentAction.Done)
+            {
+                if(GameOver.Done && GameOverMenu == null)
+                {
+                    GameOverMenu = new MenuTextSelection(string.Empty, new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height * 3 / 4), 300, 2);
+                    GameOverMenu.Add(new ActAction("Restart", () =>
+                    {
+                        Scene.Restart();
+                    }));
+                    GameOverMenu.Add(new ActAction("Quit", () =>
+                    {
+                        Scene.Quit();
+                    }));
+                }
+                return;
+            }
 
             if (SubMenu != null)
             {
@@ -97,8 +157,9 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.ResetTurn();
                     Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(0, -1));
+                    Player.TakeTurn(Scene.ActionQueue);
+                    return;
                 }
             }
             if (state.IsKeyPressed(Keys.S, 15, 5))
@@ -109,8 +170,9 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.ResetTurn();
                     Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(0, 1));
+                    Player.TakeTurn(Scene.ActionQueue);
+                    return;
                 }
             }
             if (state.IsKeyPressed(Keys.A, 15, 5))
@@ -121,8 +183,9 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.ResetTurn();
                     Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(-1, 0));
+                    Player.TakeTurn(Scene.ActionQueue);
+                    return;
                 }
             }
             if (state.IsKeyPressed(Keys.D, 15, 5))
@@ -133,15 +196,29 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.ResetTurn();
                     Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(1, 0));
+                    Player.TakeTurn(Scene.ActionQueue);
+                    return;
                 }
+            }
+            if (state.IsKeyPressed(Keys.R))
+            {
+                var mainhand = Player.EquipMainhand;
+                var offhand = Player.EquipOffhand;
+                Player.Unequip(EquipSlot.Mainhand);
+                Player.Unequip(EquipSlot.Offhand);
+                if(offhand != null)
+                    Player.Equip(offhand, EquipSlot.Mainhand);
+                if (mainhand != null)
+                    Player.Equip(mainhand, EquipSlot.Offhand);
+                return;
             }
             if (state.IsKeyPressed(Keys.Space))
             {
                 var offset = Player.Facing.ToOffset();
-                Player.ResetTurn();
-                Scene.Wait = Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y));
+                Scene.Wait = Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack));
+                Player.TakeTurn(Scene.ActionQueue);
+                return;
             }
             if (state.IsKeyPressed(Keys.Enter))
             {
@@ -167,6 +244,35 @@ namespace RoguelikeEngine
             if (SubMenu != null)
             {
                 SubMenu.Draw(scene);
+            }
+
+            DrawSlot(scene, new Vector2(48, scene.Viewport.Height - 48), "Offhand", Player.EquipOffhand);
+            DrawSlot(scene, new Vector2(96, scene.Viewport.Height - 64), "Body", Player.EquipBody);
+            DrawSlot(scene, new Vector2(144, scene.Viewport.Height - 48), "Mainhand", Player.EquipMainhand);
+
+            if (SkillInfo != null)
+            {
+                SkillInfo.Draw(scene);
+            }
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, 0, scene.Viewport.Width, scene.Viewport.Height), new Color(0, 0, 0, GameOver.Slide * 0.5f));
+
+            if (GameOverMenu != null)
+                GameOverMenu.Draw(scene);
+        }
+
+        public void DrawSlot(SceneGame scene, Vector2 position, string name, Item item)
+        {
+            int x = (int)position.X;
+            int y = (int)position.Y;
+            SpriteReference uiSlot = SpriteLoader.Instance.AddSprite("content/ui_slot");
+            scene.DrawUI(uiSlot, new Rectangle(x - 16, y - 16, 32, 32), Color.White);
+            scene.DrawText(Game.ConvertToSmallPixelText(name), position + new Vector2(0, 20-8), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black));
+            if (item != null)
+            {
+                scene.PushSpriteBatch(transform: Matrix.CreateScale(2, 2, 1));
+                item.DrawIcon(scene, position / 2);
+                scene.PopSpriteBatch();
             }
         }
 
@@ -290,6 +396,16 @@ namespace RoguelikeEngine
                 {
                     Result = Create(Parts.OfType<IOre>().Select(x => x.Material).ToArray());
                 }
+            }
+
+            public override void Update(SceneGame scene)
+            {
+                base.Update(scene);
+                InfoWindow.Update(scene);
+                if (ItemMenu != null)
+                {
+                    ItemMenu.Update(scene);
+                }  
             }
 
             public override void HandleInput(SceneGame scene)
@@ -423,9 +539,11 @@ namespace RoguelikeEngine
             BlueprintMenu = new MenuTextSelection("Anvil", new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 1 / 4), 256, 8);
             BlueprintMenu.Add(new ActAction("Blade", () =>
             {
-                string[] partNames = new[] { "Blade", "Guard", "Handle" };
-                string[] partSprites = new[] { "Blade", "Guard", "Handle" };
                 OpenBlueprintMenu("Blade", ToolBlade.Parts, (materials) => ToolBlade.Create(Scene, materials[0], materials[1], materials[2]));
+            }));
+            BlueprintMenu.Add(new ActAction("Adze", () =>
+            {
+                OpenBlueprintMenu("Adze", ToolAdze.Parts, (materials) => ToolAdze.Create(Scene, materials[0], materials[1], materials[2]));
             }));
             BlueprintMenu.AddDefault(new ActAction("Cancel", () =>
             {
@@ -439,6 +557,20 @@ namespace RoguelikeEngine
             {
                 Create = create,
             };
+        }
+
+        public override void Update(SceneGame scene)
+        {
+            base.Update(scene);
+
+            if (CraftingMenu != null)
+            {
+                CraftingMenu.Update(scene);
+            }
+            if (BlueprintMenu != null)
+            {
+                BlueprintMenu.Update(scene);
+            }
         }
 
         public override void HandleInput(SceneGame scene)
@@ -506,6 +638,18 @@ namespace RoguelikeEngine
             if (ActionMenu != null && ActionMenu.IsMouseOver(x, y))
                 return true;
             return base.IsMouseOver(x, y);
+        }
+
+        public override void Update(SceneGame scene)
+        {
+            if (ActionMenu != null)
+            {
+                ActionMenu.Update(scene);
+            }
+            if (ItemMenu != null)
+            {
+                ItemMenu.Update(scene);
+            }
         }
 
         public override void HandleInput(SceneGame scene)
@@ -680,6 +824,18 @@ namespace RoguelikeEngine
             {
                 ItemActionMenu.Close();
             }));
+        }
+
+        public override void Update(SceneGame scene)
+        {
+            base.Update(scene);
+
+            ItemInfo.Update(scene);
+            if (ItemActionMenu != null)
+            {
+                ItemActionMenu.Update(scene);
+            }
+            ItemMenu.Update(scene);
         }
 
         public override void HandleInput(SceneGame scene)

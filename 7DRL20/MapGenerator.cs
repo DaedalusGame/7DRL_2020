@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,25 +10,69 @@ namespace RoguelikeEngine
 {
     class GeneratorTile
     {
-        public static GeneratorTile Empty = new GeneratorTile(' ');
-        public static GeneratorTile Floor = new GeneratorTile('.');
-        public static GeneratorTile Wall = new GeneratorTile('X');
+        public static GeneratorTile Empty = new GeneratorTile(' ') { Print = (generator, tile, group) => tile.Replace(new WallCave()) };
+        public static GeneratorTile Floor = new GeneratorTile('.') { Print = (generator, tile, group) => tile.Replace(new FloorCave()) };
+        public static GeneratorTile Wall = new GeneratorTile('X') { Print = (generator, tile, group) => tile.Replace(new WallCave()) };
+        public static GeneratorTile WallBrick = new GeneratorTile('#') { Print = (generator, tile, group) => tile.Replace(new WallBrick()) };
+        public static GeneratorTile OreDilithium = new GeneratorTile('G') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Dilithium)) };
+        public static GeneratorTile OreTiberium = new GeneratorTile('T') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Tiberium)) };
+        public static GeneratorTile OreBasalt = new GeneratorTile('B') { Print = (generator, tile, group) => tile.Replace(new WallBasalt()) };
+        public static GeneratorTile OreMeteorite = new GeneratorTile('M') { Print = (generator, tile, group) => tile.Replace(new WallMeteorite()) };
+        public static GeneratorTile OreObsidiorite = new GeneratorTile('D') { Print = (generator, tile, group) => tile.Replace(new WallObsidiorite()) };
+        public static GeneratorTile OreKarmesine = new GeneratorTile('K') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Karmesine)) };
+        public static GeneratorTile OreOvium = new GeneratorTile('O') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Ovium)) };
+        public static GeneratorTile OreJauxum = new GeneratorTile('J') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Jauxum)) };
 
         public char Character;
+        public Action<MapGenerator, Tile, GeneratorGroup> Print;
 
         public GeneratorTile(char character)
         {
             Character = character;
         }
+
+        static void PrintCaveWall(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new WallCave());
+        }
+
+        static void PrintOre(MapGenerator generator, Tile tile, GeneratorGroup group, Tile ore)
+        {
+            PrintCaveWall(generator, tile, group);
+            tile.PlaceOn(ore);
+        }
+
+        static void NoPrint(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            //NOOP
+        }
     }
 
     abstract class GeneratorGroup
     {
+        HashSet<GeneratorGroup> ConnectedGroups = new HashSet<GeneratorGroup>();
         HashSet<GeneratorCell> Cells = new HashSet<GeneratorCell>();
+        public TileColor CaveColor;
+        public TileColor BrickColor;
+        public Func<int,Color> GlowColor = (time) => Color.Black;
+        public EnemySpawnDelegate Spawn = (world,tile) => Enumerable.Empty<Enemy>();
+
+        public void Connect(GeneratorGroup other)
+        {
+            this.ConnectedGroups.Add(other);
+            other.ConnectedGroups.Add(this);
+        }
+
+        public bool IsConnected(GeneratorGroup other)
+        {
+            return ConnectedGroups.Contains(other);
+        }
 
         public abstract void PlaceConnection(MapGenerator generator, GeneratorCell cell);
 
         public abstract void PlaceRoom(MapGenerator generator, GeneratorCell cell);
+
+        public abstract IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b);
 
         public IEnumerable<GeneratorCell> GetCells()
         {
@@ -44,8 +89,45 @@ namespace RoguelikeEngine
             Cells.Remove(generatorCell);
         }
         
+        private Rectangle Between(Point a, Point b)
+        {
+            return new Rectangle(Math.Min(a.X,b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
+        }
+
+        public class Smelter : GeneratorGroup
+        {
+            public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
+            {
+                return Enumerable.Empty<Point>();
+            }
+
+            public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
+            {
+                //NOOP
+            }
+
+            public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    int offX = generator.Random.Next(-5, 6);
+                    int offY = generator.Random.Next(-5, 6);
+                    GeneratorCell center = cell.GetNeighbor(offX, offY);
+                    center.Tile = GeneratorTile.Floor;
+                    center.Group = this;
+                    generator.SpreadCastle(center, 3 + generator.Random.Next(4));
+                }
+            }
+        }
+
         public class Castle : GeneratorGroup
         {
+            public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
+            {
+                var dijkstraMap = Util.Dijkstra(a, generator.Width, generator.Height, new Rectangle(0,0,generator.Width,generator.Height), 50, generator.GetWeightStraight, generator.GetAllNeighbors);
+                return dijkstraMap.FindPath(b);
+            }
+
             public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
             {
                 generator.SpreadCastle(cell, 1);
@@ -53,12 +135,18 @@ namespace RoguelikeEngine
 
             public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
             {
-                generator.SpreadCastle(cell, 3+generator.Random.Next(4));
+                generator.SpreadCastle(cell, generator.Random.Next(3,7));
             }
         }
 
         public class Cave : GeneratorGroup
         {
+            public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
+            {
+                var dijkstraMap = Util.Dijkstra(a, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, generator.GetWeightStraight, generator.GetNeighbors);
+                return dijkstraMap.FindPath(b);
+            }
+
             public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
             {
                 generator.SpreadCave(cell, 2);
@@ -66,7 +154,7 @@ namespace RoguelikeEngine
 
             public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
             {
-                generator.SpreadCave(cell, 3 + generator.Random.Next(6));
+                generator.SpreadCave(cell, generator.Random.Next(3,10));
             }
         }
     }
@@ -149,16 +237,16 @@ namespace RoguelikeEngine
             CollapseTiles.Add(collapseAction);
         }
 
-        public GeneratorCell GetNeighbor(int x, int y)
+        public GeneratorCell GetNeighbor(int dx, int dy)
         {
-            return Generator.Cells[x, y];
+            return Generator.Cells[X + dx, Y + dy];
         }
 
         public void Spread()
         {
             foreach(var spread in SpreadTiles)
             {
-                var neighbors = spread.GetNeighbors(new Point(X, Y)).Where(Generator.InBounds).Select(p => GetNeighbor(p.X, p.Y));
+                var neighbors = spread.GetNeighbors(new Point(X, Y)).Where(Generator.InBounds).Select(Generator.GetCell);
                 foreach (var neighbor in neighbors)
                     spread.SpreadAction(neighbor);
             }
@@ -179,14 +267,17 @@ namespace RoguelikeEngine
     class MapGenerator
     {
         public Random Random;
-        List<Point> Points = new List<Point>();
+        public List<Point> Points = new List<Point>();
+        public Point StartRoom;
+        public GeneratorGroup StartRoomGroup;
+        List<GeneratorGroup> Groups = new List<GeneratorGroup>();
         Queue<GeneratorCell> ToSpread = new Queue<GeneratorCell>();
         Queue<GeneratorCell> ToCollapse = new Queue<GeneratorCell>();
         public GeneratorCell[,] Cells;
         public int ExpansionGeneration;
 
-        int Width => Cells.GetLength(0);
-        int Height => Cells.GetLength(1);
+        public int Width => Cells.GetLength(0);
+        public int Height => Cells.GetLength(1);
 
         public MapGenerator(int width, int height, int seed)
         {
@@ -212,19 +303,106 @@ namespace RoguelikeEngine
             ToSpread.Enqueue(cell);
         }
 
+        private IEnumerable<Point> AllCells()
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    yield return new Point(x, y);
+                }
+            }
+        }
+
+        public void Print(Map map)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    var cell = Cells[x, y];
+                    Tile mapTile = map.GetTile(x, y);
+                    cell.Tile.Print(this, mapTile, cell.Group);
+                    mapTile.Group = cell.Group;
+                }
+            }
+        }
+
         public void Generate()
         {
-            SetupPoints(250, 5);
+            SetupPoints(250, 10);
             ConnectPoints();
+            ConnectGroups();
             Expand();
-            string map = "";
+            GenerateStartRoom();
+            Expand();
+            GenerateOres(250, 0, GeneratorTile.OreDilithium);
+            GenerateOres(30, 3, GeneratorTile.OreBasalt);
+            GenerateOres(50, 3, GeneratorTile.OreKarmesine);
+            GenerateOres(50, 3, GeneratorTile.OreOvium);
+            GenerateOres(50, 3, GeneratorTile.OreJauxum);
+            GenerateOres(10, 6, GeneratorTile.OreMeteorite);
+            GenerateOres(30, 6, GeneratorTile.OreObsidiorite);
+            GenerateOres(20, 6, GeneratorTile.OreTiberium);
+            Expand();
+            FloodFillGroup();
+            /*string map = "";
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    map += Cells[x, y].Tile.Character;
+                    var cell = Cells[x, y];
+                    if (cell.Tile == GeneratorTile.Empty)
+                        map += (char)('0' + ((cell.Group?.GetHashCode() ?? 0) & 63));
+                    else
+                        map += cell.Tile.Character;
                 }
                 map += '\n';
+            }*/
+        }
+
+        struct FloodPoint
+        {
+            public Point Position;
+            public GeneratorGroup Group;
+
+            public FloodPoint(Point position, GeneratorGroup group)
+            {
+                Position = position;
+                Group = group;
+            }
+        }
+
+        public void FloodFillGroup()
+        {
+            HashSet<Point> visited = new HashSet<Point>();
+            Queue<FloodPoint> toVisit = new Queue<FloodPoint>();
+
+            var groupTiles = AllCells().Where(p => GetCell(p).Group != null);
+
+            foreach (var tile in groupTiles)
+            {
+                toVisit.Enqueue(new FloodPoint(tile,GetCell(tile).Group));
+                visited.Add(tile);
+            }
+
+            while (toVisit.Any())
+            {
+                FloodPoint visit = toVisit.Dequeue();
+
+                if (!InMap(visit.Position))
+                    continue;
+
+                GetCell(visit.Position).Group = visit.Group;
+
+                foreach (Point neighbor in GetNeighbors(visit.Position))
+                {
+                    if (!visited.Contains(neighbor))
+                    {
+                        visited.Add(neighbor);
+                        toVisit.Enqueue(new FloodPoint(neighbor, visit.Group));
+                    }
+                }
             }
         }
 
@@ -256,33 +434,100 @@ namespace RoguelikeEngine
             }
         }
 
+        Func<SceneGame, Enemy> SpawnSkeleton = (world) => new Skeleton(world);
+        Func<SceneGame, Enemy> SpawnDeathKnight = (world) => new DeathKnight(world);
+        
+        Func<SceneGame, Enemy> SpawnBlastCannon = (world) => new BlastCannon(world);
+
+        Func<SceneGame, Enemy> SpawnGoreVala = (world) => new GoreVala(world);
+        Func<SceneGame, Enemy> SpawnVorrax = (world) => new Vorrax(world);
+        Func<SceneGame, Enemy> SpawnCtholoid = (world) => new Ctholoid(world);
+
+        Func<SceneGame, Enemy> SpawnBlueDragon = (world) => new BlueDragon(world);
+        Func<SceneGame, Enemy> SpawnYellowDragon = (world) => new YellowDragon(world);
+
+        Func<SceneGame, Enemy> SpawnPoisonBlob = (world) => new PoisonBlob(world);
+        Func<SceneGame, Enemy> SpawnAcidBlob = (world) => new AcidBlob(world);
+
+        private IEnumerable<Enemy> SpawnEnemySet(SceneGame world, Tile tile, IList<Func<SceneGame, Enemy>> spawns)
+        {
+            var enemy = spawns.Pick(Random)(world);
+            enemy.MoveTo(tile);
+            return new[] { enemy };
+        }
+
         public void SetupPoints(int count, int deviation)
         {
-            while(Points.Count < count)
+            while (Points.Count < count)
             {
                 int x = Random.Next(deviation, Width - deviation);
                 int y = Random.Next(deviation, Height - deviation);
-                if(!Points.Contains(new Point(x,y)))
-                    Points.Add(new Point(x,y));
+                if (!Points.Contains(new Point(x, y)))
+                    Points.Add(new Point(x, y));
             }
-            GeneratorGroup[] biomes = new GeneratorGroup[]
+            StartRoomGroup = new GeneratorGroup.Smelter()
             {
-                new GeneratorGroup.Cave(),
-                new GeneratorGroup.Cave(),
-                new GeneratorGroup.Cave(),
-                new GeneratorGroup.Cave(),
-                new GeneratorGroup.Cave(),
-                new GeneratorGroup.Castle(),
-                new GeneratorGroup.Castle(),
-                new GeneratorGroup.Castle(),
+                CaveColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160)),
+                BrickColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160))
             };
+            Groups.Add(new GeneratorGroup.Cave() //Fire Cave
+            {
+                CaveColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton })
+            });
+            Groups.Add(new GeneratorGroup.Cave() //Adamant Cave
+            {
+                CaveColor = new TileColor(new Color(128, 160, 160), new Color(32, 64, 32)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton, SpawnPoisonBlob })
+            });
+            Groups.Add(new GeneratorGroup.Cave() //Acid Cave
+            {
+                CaveColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
+                GlowColor = (time) => Color.Lerp(Color.Black, Color.GreenYellow, 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnAcidBlob, SpawnAcidBlob, SpawnAcidBlob, SpawnCtholoid, SpawnYellowDragon })
+            });
+            Groups.Add(new GeneratorGroup.Cave() //Sea of Dirac
+            {
+                CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnPoisonBlob, SpawnPoisonBlob, SpawnGoreVala, SpawnGoreVala, SpawnGoreVala, SpawnBlueDragon, SpawnCtholoid })
+            });
+            Groups.Add(new GeneratorGroup.Cave() //Magma Mine
+            {
+                CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnBlastCannon, SpawnBlastCannon, SpawnBlastCannon, SpawnAcidBlob, SpawnAcidBlob, SpawnSkeleton })
+            });
+            Groups.Add(new GeneratorGroup.Castle() //Dungeon
+            {
+                CaveColor = new TileColor(new Color(128, 128, 128), new Color(160, 160, 160)),
+                BrickColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton, SpawnSkeleton, SpawnSkeleton, SpawnVorrax, SpawnVorrax, SpawnDeathKnight })
+            });
+            Groups.Add(new GeneratorGroup.Castle() //Ivory Tower
+            {
+                CaveColor = new TileColor(new Color(108, 106, 79), new Color(188, 173, 139)),
+                BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton, SpawnSkeleton, SpawnDeathKnight, SpawnBlueDragon, SpawnBlueDragon })
+            });
+            Groups.Add(new GeneratorGroup.Castle() //Dark Castle
+            {
+                CaveColor = new TileColor(new Color(29, 50, 56), new Color(131, 138, 167)),
+                BrickColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
+                GlowColor = (time) => Color.Lerp(new Color(62, 79, 2), new Color(227, 253, 138), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
+                Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] {  SpawnDeathKnight, SpawnBlastCannon, SpawnCtholoid })
+            });
             var i = 0;
-            var toAssign = Points.Shuffle(Random).Take(biomes.Length);
+            IEnumerable<Point> shuffled = Points.Shuffle(Random);
+            var toAssign = shuffled.Take(Groups.Count);
             foreach(var cell in toAssign.Select(GetCell))
             {
-                cell.Group = biomes[i];
+                cell.Group = Groups[i];
                 i++;
             }
+            /*StartRoom = shuffled.Last();
+            Points.Remove(StartRoom);
+            var startCell = GetCell(StartRoom);
+            startCell.Group = StartRoomGroup;
+            StartRoomGroup.PlaceRoom(this, startCell);*/
         }
 
         public void ConnectPoints()
@@ -314,17 +559,78 @@ namespace RoguelikeEngine
 
         public void ConnectGroups()
         {
-            var groups = Points.GroupBy(point => Cells[point.X, point.Y].Group);
+            var groupIds = new Dictionary<GeneratorGroup, int>();
+            var id = 0;
+            foreach(var group in Groups)
+            {
+                groupIds.Add(group, id++);
+            }
+            
+            var pairs = Points.SelectMany(x => Points.Where(y => IsUngrouped(x,y)).Select(y => Tuple.Create(x, y)));
+            var unconnectedPairs = pairs.Where(pair => groupIds[GetCell(pair.Item1).Group] != groupIds[GetCell(pair.Item2).Group]);
 
+            var test = pairs.All(pair => IsUngrouped(pair.Item1, pair.Item2));
 
+            while (unconnectedPairs.Any())
+            {
+                var pick = unconnectedPairs.WithMin(pair => GetDistance(pair.Item1,pair.Item2));
+                var cellA = GetCell(pick.Item1);
+                var cellB = GetCell(pick.Item2);
+                foreach(var key in groupIds.Keys.ToList())
+                {
+                    var groupId = groupIds[key];
+                    if (groupId == groupIds[cellA.Group] || groupId == groupIds[cellB.Group])
+                    {
+                        groupIds[key] = groupIds[cellB.Group];
+                    }
+                }
+                groupIds[cellA.Group] = groupIds[cellB.Group];
+                Connect(pick.Item1, pick.Item2);
+            }
+        }
+
+        public void GenerateOres(int times, int size, GeneratorTile ore)
+        {
+            var validTiles = AllCells().Select(GetCell).Where(cell => cell.Tile == GeneratorTile.Empty).ToList();
+            
+            for(int i = 0; i < times; i++)
+            {
+                var cell = validTiles.Pick(Random);
+                if (cell.Tile != GeneratorTile.Empty)
+                    continue;
+                cell.Tile = ore;
+                SpreadOre(cell, size, ore);
+            }
+        }
+
+        public void GenerateStartRoom()
+        {
+            var validTiles = AllCells().Select(GetCell).Where(cell => cell.Tile == GeneratorTile.Empty).Where(cell => cell.X >= 10 && cell.Y >= 10 && cell.X < Width-10 && cell.Y < Height-10).ToList();
+
+            var startCell = validTiles.Pick(Random);
+            StartRoomGroup.PlaceRoom(this, startCell);
+            StartRoom = new Point(startCell.X, startCell.Y);
+        }
+
+        private bool IsUngrouped(Point a, Point b)
+        {
+            var cellA = GetCell(a);
+            var cellB = GetCell(b);
+            return cellA.Group != cellB.Group;
+        }
+
+        private bool IsConnected(Point a, Point b)
+        {
+            var cellA = GetCell(a);
+            var cellB = GetCell(b);
+            return cellA.Group.IsConnected(cellB.Group);
         }
 
         public void Connect(Point a, Point b)
         {
             var baseTile = Cells[a.X, a.Y];
             var group = baseTile.Group;
-            var dijkstraMap = Util.Dijkstra(a, Width, Height, new Rectangle(0,0,Width,Height), 50, GetWeightStraight, GetAllNeighbors);
-            var path = dijkstraMap.FindPath(b);
+            var path = group.GetPath(this, a, b);
 
             foreach(var cell in path.Select(GetCell))
             {
@@ -334,7 +640,7 @@ namespace RoguelikeEngine
             }
         }
 
-        private GeneratorCell GetCell(Point point)
+        public GeneratorCell GetCell(Point point)
         {
             return Cells[point.X,point.Y];
         }
@@ -342,6 +648,11 @@ namespace RoguelikeEngine
         public bool InBounds(Point point)
         {
             return point.X > 0 && point.Y > 0 && point.X < Width - 1 && point.Y < Height - 1;
+        }
+
+        private bool InMap(Point point)
+        {
+            return point.X >= 0 && point.Y >= 0 && point.X <= Width - 1 && point.Y <= Height - 1;
         }
 
         public void SpreadCastle(GeneratorCell cell, int n)
@@ -371,7 +682,7 @@ namespace RoguelikeEngine
             cell.AddCollapse(x => {
                 if (n == 0)
                 {
-                    x.Tile = GeneratorTile.Wall;
+                    x.Tile = GeneratorTile.WallBrick;
                     x.Group = group;
                 }
                 else if (x.Group == group || x.Group == null)
@@ -412,17 +723,40 @@ namespace RoguelikeEngine
             });
         }
 
-        private double GetWeightStraight(Point start, Point end)
+        public void SpreadOre(GeneratorCell cell, int n, GeneratorTile ore)
+        {
+            if (n <= 0)
+                return;
+            cell.AddSpread(x => GetRandomNeighbors(x, 0.6), x => SpreadOreInternal(x, n, ore, cell.Group));
+        }
+
+        private void SpreadOreInternal(GeneratorCell cell, int n, GeneratorTile ore, GeneratorGroup group)
+        {
+            if (cell.Tile != GeneratorTile.Empty)
+                return;
+            cell.AddCollapse(x => {
+                if (x.Group == group || x.Group == null)
+                {
+                    x.Tile = ore;
+                    x.Group = group;
+                    if (!x.HasSpread)
+                        SpreadOre(x, n - 1, ore);
+                }
+            });
+        }
+
+
+        public double GetWeightStraight(Point start, Point end)
         {
             return 1;
         }
 
-        private double GetWeightWavy(Point start, Point end)
+        public double GetWeightWavy(Point start, Point end)
         {
             return Cells[end.X, end.Y].Weight;
         }
 
-        private IEnumerable<Point> GetNeighbors(Point point)
+        public IEnumerable<Point> GetNeighbors(Point point)
         {
             yield return new Point(point.X, point.Y - 1);
             yield return new Point(point.X, point.Y + 1);
@@ -430,7 +764,7 @@ namespace RoguelikeEngine
             yield return new Point(point.X + 1, point.Y);
         }
 
-        private IEnumerable<Point> GetRandomNeighbors(Point point, double chance)
+        public IEnumerable<Point> GetRandomNeighbors(Point point, double chance)
         {
             var neighbors = GetNeighbors(point).Shuffle();
             yield return neighbors.First();
@@ -439,7 +773,7 @@ namespace RoguelikeEngine
                     yield return neighbor;
         }
 
-        private IEnumerable<Point> GetAllNeighbors(Point point)
+        public IEnumerable<Point> GetAllNeighbors(Point point)
         {
             yield return new Point(point.X, point.Y - 1);
             yield return new Point(point.X, point.Y + 1);

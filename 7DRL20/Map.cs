@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,15 +35,32 @@ namespace RoguelikeEngine
 
         public Tile GetTile(int x, int y)
         {
-            if (InBounds(x, y))
+            if (InMap(x, y))
                 return Tiles[x, y].Tile;
             else
                 return null;
         }
 
-        public bool InBounds(int x, int y)
+        public IEnumerable<Tile> GetNearby(int x, int y, int radius)
+        {
+            for (int dx = MathHelper.Clamp(x - radius, 0, Width - 1); dx <= MathHelper.Clamp(x + radius, 0, Width - 1); dx++)
+            {
+                for (int dy = MathHelper.Clamp(y - radius, 0, Height - 1); dy <= MathHelper.Clamp(y + radius, 0, Height - 1); dy++)
+                {
+                    yield return GetTile(dx, dy);
+                }
+            }
+        }
+
+
+        public bool InMap(int x, int y)
         {
             return x >= 0 && y >= 0 && x < Width && y < Height;
+        }
+
+        public bool InBounds(int x, int y)
+        {
+            return x >= 1 && y >= 1 && x < Width-1 && y < Height-1;
         }
     }
 }

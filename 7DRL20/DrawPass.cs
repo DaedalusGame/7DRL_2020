@@ -11,6 +11,7 @@ namespace RoguelikeEngine
         Tile,
         Item,
         Creature,
+        Effect,
         UIWorld,
         UI,
     }

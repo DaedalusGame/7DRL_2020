@@ -43,6 +43,7 @@ namespace RoguelikeEngine
         {
             if (CurrentTurnTaker != null && !CurrentTurnTaker.TurnReady)
                 CurrentTurnTaker = null;
+            TurnTakers.RemoveAll(x => x.RemoveFromQueue);
         }
 
         public void Step()
@@ -52,6 +53,7 @@ namespace RoguelikeEngine
             {
                 while (CurrentTurnTaker == null)
                 {
+                    foreach(var turnTaker in TurnTakers.GetAndClean(x => x.RemoveFromQueue))
                     TurnTakers.ForEach(x => x.IncrementTurn());
                     var fastest = TurnTakers.OrderByDescending(x => x.TurnBuildup); //TurnTakers.Aggregate((a, b) => a.TurnBuildup > b.TurnBuildup ? a : b);
 

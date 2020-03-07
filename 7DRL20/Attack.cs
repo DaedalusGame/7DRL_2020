@@ -35,7 +35,14 @@ namespace RoguelikeEngine
             FinalDamage = Elements.ToDictionary(pair => pair.Key, pair => CalculateElementalDamage(pair.Key, pair.Value));
 
             foreach (var damage in FinalDamage)
-                Defender.TakeDamage(damage.Value, damage.Key);
+            {
+                if (damage.Value > 0)
+                    Defender.TakeDamage(damage.Value, damage.Key);
+                else if(damage.Value < 0)
+                    Defender.Heal(-damage.Value);
+                else
+                    Effect.Apply(new EffectMessage(Defender, $"Immune {damage.Key}"));
+            }
             foreach (var statusEffect in StatusEffects)
                 Defender.AddStatusEffect(statusEffect);
 
@@ -43,7 +50,7 @@ namespace RoguelikeEngine
             Defender.OnDefend(this);
         }
 
-        private void CalculateDamage()
+        protected virtual void CalculateDamage()
         {
             double attack = Attacker.GetStat(Stat.Attack);
             double defense = Defender.GetStat(Stat.Defense);
@@ -55,7 +62,30 @@ namespace RoguelikeEngine
         {
             double damageRate = Defender.GetStat(element.DamageRate);
             double resistance = Defender.GetStat(element.Resistance);
-            return (Damage * rate - resistance) * damageRate;
+            return Math.Max(0,Damage * rate - resistance) * damageRate;
+        }
+    }
+
+    class AttackDrain : Attack
+    {
+        double Rate;
+
+        public AttackDrain(Creature attacker, IEffectHolder defender, double rate) : base(attacker, defender)
+        {
+            Rate = rate;
+        }
+
+        public override void Start()
+        {
+            base.Start();
+
+            foreach (var damage in FinalDamage)
+            {
+                if (damage.Value > 0)
+                    Attacker.Heal(damage.Value * Rate);
+                else if(damage.Value < 0)
+                    Attacker.TakeDamage(-damage.Value * Rate, damage.Key);
+            }
         }
     }
 

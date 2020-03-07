@@ -6,14 +6,172 @@ using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using RoguelikeEngine.Enemies;
 
 namespace RoguelikeEngine
 {
+    abstract class Quest
+    {
+        protected SceneGame Game;
+
+        public virtual string Name
+        {
+            get;
+        }
+        public virtual string Description
+        {
+            get;
+        }
+        public bool Completed;
+        public List<Quest> Prerequisites = new List<Quest>();
+
+        public Quest(SceneGame game, params Quest[] prerequisites)
+        {
+            Game = game;
+            Prerequisites.AddRange(prerequisites);
+        }
+
+        public bool PrerequisitesCompleted => Prerequisites.All(quest => quest.Completed);
+
+        public abstract bool CheckCompletion();
+
+        public abstract bool ShowMarker(Tile tile);
+
+        public abstract string GetMarker(Tile tile);
+    }
+
     class SceneGame : Scene
     {
-        const float ViewScale = 2f;
+        class TutorialGetOre : Quest
+        {
+            public override string Name => "Collect Ore";
+            public override string Description => $"{Count}/{CountMax}";
 
-        Random random = new Random();
+            public int CountMax => 3;
+            public int Count => Game.Player.GetInventory().OfType<IOre>().Where(ore => !IsFuel(ore) && ore.Amount >= 200).Sum(ore => ore.Amount / 200);
+
+            public TutorialGetOre(SceneGame game, params Quest[] prerequisites) : base(game, prerequisites)
+            {
+            }
+
+            private bool IsFuel(IOre ore)
+            {
+                if(ore is IFuel fuel)
+                {
+                    return fuel.FuelTemperature > 0;
+                }
+                return false;
+            }
+
+            public override bool CheckCompletion()
+            {
+                return Count >= CountMax;
+            }
+
+            public override string GetMarker(Tile tile)
+            {
+                return "Collect Ore";
+            }
+
+            public override bool ShowMarker(Tile tile)
+            {
+                return tile.Items.Any(x => x is IOre ore && !IsFuel(ore));
+            }
+        }
+
+        class TutorialGetFuel : Quest
+        {
+            public override string Name => "Collect Fuel";
+            public override string Description => $"{Count}/{CountMax}";
+
+            public int CountMax => 1;
+            public int Count => Game.Player.GetInventory().OfType<IOre>().Where(ore => IsFuel(ore) && ore.Amount >= 200).Sum(ore => ore.Amount / 200);
+
+            public TutorialGetFuel(SceneGame game, params Quest[] prerequisites) : base(game, prerequisites)
+            {
+            }
+
+            private bool IsFuel(IOre ore)
+            {
+                if (ore is IFuel fuel)
+                {
+                    return fuel.FuelTemperature > 0;
+                }
+                return false;
+            }
+
+            public override bool CheckCompletion()
+            {
+                return Count >= CountMax;
+            }
+
+            public override string GetMarker(Tile tile)
+            {
+                return "Collect Fuel";
+            }
+
+            public override bool ShowMarker(Tile tile)
+            {
+                return tile.Items.Any(x => x is IOre ore && IsFuel(ore));
+            }
+        }
+
+        class TutorialSmeltOre : Quest
+        {
+            public override string Name => "Smelt Ore";
+            public override string Description => $"{Count}/{CountMax}";
+
+            public int CountMax => 3;
+            public int Count => Game.Player.GetInventory().OfType<Ingot>().Sum(ingot => ingot.Count);
+
+            public TutorialSmeltOre(SceneGame game, params Quest[] prerequisites) : base(game, prerequisites)
+            {
+            }
+
+            public override bool CheckCompletion()
+            {
+                return Count >= CountMax;
+            }
+
+            public override string GetMarker(Tile tile)
+            {
+                return "Smelt Ore";
+            }
+
+            public override bool ShowMarker(Tile tile)
+            {
+                return tile is Smelter;
+            }
+        }
+
+        class TutorialBuildAdze : Quest
+        {
+            public override string Name => "Build an Adze";
+            public override string Description => String.Empty;
+
+            public TutorialBuildAdze(SceneGame game, params Quest[] prerequisites) : base(game, prerequisites)
+            {
+            }
+
+            public override bool CheckCompletion()
+            {
+                return Game.Player.GetInventory().Any(x => x is ToolAdze);
+            }
+
+            public override string GetMarker(Tile tile)
+            {
+                return "Build Adze";
+            }
+
+            public override bool ShowMarker(Tile tile)
+            {
+                return tile is Anvil;
+            }
+        }
+
+        const float ViewScale = 2.0f;
+
+        Random Random = new Random();
 
         public PlayerUI Menu;
         public ActionQueue ActionQueue = new ActionQueue();
@@ -36,6 +194,10 @@ namespace RoguelikeEngine
         public IEnumerable<VisualEffect> VisualEffects => GameObjects.OfType<VisualEffect>();
 
         public List<IGameObject> GameObjects = new List<IGameObject>();
+        public Queue<IGameObject> ToAdd = new Queue<IGameObject>();
+
+        public List<Quest> Quests = new List<Quest>();
+        public CurrentSkill CurrentSkill => GameObjects.OfType<CurrentSkill>().FirstOrDefault();
 
         string Tooltip = "Test";
         Point? TileCursor;
@@ -44,42 +206,110 @@ namespace RoguelikeEngine
         {
             Menu = new PlayerUI(this);
             Map = new Map(250, 250);
-
-            Player = new Creature(this)
-            {
-                Name = "You",
-                Description = "This is you.",
-            };
-            Player.MoveTo(Map.GetTile(150, 150));
-            ActionQueue.Add(Player);
-
-            var enemy = new Creature(this)
-            {
-                Name = "Gay Bowser",
-                Description = "?????",
-            };
-            enemy.MoveTo(Map.GetTile(155, 150));
-            ActionQueue.Add(enemy);
-
-            Item testItem = ToolBlade.Create(this, Material.Karmesine, Material.Ovium, Material.Jauxum);
-            testItem.MoveTo(Map.GetTile(150, 155));
-
-            new Ore(this, Material.Dilithium, 500).MoveTo(Map.GetTile(151, 150));
-            new Ore(this, Material.Dilithium, 1000).MoveTo(Map.GetTile(151, 155));
-            new Ore(this, Material.Tiberium, 1000).MoveTo(Map.GetTile(151, 156));
-            new Ore(this, Material.Basalt, 1000).MoveTo(Map.GetTile(151, 157));
-            new Ore(this, Material.Triberium, 1000).MoveTo(Map.GetTile(151, 158));
-            new Ore(this, Material.Jauxum, 1000).MoveTo(Map.GetTile(152, 155));
-            new Ore(this, Material.Ovium, 1000).MoveTo(Map.GetTile(152, 156));
-            new Ore(this, Material.Karmesine, 1000).MoveTo(Map.GetTile(152, 157));
-            new Ore(this, Material.Meteorite, 1000).MoveTo(Map.GetTile(153, 155));
-            new Ore(this, Material.Obsidiorite, 1000).MoveTo(Map.GetTile(153, 156));
-
-            Map.GetTile(145, 150).PlaceOn(new Smelter(this));
-            Map.GetTile(147, 150).PlaceOn(new Anvil());
-
-            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, random.Next());
+            
+            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Random.Next());
             generator.Generate();
+            generator.Print(Map);
+
+            var smelterGroup = generator.StartRoomGroup;
+            var smelterPos = generator.StartRoom;
+            Tile startTile = Map.GetTile(smelterPos.X, smelterPos.Y);
+            Player = new Hero(this);
+            Player.MoveTo(startTile);
+            ActionQueue.Add(Player);
+            /*var testEnemy = new BlueDragon(this);
+            testEnemy.MoveTo(startTile.GetNeighbor(-2, 0));
+            testEnemy.MakeAggressive(Player);
+            ActionQueue.Add(testEnemy);
+            testEnemy = new BlueDragon(this);
+            testEnemy.MoveTo(startTile.GetNeighbor(2,0));
+            testEnemy.MakeAggressive(Player);
+            ActionQueue.Add(testEnemy);*/
+            /*Player.Pickup(new Ingot(this, Material.Dilithium, 8));
+            Player.Pickup(new Ingot(this, Material.Tiberium, 8));
+            Player.Pickup(new Ingot(this, Material.Basalt, 8));
+            Player.Pickup(new Ingot(this, Material.Meteorite, 8));
+            Player.Pickup(new Ingot(this, Material.Obsidiorite, 8));
+            Player.Pickup(new Ingot(this, Material.Jauxum, 8));
+            Player.Pickup(new Ingot(this, Material.Karmesine, 8));
+            Player.Pickup(new Ingot(this, Material.Ovium, 8));
+            Player.Pickup(new Ingot(this, Material.Terrax, 8));
+            Player.Pickup(new Ingot(this, Material.Triberium, 8));*/
+
+            var startTiles = generator.StartRoomGroup.GetCells().Select(cell => Map.GetTile(cell.X, cell.Y));
+            var startFloors = startTiles.Where(tile => !tile.Solid).Shuffle();
+
+            var anvilTile = startFloors.ElementAt(0);
+            var smelterTile = startFloors.ElementAt(1);
+
+            anvilTile.PlaceOn(new Anvil());
+            smelterTile.PlaceOn(new Smelter(this));
+
+            Material[] possibleMaterials = new[] { Material.Karmesine, Material.Ovium, Material.Jauxum, Material.Basalt, Material.Coal };
+            for(int i = 0; i < 25; i++)
+            {
+                var pick = possibleMaterials.Pick(Random);
+                var pickFloor = startFloors.ElementAt(2 + i);
+
+                new Ore(this, pick, 100).MoveTo(pickFloor);
+            }
+
+            Quest getOre = new TutorialGetOre(this);
+            Quest getFuel = new TutorialGetFuel(this, getOre);
+            Quest smeltOre = new TutorialSmeltOre(this, getOre, getFuel);
+            Quest buildAdze = new TutorialBuildAdze(this, smeltOre);
+            Quests.Add(getOre);
+            Quests.Add(getFuel);
+            Quests.Add(smeltOre);
+            Quests.Add(buildAdze);
+
+            ActionQueue.Add(new EnemySpawner(this, 60));
+        }
+
+        private void BuildSmelterRoom(Tile center, GeneratorGroup group)
+        {
+            var offsets = new[] { new Point(1,0), new Point(0,1), new Point(-1,0), new Point(0,-1) };
+            var offset = offsets.Pick(Random);
+            int radius = Random.Next(3,5);
+            int smelterX = -Random.Next(radius - 1) + Random.Next(radius - 1);
+            int smelterY = -Random.Next(radius - 1) + Random.Next(radius - 1);
+
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    var tile = center.GetNeighbor(x, y);
+                    tile.Group = group;
+                    if (x == offset.X * radius && y == offset.Y * radius)
+                    {
+                        tile.Replace(new FloorCave());
+                    }
+                    else if (x == smelterX && y == smelterY)
+                    {
+                        tile.Replace(new FloorCave());
+                        tile.PlaceOn(new Smelter(this));
+                    }
+                    else if (x <= -radius || y <= -radius || x >= radius || y >= radius)
+                    {
+                        tile.Replace(new WallBrick());
+                    }
+                    else
+                    {
+                        tile.Replace(new FloorCave());
+                    }
+                }
+            }
+        }
+
+        public void Restart()
+        {
+            Game.Scene = new SceneLoading(Game);
+            EffectManager.Reset();
+        }
+
+        public void Quit()
+        {
+            Game.Exit();
         }
 
         private Vector2 FitCamera(Vector2 camera, Vector2 size)
@@ -115,7 +345,16 @@ namespace RoguelikeEngine
         {
             InputTwinState state = Game.InputState;
 
-            while (Wait.Done)
+            while(ToAdd.Count > 0)
+            {
+                GameObjects.Add(ToAdd.Dequeue());
+            }
+            Menu.Update(this);
+
+            if(Player.Dead)
+                Menu.HandleInput(this);
+
+            while (Wait.Done && !Player.Dead)
             {
                 ActionQueue.Step();
 
@@ -134,9 +373,15 @@ namespace RoguelikeEngine
                 }
             }
 
-            foreach (var obj in GameObjects.GetAndClean(x => x.Remove))
+            foreach (var obj in GameObjects.GetAndClean(x => x.Destroyed))
             {
                 obj.Update();
+            }
+
+            foreach (var quest in Quests)
+            {
+                if(!quest.Completed && quest.PrerequisitesCompleted)
+                    quest.Completed = quest.CheckCompletion();
             }
 
             Vector2 worldPos = Vector2.Transform(new Vector2(InputState.MouseX, InputState.MouseY), Matrix.Invert(WorldTransform));
@@ -148,8 +393,12 @@ namespace RoguelikeEngine
                 TileCursor = null;
 
             Tooltip = string.Empty;
-            if(TileCursor.HasValue)
-                Map.GetTile(TileCursor.Value.X, TileCursor.Value.Y)?.AddTooltip(ref Tooltip);
+            if (TileCursor.HasValue)
+            {
+                Tile tile = Map.GetTile(TileCursor.Value.X, TileCursor.Value.Y);
+                if(tile != null && tile.IsVisible())
+                    tile.AddTooltip(ref Tooltip);
+            }
             Tooltip = Tooltip.Trim();
         }
 
@@ -214,6 +463,7 @@ namespace RoguelikeEngine
             drawPasses.DrawPass(this, DrawPass.Tile);
             drawPasses.DrawPass(this, DrawPass.Item);
             drawPasses.DrawPass(this, DrawPass.Creature);
+            drawPasses.DrawPass(this, DrawPass.Effect);
             PopSpriteBatch();
 
             GraphicsDevice.SetRenderTarget(null);
@@ -236,6 +486,8 @@ namespace RoguelikeEngine
                 DrawSprite(cursor_tile, Frame / 8, new Vector2(TileCursor.Value.X * 16, TileCursor.Value.Y * 16), SpriteEffects.None, 0);
             }
 
+            DrawQuests(Map);
+
             drawPasses.DrawPass(this, DrawPass.UIWorld);
 
             //SpriteBatch.End();
@@ -245,6 +497,8 @@ namespace RoguelikeEngine
             //SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap);
 
             PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap);
+
+            DrawQuestText(Map);
 
             drawPasses.DrawPass(this, DrawPass.UI);
 
@@ -304,8 +558,54 @@ namespace RoguelikeEngine
 
             foreach (Tile tile in EnumerateCloseTiles(map, drawX, drawY, drawRadius))
             {
-                tile.Draw(this);
+                if (tile.IsVisible())
+                    tile.Draw(this);
             }
-        }  
+        }
+
+        private void DrawQuests(Map map)
+        {
+            SpriteReference cursor_tile = SpriteLoader.Instance.AddSprite("content/cursor_tile");
+
+            int drawX = (int)(Camera.X / 16);
+            int drawY = (int)(Camera.Y / 16);
+            int drawRadius = 30;
+
+            foreach (Tile tile in EnumerateCloseTiles(map, drawX, drawY, drawRadius))
+            {
+                if (!tile.IsVisible())
+                    continue;
+                foreach (var quest in Quests)
+                {
+                    if (!quest.Completed && quest.PrerequisitesCompleted && quest.ShowMarker(tile))
+                        DrawSprite(cursor_tile, Frame / 1, new Vector2(tile.X * 16, tile.Y * 16), SpriteEffects.None, 0);
+                }
+            }
+        }
+
+        private void DrawQuestText(Map map)
+        {
+            HashSet<Quest> RenderedQuests = new HashSet<Quest>();
+
+            int drawX = (int)(Camera.X / 16);
+            int drawY = (int)(Camera.Y / 16);
+            int drawRadius = 30;
+
+            foreach (Tile tile in EnumerateCloseTiles(map, drawX, drawY, drawRadius))
+            {
+                if (!tile.IsVisible())
+                    continue;
+                foreach (var quest in Quests)
+                {
+                    if (!quest.Completed && !RenderedQuests.Contains(quest) && quest.PrerequisitesCompleted && quest.ShowMarker(tile))
+                    {
+                        Vector2 worldPos = new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8);
+                        var text = quest.GetMarker(tile);
+                        DrawText(text,Vector2.Transform(worldPos,WorldTransform) + new Vector2(0,-32),Alignment.Center,new TextParameters().SetColor(Color.White,Color.Black).SetBold(true));
+                        RenderedQuests.Add(quest);
+                    }
+                }
+            }
+        }
     }
 }

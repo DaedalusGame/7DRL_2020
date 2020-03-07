@@ -18,6 +18,14 @@ namespace RoguelikeEngine
                 return Linear(b, a, (amt - 0.5) * 2);
         }
 
+        public static double Flick(double a, double b, double amt)
+        {
+            if (amt < 1)
+                return a;
+            else
+                return b;
+        }
+
         public static double Linear(double a, double b, double amt)
         {
             return a * (1 - amt) + b * amt;

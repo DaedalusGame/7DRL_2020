@@ -19,7 +19,7 @@ namespace RoguelikeEngine
             get;
         }
 
-        bool Remove
+        bool Destroyed
         {
             set;
             get;
