@@ -103,19 +103,25 @@ namespace RoguelikeEngine
             int lastStacks = Stacks;
             Buildup += buildup;
             Buildup = Math.Max(0, Buildup);
-            Effect.Apply(new EffectMessage(this, $"{Name} {BuildupText(buildup)}"));
+            PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(buildup)}"));
             if (Stacks > lastStacks)
                 OnStackChange(Stacks - lastStacks);
         }
 
-        public abstract void OnAdd();
+        public virtual void OnAdd()
+        {
+            PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(Buildup)}"));
+        }
 
-        public abstract void OnRemove();
+        public virtual void OnRemove()
+        {
+            PopupManager.Add(new EffectMessage(Creature, $"{Game.FormatColor(Microsoft.Xna.Framework.Color.Gray)}{Name}"));
+        }
 
         public virtual void OnStackChange(int delta)
         {
             LastChange += delta;
-            Effect.Apply(new EffectMessage(this, $"{Name} {StackText}"));
+            PopupManager.Add(new EffectMessage(Creature, $"{Name} {StackText}"));
         }
     }
 
@@ -130,16 +136,6 @@ namespace RoguelikeEngine
         {
             Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, -0.1));
             Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3));
-        }
-
-        public override void OnAdd()
-        {
-            //Your defense decreases!
-        }
-
-        public override void OnRemove()
-        {
-            //Your defense returns to normal
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -166,16 +162,6 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3));
         }
 
-        public override void OnAdd()
-        {
-            //Your defense increases!
-        }
-
-        public override void OnRemove()
-        {
-            //Your defense returns to normal
-        }
-
         public override bool CanCombine(StatusEffect other)
         {
             return other is DefenseUp;
@@ -192,21 +178,11 @@ namespace RoguelikeEngine
         public override string Name => $"Poison";
         public override string Description => $"Periodic damage based on buildup.";
 
-        public static Element Element = new Element("Poison");
+        public static Element Element = new Element("Poison", SpriteLoader.Instance.AddSprite("content/element_poison"));
 
         public Poison() : base()
         {
             
-        }
-
-        public override void OnAdd()
-        {
-            //Your defense decreases!
-        }
-
-        public override void OnRemove()
-        {
-            //Your defense returns to normal
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -232,20 +208,10 @@ namespace RoguelikeEngine
         public override string Name => $"Bleeding";
         public override string Description => $"Sudden HP damage on each buildup.";
 
-        public static Element Element = new Element("Bleed");
+        public static Element Element = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
 
         public Bleeding() : base()
         {
-        }
-
-        public override void OnAdd()
-        {
-            //You start bleeding!
-        }
-
-        public override void OnRemove()
-        {
-            //Yout stop bleeding
         }
 
         public override void OnStackChange(int delta)
@@ -283,16 +249,6 @@ namespace RoguelikeEngine
             Master = master;
         }
 
-        public override void OnAdd()
-        {
-            //You turn to slime!
-        }
-
-        public override void OnRemove()
-        {
-            //Yout stop turning to slime
-        }
-
         public override void Update()
         {
             base.Update();
@@ -325,16 +281,6 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
         }
 
-        public override void OnAdd()
-        {
-            //You turn undead!
-        }
-
-        public override void OnRemove()
-        {
-            //You return to human form
-        }
-
         public override bool CanCombine(StatusEffect other)
         {
             return other is Undead;
@@ -343,6 +289,24 @@ namespace RoguelikeEngine
         public override string ToString()
         {
             return $"{base.ToString()}";
+        }
+    }
+
+    class PoweredUp : StatusEffect
+    {
+        public override string Name => $"Powered Up";
+        public override string Description => $"GROOOOOAAAAR";
+
+        public override int MaxStacks => 1;
+
+        public override void OnAdd()
+        {
+            //NOOP
+        }
+
+        public override void OnRemove()
+        {
+            //NOOP
         }
     }
 }

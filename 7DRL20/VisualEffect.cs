@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using LibNoise.Primitive;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -10,12 +11,14 @@ namespace RoguelikeEngine
 {
     abstract class VisualEffect : IGameObject
     {
+        public static Random Random = new Random();
+
         public SceneGame World { get; set; }
         public double DrawOrder => 0;
-        bool IGameObject.Destroyed { get; set; }
+        public bool Destroyed { get; set; }
 
         public Slider Frame;
-
+        
         public VisualEffect(SceneGame world)
         {
             World = world;
@@ -65,6 +68,158 @@ namespace RoguelikeEngine
         }
     }
 
+    abstract class ScreenFlash : VisualEffect
+    {
+        public abstract ColorMatrix Color
+        {
+            get;
+        }
+
+        public ScreenFlash(SceneGame world, float time) : base(world)
+        {
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+            {
+                this.Destroy();
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class ScreenFlashLocal : ScreenFlash
+    {
+        Vector2 Position;
+        Func<ColorMatrix> ColorFunction;
+
+        float FullRadius;
+        float FalloffRadius;
+
+        int Time;
+        int FalloffTime;
+
+        public override ColorMatrix Color => ColorMatrix.Lerp(ColorMatrix.Identity,ColorFunction(),GetFalloff());
+
+        public ScreenFlashLocal(SceneGame world, Func<ColorMatrix> colorFunction, Vector2 position, float fullRadius, float falloffRadius, int time, int falloffTime) : base(world, time + falloffTime)
+        {
+            Position = position;
+            ColorFunction = colorFunction;
+            FullRadius = fullRadius;
+            FalloffRadius = falloffRadius;
+            Time = time;
+            FalloffTime = falloffTime;
+        }
+
+        float GetTimeFalloff()
+        {
+            if (Frame.Time < Time)
+                return 1.0f;
+            else if (Frame.Time < Time + FalloffTime)
+                return (float)LerpHelper.CubicIn(1, 0, (Frame.Time - Time) / FalloffTime);
+            else
+                return 0.0f;
+        }
+
+        float GetFalloff()
+        {
+            float timeFalloff = GetTimeFalloff();
+            Creature player = World.Player;
+            if (player == null)
+                return 0.0f;
+            Vector2 dist = player.VisualTarget - Position;
+            float length = dist.Length();
+            if (length < FullRadius)
+                return 1.0f * timeFalloff;
+            else if (length < FullRadius + FalloffRadius)
+                return (float)LerpHelper.CubicIn(1, 0, (length - FullRadius) / FalloffRadius) * timeFalloff;
+            else
+                return 0.0f;
+        }
+    }
+
+    abstract class ScreenShake : VisualEffect
+    {
+        public Vector2 Offset;
+
+        public ScreenShake(SceneGame world, int time) : base(world)
+        {
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+            {
+                this.Destroy();
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class ScreenShakeRandom : ScreenShake
+    {
+        float Amount;
+        LerpHelper.Delegate Lerp;
+
+        public ScreenShakeRandom(SceneGame world, float amount, int time, LerpHelper.Delegate lerp) : base(world, time)
+        {
+            Lerp = lerp;
+            Amount = amount;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            double amount = Lerp(Amount, 0, Frame.Slide);
+            double shakeAngle = Random.NextDouble() * Math.PI * 2;
+            int x = (int)Math.Round(Math.Cos(shakeAngle) * amount);
+            int y = (int)Math.Round(Math.Sin(shakeAngle) * amount);
+            Offset = new Vector2(x, y);
+        }
+    }
+
+    class ScreenShakeJerk : ScreenShake
+    {
+        Vector2 Jerk;
+
+        public ScreenShakeJerk(SceneGame world, Vector2 jerk, int time) : base(world, time)
+        {
+            Jerk = jerk;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            float amount = (1 - Frame.Slide);
+            Offset = Jerk * amount;
+        }
+    }
+
     abstract class Particle : VisualEffect
     {
         public virtual Vector2 Position
@@ -81,10 +236,12 @@ namespace RoguelikeEngine
 
     class Explosion : Particle
     {
+        public SpriteReference Sprite;
         public Vector2 Velocity;
 
-        public Explosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, position)
+        public Explosion(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, int time) : base(world, position)
         {
+            Sprite = sprite;
             Frame = new Slider(time);
             Velocity = velocity;
         }
@@ -104,40 +261,34 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            var explosion = SpriteLoader.Instance.AddSprite("content/explosion");
-            scene.DrawSprite(explosion, scene.AnimationFrame(explosion, Frame.Time, Frame.EndTime), Position - explosion.Middle, SpriteEffects.None, 0);
+            scene.DrawSprite(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), Position - Sprite.Middle, SpriteEffects.None, 0);
+        }
+    }
+
+    class FireExplosion : Explosion
+    {
+        public FireExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/explosion"), position, velocity, time)
+        {
         }
     }
 
     class Smoke : Explosion
     {
-        public Smoke(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, position, velocity, time)
+        public Smoke(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/smoke"), position, velocity, time)
         {
-        }
-
-        public override void Draw(SceneGame scene, DrawPass pass)
-        {
-            var explosion = SpriteLoader.Instance.AddSprite("content/smoke");
-            scene.DrawSprite(explosion, scene.AnimationFrame(explosion, Frame.Time, Frame.EndTime), Position - explosion.Middle, SpriteEffects.None, 0);
         }
     }
 
     class WaterSplash : Explosion
     {
-        public WaterSplash(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, position, velocity, time)
+        public WaterSplash(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/splash"), position, velocity, time)
         {
-        }
-
-        public override void Draw(SceneGame scene, DrawPass pass)
-        {
-            var explosion = SpriteLoader.Instance.AddSprite("content/splash");
-            scene.DrawSprite(explosion, scene.AnimationFrame(explosion, Frame.Time, Frame.EndTime), Position - explosion.Middle, SpriteEffects.None, 0);
         }
     }
 
     class LightningFlash : Explosion
     {
-        public LightningFlash(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, position, velocity, time)
+        public LightningFlash(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_flash"), position, velocity, time)
         {
         }
 
@@ -150,33 +301,289 @@ namespace RoguelikeEngine
                 new LightningExplosion(World, Position + new Vector2(-4, 8), Velocity, 15);
             }
         }
-
-        public override void Draw(SceneGame scene, DrawPass pass)
-        {
-            var explosion = SpriteLoader.Instance.AddSprite("content/lightning_flash");
-            scene.DrawSprite(explosion, scene.AnimationFrame(explosion, Frame.Time, Frame.EndTime), Position - explosion.Middle, SpriteEffects.None, 0);
-        }
     }
 
     class LightningExplosion : Explosion
     {
-        public LightningExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, position, velocity, time)
+        public LightningExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_explosion"), position, velocity, time)
         {
+        }
+    }
+
+    class EnderExplosion : Explosion
+    {
+        public EnderExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/ender_explosion"), position, velocity, time)
+        {
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
+    class EnderNuke : Particle
+    {
+        SpriteReference Sprite;
+        float MaxScale;
+        float Scale => (float)LerpHelper.Linear(0, MaxScale, GetScaleFunction(Frame.Slide));
+
+        public EnderNuke(SceneGame world, SpriteReference sprite, Vector2 position, float scale, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Frame = new Slider(time);
+            MaxScale = scale;
         }
 
         public override void Update()
         {
             base.Update();
             if (Frame.Done)
-            {
+                this.Destroy();
 
+            for (int i = 0; i < 2; i++)
+            {
+                float angle = Random.NextFloat() * MathHelper.TwoPi;
+                float distance = Random.NextFloat() * Sprite.Width * 0.5f * Scale;
+                Vector2 offset = Util.AngleToVector(angle) * distance;
+                Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f);
+                new Cinder(World, SpriteLoader.Instance.AddSprite("content/cinder_ender"), Position + offset, velocity, (int)Math.Min(Random.Next(90) + 90, Frame.EndTime - Frame.Time));
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                float angle = Random.NextFloat() * MathHelper.TwoPi;
+                float distance = Random.NextFloat() * 200;
+                Vector2 offset = Util.AngleToVector(angle) * distance;
+                Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f) * 3 + new Vector2(0f,-1.5f);
+                new Cinder(World, SpriteLoader.Instance.AddSprite("content/cinder_ender"), Position + offset, velocity, Random.Next(20) + 20);
+            }
+
+            if (Random.Next(10) < 10 && Frame.Slide < 0.66)
+            {
+                SpriteReference smoke;
+                if(Random.NextDouble() < 0.4)
+                    smoke = SpriteLoader.Instance.AddSprite("content/smoke_wave_big");
+                else
+                    smoke = SpriteLoader.Instance.AddSprite("content/smoke_wave");
+                float angle = Random.NextFloat() * MathHelper.TwoPi;
+                float distance = Random.NextFloat() * 300;
+                Vector2 offset = Util.AngleToVector(angle) * distance;
+                Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f) * 5;
+                new SmokeWave(World, smoke, Position + offset, velocity, Random.Next(20) + 20);
+            }
+        }
+
+        protected double GetScaleFunction(double amount)
+        {
+            if (amount < 0.33)
+                return LerpHelper.SineOut(0, 1, amount / 0.33);
+            else if (amount < 0.66)
+                return 1;
+            else
+                return LerpHelper.CubicIn(1, 0,(amount - 0.66) / 0.33);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
+    delegate Explosion ExplosionGenerator(Vector2 position, Vector2 velocity, int time);
+
+    class BigExplosion : VisualEffect
+    {
+        Func<Vector2> Anchor;
+        ExplosionGenerator Generator;
+
+        public BigExplosion(SceneGame world, Func<Vector2> anchor, ExplosionGenerator generator) : base(world)
+        {
+            Frame = new Slider(10);
+            Anchor = anchor;
+            Generator = generator;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+
+            var position = Anchor();
+            if (Frame.Time == 1)
+            {
+                Generator(position + new Vector2(0, 0), Vector2.Zero, 30);
+            }
+            if (Frame.Time == 5)
+            {
+                Generator(position + new Vector2(16, 0), Vector2.Zero, 15);
+                Generator(position + new Vector2(0, 16), Vector2.Zero, 15);
+                Generator(position + new Vector2(-16, 0), Vector2.Zero, 15);
+                Generator(position + new Vector2(0, -16), Vector2.Zero, 15);
             }
         }
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            var explosion = SpriteLoader.Instance.AddSprite("content/lightning_explosion");
-            scene.DrawSprite(explosion, scene.AnimationFrame(explosion, Frame.Time, Frame.EndTime), Position - explosion.Middle, SpriteEffects.None, 0);
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class MultiExplosion : VisualEffect
+    {
+        Func<Vector2> Anchor;
+        ExplosionGenerator Generator;
+        Vector2 Velocity;
+
+        public MultiExplosion(SceneGame world, Func<Vector2> anchor, Vector2 velocity, ExplosionGenerator generator, int time) : base(world)
+        {
+            Frame = new Slider(time);
+            Anchor = anchor;
+            Velocity = velocity;
+            Generator = generator;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+
+            var position = Anchor();
+            if ((Frame.EndTime - Frame.Time) % 10 == 0)
+            {
+                Generator(position, Velocity, 30);
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class SmokeSmall : Particle
+    {
+        SpriteReference Sprite;
+        int SubImage;
+        Vector2 Velocity;
+        float Scale => (float)LerpHelper.CubicIn(1, 0, Frame.Slide);
+
+        public SmokeSmall(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            SubImage = Random.Next(Sprite.SubImageCount);
+            Velocity = velocity;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            Position += Velocity;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            var angle = Util.VectorToAngle(Velocity);
+            scene.DrawSpriteExt(Sprite, SubImage, Position - Sprite.Middle, Sprite.Middle, angle - MathHelper.PiOver2, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectLow;
+        }
+    }
+
+    class SmokeWave : Particle
+    {
+        SpriteReference Sprite;
+        Vector2 Velocity;
+
+        public SmokeWave(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Velocity = velocity;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            Position += Velocity;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            var angle = Util.VectorToAngle(Velocity);
+            if(Frame.Time % 3 == 1)
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, angle - MathHelper.PiOver2, Vector2.One, SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectLow;
+        }
+    }
+
+    class LightningField : VisualEffect
+    {
+        public SpriteReference Sprite;
+        public List<Tile> Tiles = new List<Tile>();
+
+        public LightningField(SceneGame world, IEnumerable<Tile> tiles, int time) : base(world)
+        {
+            Tiles.AddRange(tiles);
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+
+            if (Random.NextDouble() < LerpHelper.Linear(0,0.5,Frame.Slide))
+            {
+                Tile startTile = Tiles.Pick(Random);
+                Tile endTile = Tiles.Pick(Random);
+                if (startTile != endTile)
+                {
+                    Vector2 startOffset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                    Vector2 endOffset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                    new LightningSpark(World, SpriteLoader.Instance.AddSprite("content/lightning_ender"), startTile.VisualTarget + startOffset, endTile.VisualTarget + endOffset, 2);
+                }
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
         }
     }
 
@@ -211,6 +618,47 @@ namespace RoguelikeEngine
         public abstract void Impact(Vector2 position);
     }
 
+    class LightningSpark : Particle
+    {
+        public SpriteReference Sprite;
+        public Vector2 PositionStart;
+        public Vector2 PositionEnd;
+        public int RandomOffset;
+
+        public LightningSpark(SceneGame world, SpriteReference sprite, Vector2 start, Vector2 end, int time) : base(world, Vector2.Zero)
+        {
+            Sprite = sprite;
+            PositionStart = start;
+            PositionEnd = end;
+            RandomOffset = Random.Next(100);
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            Vector2 point1 = PositionStart;
+            Vector2 point2 = PositionEnd;
+
+            float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
+            int length = (int)(point2 - point1).Length();
+            scene.PushSpriteBatch(samplerState: SamplerState.PointWrap);
+            scene.SpriteBatch.Draw(Sprite.Texture, point1, new Rectangle(RandomOffset, 0, length, Sprite.Height), Color.White, angle, new Vector2(0, Sprite.Height / 2), 1.0f, SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+    
     class Lightning : Projectile
     {
         public int TrailLength;
@@ -244,6 +692,245 @@ namespace RoguelikeEngine
             scene.PushSpriteBatch(samplerState: SamplerState.PointWrap);
             scene.SpriteBatch.Draw(beam.Texture, point1, new Rectangle((int)Frame.Time * 2, 0, length, beam.Height), Color.White, angle, new Vector2(0, beam.Height / 2), 1.0f, SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+        }
+    }
+
+    class Cinder : Particle
+    {
+        static SimplexPerlin Noise = new SimplexPerlin();
+
+        protected SpriteReference Sprite;
+        protected Vector2 Velocity;
+        protected float DriftAngle;
+        protected float Angle;
+        protected float InitialScale;
+        protected virtual float Scale => (float)LerpHelper.Linear(InitialScale,0,Frame.Slide);
+        protected float RandomOffset;
+
+        public Cinder(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Velocity = velocity;
+            Frame = new Slider(time);
+            InitialScale = MathHelper.Lerp(0.2f,1.0f,Random.NextFloat());
+            RandomOffset = Random.NextFloat();
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+            DriftAngle = Random.NextFloat() * MathHelper.TwoPi;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            Position += Velocity;
+            Velocity += Util.AngleToVector(DriftAngle) * 0.1f;
+            Velocity = Velocity.ClampLength(0, 2000);
+            Angle += 0.01f;
+            float driftAngleVelocity = Noise.GetValue(Frame.Slide, RandomOffset);
+            DriftAngle += driftAngleVelocity;
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class FlarePower : VisualEffect
+    {
+        protected SpriteReference Sprite;
+        protected Creature Anchor;
+
+        public FlarePower(SceneGame world, SpriteReference sprite, Creature anchor, int time) : base(world)
+        {
+            Sprite = sprite;
+            Anchor = anchor;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            int n;
+            if (Frame.Time <= 3)
+                n = 50;
+            else
+                n = 2;
+
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 emitPos = new Vector2(Anchor.X * 16, Anchor.Y * 16) + Anchor.Mask.GetRandomPixel(Random);
+                Vector2 centerPos = Anchor.VisualTarget;
+                Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 1;
+                new Cinder(World, Sprite, emitPos, velocity, (int)Math.Min(Random.Next(90) + 90, Frame.EndTime - Frame.Time));
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class FlareCharge : VisualEffect
+    {
+        protected SpriteReference Sprite;
+        protected Creature Anchor;
+        protected Func<Vector2> Target;
+
+        public FlareCharge(SceneGame world, SpriteReference sprite, Creature anchor, Func<Vector2> target, int time) : base(world)
+        {
+            Sprite = sprite;
+            Anchor = anchor;
+            Target = target;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            int n;
+            if (Frame.Time <= 3)
+                n = 50;
+            else
+                n = 2;
+
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 emitPos = new Vector2(Anchor.X * 16, Anchor.Y * 16) + Anchor.Mask.GetRandomPixel(Random);
+                Vector2 centerPos = Anchor.VisualTarget;
+                Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 5;
+                new CinderFlare(World, Sprite, Target, emitPos, velocity, (int)Math.Min(Random.Next(90) + 90, Frame.EndTime - Frame.Time));
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class CinderFlare : Cinder
+    {
+        Func<Vector2> Anchor;
+        Vector2 VisualPosition => Vector2.Lerp(Position, Anchor(), (float)LerpHelper.CircularOut(0, 1, Frame.Slide));
+        protected override float Scale => InitialScale;
+
+        public CinderFlare(SceneGame world, SpriteReference sprite, Func<Vector2> anchor, Vector2 position, Vector2 velocity, int time) : base(world, sprite, position, velocity, time)
+        {
+            Anchor = anchor;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, VisualPosition - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+        }
+    }
+
+    class IronMaiden : VisualEffect
+    {
+        public Func<Vector2> Anchor;
+        public Func<Vector2> Target;
+        public Slider NextPiece;
+        public Slider Pieces;
+        int ExtraTime;
+
+        public IronMaiden(SceneGame world, Func<Vector2> anchor, Func<Vector2> target, int time, int pieces, int extraTime) : base(world)
+        {
+            Anchor = anchor;
+            Target = target;
+            Frame = new Slider(time * pieces + extraTime);
+            NextPiece = new Slider(time);
+            Pieces = new Slider(pieces);
+            ExtraTime = extraTime;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            NextPiece += 1;
+
+            if (NextPiece.Done && !Pieces.Done)
+            {
+                float angle = MathHelper.TwoPi * Pieces.Slide - Frame.Time * 0.1f;
+                float time = Frame.EndTime - Frame.Time;
+                
+                new IronMaidenPart(World, Anchor(), Target(), angle, (int)time);
+                Pieces += 1;
+            }
+
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class IronMaidenPart : Projectile
+    {
+        float Angle;
+        float TweenAngle;
+
+        private Vector2 Offset => Util.AngleToVector(TweenAngle) * (float)LerpHelper.QuadraticOut(0, 50, LerpHelper.ForwardReverse(0, 1, Frame.Slide));
+        public override Vector2 Tween => Offset + Vector2.Lerp(PositionStart, PositionEnd, (float)LerpHelper.Quadratic(0, 1, Frame.Slide));
+
+
+        public IronMaidenPart(SceneGame world, Vector2 positionStart, Vector2 positionEnd, float angle, int time) : base(world, positionStart, positionEnd, time)
+        {
+            TweenAngle = angle;
+            Angle = angle;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            Angle += 0.1f;
+            TweenAngle -= 0.1f;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            var triangle = SpriteLoader.Instance.AddSprite("content/triangle");
+            scene.DrawSpriteExt(triangle, scene.AnimationFrame(triangle, Frame.Time, Frame.EndTime), Position - triangle.Middle, triangle.Middle, Angle, Vector2.One, SpriteEffects.None, new Color(225, 174, 210), 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Impact(Vector2 position)
+        {
+            
         }
     }
 

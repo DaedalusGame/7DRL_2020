@@ -57,6 +57,9 @@ namespace RoguelikeEngine
             { ToolAdze.Head, "pick" },
             { ToolAdze.Binding, "binding" },
             { ToolAdze.Handle, "handle" },
+            { ToolPlate.Core, "layer1" },
+            { ToolPlate.Composite, "layer2" },
+            { ToolPlate.Trim, "layer3" },
         };
 
         public ColorMatrix ColorTransform = ColorMatrix.Identity;
@@ -84,6 +87,8 @@ namespace RoguelikeEngine
             effect.Apply();
             Parts[ToolBlade.Blade].Effects.Add(effect);
             Parts[ToolAdze.Head].Effects.Add(effect);
+            Parts[ToolPlate.Composite].Effects.Add(effect);
+            Parts[ToolPlate.Trim].Effects.Add(effect);
         }
 
         public void AddHandleEffect(Effect effect)
@@ -93,6 +98,7 @@ namespace RoguelikeEngine
             Parts[ToolBlade.Handle].Effects.Add(effect);
             Parts[ToolAdze.Binding].Effects.Add(effect);
             Parts[ToolAdze.Handle].Effects.Add(effect);
+            Parts[ToolPlate.Core].Effects.Add(effect);
         }
 
         public void AddFullEffect(Effect effect)
@@ -104,6 +110,9 @@ namespace RoguelikeEngine
             Parts[ToolAdze.Head].Effects.Add(effect);
             Parts[ToolAdze.Binding].Effects.Add(effect);
             Parts[ToolAdze.Handle].Effects.Add(effect);
+            Parts[ToolPlate.Core].Effects.Add(effect);
+            Parts[ToolPlate.Composite].Effects.Add(effect);
+            Parts[ToolPlate.Trim].Effects.Add(effect);
         }
 
         public void AddBladeEffect(Effect effect)
@@ -117,6 +126,13 @@ namespace RoguelikeEngine
         {
             effect.Apply();
             foreach (var part in ToolAdze.Parts)
+                Parts[part].Effects.Add(effect);
+        }
+
+        public void AddPlateEffect(Effect effect)
+        {
+            effect.Apply();
+            foreach (var part in ToolPlate.Parts)
                 Parts[part].Effects.Add(effect);
         }
 
@@ -235,7 +251,7 @@ namespace RoguelikeEngine
                 var attacker = attack.Attacker;
                 if (random.NextDouble() < 0.3 && attack.Defender is Creature defender)
                 {
-                    new Explosion(defender.World, new Vector2(defender.X * 16 + 8, defender.Y * 18 + 8), Vector2.Zero, 15);
+                    new FireExplosion(defender.World, new Vector2(defender.X * 16 + 8, defender.Y * 18 + 8), Vector2.Zero, 15);
                     //attacker.TakeDamage(5, Element.Fire);
                     //defender.TakeDamage(5, Element.Fire);
                 }
@@ -244,7 +260,7 @@ namespace RoguelikeEngine
             {
                 if (mine.Success && random.NextDouble() < 0.3 && mine.Mineable is Tile tile)
                 {
-                    new Explosion(mine.Miner.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 15);
+                    new FireExplosion(mine.Miner.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 15);
                     //mine.Miner.TakeDamage(5, Element.Fire);
                 }
             }));

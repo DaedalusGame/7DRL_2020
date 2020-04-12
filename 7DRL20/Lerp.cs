@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,9 +7,14 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
-    public class LerpHelper
+    public static class LerpHelper
     {
         public delegate double Delegate(double a, double b, double amt);
+
+        public static Delegate Invert(Delegate lerp)
+        {
+            return (a, b, amt) => lerp(b, a, amt);
+        }
 
         public static double ForwardReverse(double a, double b, double amt)
         {

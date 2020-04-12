@@ -123,7 +123,12 @@ namespace RoguelikeEngine
 
     class FormatCode
     {
+        public int Width;
 
+        public FormatCode(int width)
+        {
+            Width = width;
+        }
     }
 
     class FormatCodeColor : FormatCode
@@ -131,21 +136,54 @@ namespace RoguelikeEngine
         public TextColorFunction Color;
         public TextColorFunction Border;
 
-        public FormatCodeColor(TextColorFunction color, TextColorFunction border)
+        public FormatCodeColor(TextColorFunction color, TextColorFunction border) : base(0)
         {
             Color = color;
             Border = border;
         }
     }
 
-    class FormatCodeIcon : FormatCode
+    class FormatCodeItemIcon : FormatCodeIcon
     {
         public int ObjectID;
 
-        public FormatCodeIcon(int objectID)
+        public FormatCodeItemIcon(int objectID)
         {
             ObjectID = objectID;
         }
+
+        public override void Draw(Scene scene, Vector2 pos)
+        {
+            var holder = EffectManager.GetHolder(ObjectID);
+            if (holder is Item item && scene is SceneGame sceneGame)
+            {
+                item.DrawIcon(sceneGame, pos + new Vector2(8,8));
+            }
+        }
+    }
+
+    class FormatCodeElementIcon : FormatCodeIcon
+    {
+        public Element Element;
+
+        public FormatCodeElementIcon(Element element)
+        {
+            Element = element;
+        }
+
+        public override void Draw(Scene scene, Vector2 pos)
+        {
+            scene.DrawSprite(Element.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+    }
+
+    abstract class FormatCodeIcon : FormatCode
+    {
+        public FormatCodeIcon() : base(16)
+        {
+        }
+
+        public abstract void Draw(Scene scene, Vector2 pos);
     }
 
     class FontUtil
@@ -156,6 +194,7 @@ namespace RoguelikeEngine
             Color,
             Border,
             Icon,
+            ElementIcon,
         }
 
         public class Gibberish
@@ -195,6 +234,13 @@ namespace RoguelikeEngine
 
         public static Dictionary<char, FormatCode> DynamicFormat = new Dictionary<char, FormatCode>();
 
+        public static FormatCode GetFormatCode(char chr)
+        {
+            if (DynamicFormat.ContainsKey(chr))
+                return DynamicFormat[chr];
+            return null;
+        }
+
         public static char GetSimilarChar(char chr, Gibberish gibberish)
         {
             if (Random.Next(2) > 0)
@@ -212,6 +258,8 @@ namespace RoguelikeEngine
 
         public static int GetCharWidth(char chr)
         {
+            if (DynamicFormat.ContainsKey(chr))
+                return DynamicFormat[chr].Width;
             return CharInfo[chr].Width;
         }
 
@@ -315,6 +363,9 @@ namespace RoguelikeEngine
                                 state = FormatState.Icon;
                                 indexObjectID = 0;
                                 break;
+                            case (Game.FORMAT_ELEMENT_ICON):
+                                state = FormatState.ElementIcon;
+                                break;
                             default:
                                 builder.Append(c);
                                 break;
@@ -348,9 +399,16 @@ namespace RoguelikeEngine
                         {
                             int objectID = BitConverter.ToInt32(bufferObjectID, 0);
                             builder.Append(dynamicCode);
-                            DynamicFormat.Add(dynamicCode++, new FormatCodeIcon(objectID));
+                            DynamicFormat.Add(dynamicCode++, new FormatCodeItemIcon(objectID));
                             state = FormatState.None;
                         }
+                        break;
+                    case FormatState.ElementIcon:
+                        int elementID = (int)c;
+                        Element element = Element.AllElements[elementID];
+                        builder.Append(dynamicCode);
+                        DynamicFormat.Add(dynamicCode++, new FormatCodeElementIcon(element));
+                        state = FormatState.None;
                         break;
                 }
             }
@@ -385,6 +443,9 @@ namespace RoguelikeEngine
                                 state = FormatState.Icon;
                                 indexObjectID = 0;
                                 break;
+                            case (Game.FORMAT_ELEMENT_ICON):
+                                state = FormatState.ElementIcon;
+                                break;
                             default:
                                 builder.Append(c);
                                 break;
@@ -395,7 +456,7 @@ namespace RoguelikeEngine
                         indexColor++;
                         if (indexColor >= 4)
                         {
-                            builder.Append(Game.FORMAT_BLANK);
+                            builder.Append(Game.FORMAT_BOLD);
                             state = FormatState.None;
                         }
                         break;
@@ -406,6 +467,10 @@ namespace RoguelikeEngine
                             builder.Append(Game.FORMAT_ICON);
                             state = FormatState.None;
                         }
+                        break;
+                    case FormatState.ElementIcon:
+                        builder.Append(Game.FORMAT_ICON);
+                        state = FormatState.None;
                         break;
                 }
             }

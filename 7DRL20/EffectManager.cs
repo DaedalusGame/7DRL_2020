@@ -220,7 +220,7 @@ namespace RoguelikeEngine
 
         public static void TakeDamage(this IEffectHolder holder, double damage, Element element)
         {
-            Effect.Apply(new EffectMessage(holder, $"-{damage} {element}"));
+            PopupManager.Add(new EffectMessage(holder, $"-{damage}{Game.FormatElement(element)}"));
             Effect.Apply(new EffectDamage(holder, damage, element));
         }
 
@@ -239,7 +239,7 @@ namespace RoguelikeEngine
                 i++;
             }
 
-            Effect.Apply(new EffectMessage(holder, $"{Game.FormatColor(new Microsoft.Xna.Framework.Color(128,255,128))}+{heal}{Game.FormatColor(Microsoft.Xna.Framework.Color.White)}"));
+            PopupManager.Add(new EffectMessage(holder, $"{Game.FormatColor(new Microsoft.Xna.Framework.Color(128,255,128))}+{heal}{Game.FormatColor(Microsoft.Xna.Framework.Color.White)}"));
         }
 
 

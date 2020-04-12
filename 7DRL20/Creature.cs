@@ -12,15 +12,22 @@ namespace RoguelikeEngine
 {
     class Element
     {
+        public static List<Element> AllElements = new List<Element>();
+
+        public int ID;
         public string Name;
+        public SpriteReference Sprite;
         public Stat Resistance;
         public Stat DamageRate;
 
-        public Element(string name)
+        public Element(string name, SpriteReference sprite)
         {
+            ID = AllElements.Count;
             Name = name;
+            Sprite = sprite;
             Resistance = new Stat($"{Name} Resistance", 0);
             DamageRate = new Stat($"{Name} Damage Rate", 1);
+            AllElements.Add(this);
         }
 
         public override string ToString()
@@ -28,23 +35,26 @@ namespace RoguelikeEngine
             return Name;
         }
 
-        public static Element Bludgeon = new Element("Bludgeon");
-        public static Element Slash = new Element("Slash");
-        public static Element Pierce = new Element("Pierce");
+        public static Element Bludgeon = new Element("Bludgeon", SpriteLoader.Instance.AddSprite("content/element_blunt"));
+        public static Element Slash = new Element("Slash", SpriteLoader.Instance.AddSprite("content/element_slice"));
+        public static Element Pierce = new Element("Pierce", SpriteLoader.Instance.AddSprite("content/element_pierce"));
 
-        public static Element Fire = new Element("Fire");
-        public static Element Ice = new Element("Ice");
-        public static Element Thunder = new Element("Thunder");
-        public static Element Water = new Element("Water");
-        public static Element Wind = new Element("Wind");
-        public static Element Earth = new Element("Earth");
-        public static Element Light = new Element("Light");
-        public static Element Dark = new Element("Dark");
+        public static Element Fire = new Element("Fire", SpriteLoader.Instance.AddSprite("content/element_fire"));
+        public static Element Ice = new Element("Ice", SpriteLoader.Instance.AddSprite("content/element_ice"));
+        public static Element Thunder = new Element("Thunder", SpriteLoader.Instance.AddSprite("content/element_thunder"));
+        public static Element Water = new Element("Water", SpriteLoader.Instance.AddSprite("content/element_water"));
+        public static Element Wind = new Element("Wind", SpriteLoader.Instance.AddSprite("content/element_wind"));
+        public static Element Earth = new Element("Earth", SpriteLoader.Instance.AddSprite("content/element_earth"));
+        public static Element Holy = new Element("Holy", SpriteLoader.Instance.AddSprite("content/element_holy"));
+        public static Element Dark = new Element("Dark", SpriteLoader.Instance.AddSprite("content/element_dark"));
 
-        public static Element Healing = new Element("Healing");
+        //Combination Elements
+        public static Element TheEnd = new Element("The End", SpriteLoader.Instance.AddSprite("content/element_the_end"));
+
+        public static Element Healing = new Element("Healing", SpriteLoader.Instance.AddSprite("content/element_healing"));
 
         public static Element[] PhysicalElements = new Element[] { Bludgeon, Slash, Pierce };
-        public static Element[] MagicalElements = new Element[] { Fire, Ice, Thunder, Water, Wind, Earth, Light, Dark };
+        public static Element[] MagicalElements = new Element[] { Fire, Ice, Thunder, Water, Wind, Earth, Holy, Dark };
     }
 
     class Stat
@@ -98,6 +108,31 @@ namespace RoguelikeEngine
             return PointLookup.Contains(point);
         }
 
+        public Rectangle GetRectangle()
+        {
+            return GetRectangle(0, 0);
+        }
+
+        public Rectangle GetRectangle(int xOff, int yOff)
+        {
+            int xMin = 0;
+            int xMax = 0;
+            int yMin = 0;
+            int yMax = 0;
+            foreach(Point point in PointList)
+            {
+                if (point.X < xMin)
+                    xMin = point.X;
+                if (point.Y < yMin)
+                    yMin = point.Y;
+                if (point.X > xMax)
+                    xMax = point.X;
+                if (point.Y > yMax)
+                    yMax = point.Y;
+            }
+            return new Rectangle(xOff + xMin, yOff + yMin, xMax - xMin + 1, yMax - yMin + 1);
+        }
+
         public IEnumerable<Point> GetFrontier()
         {
             HashSet<Point> frontier = new HashSet<Point>();
@@ -130,10 +165,20 @@ namespace RoguelikeEngine
             return PointList.GetEnumerator();
         }
 
+        public Vector2 GetRandomPixel(Random random)
+        {
+            Point point = PointList.Pick(random);
+            float x = (point.X + random.NextFloat()) * 16;
+            float y = (point.Y + random.NextFloat()) * 16;
+            return new Vector2(x,y);
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
+
+        
     }
 
     enum Facing
@@ -205,20 +250,20 @@ namespace RoguelikeEngine
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
             {
-                scene.SetupColorMatrix(BodyColor * ColorMatrix.Tint(creature.VisualColor()), matrix);
+                scene.SetupColorMatrix(BodyColor * creature.VisualColor(), matrix);
             });
-            scene.DrawSprite(Body, facingOffset + frameOffset, creature.VisualPosition(), mirror, creature.VisualColor(), 0);
+            scene.DrawSprite(Body, facingOffset + frameOffset, creature.VisualPosition(), mirror, Color.White, 0);
             scene.PopSpriteBatch();
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
             {
-                scene.SetupColorMatrix(HeadColor * ColorMatrix.Tint(creature.VisualColor()), matrix);
+                scene.SetupColorMatrix(HeadColor * creature.VisualColor(), matrix);
             });
-            scene.DrawSprite(Head, facingOffset + frameOffset, creature.VisualPosition(), mirror, creature.VisualColor(), 0);
+            scene.DrawSprite(Head, facingOffset + frameOffset, creature.VisualPosition(), mirror, Color.White, 0);
             scene.PopSpriteBatch();
         }
     }
 
-    abstract class Creature : IEffectHolder, ITurnTaker, IGameObject
+    abstract class Creature : IEffectHolder, ITurnTaker, IGameObject, IHasPosition
     {
         public class WaitFrames : Wait
         {
@@ -278,14 +323,14 @@ namespace RoguelikeEngine
         public bool TurnReady => TurnBuildup > 1;
         public bool RemoveFromQueue => Destroyed;
         public Wait CurrentAction = Wait.NoWait;
-        public Wait CurrentPopups = Wait.NoWait;
+        public Wait CurrentPopups => PopupManager.Wait;
 
         public CreatureRender Render;
         public Func<Facing> VisualFacing = () => Facing.South;
         public Func<CreaturePose> VisualPose = () => CreaturePose.Walk;
         public Func<Vector2> VisualPosition = () => Vector2.Zero;
         public Func<Vector2> VisualCamera = () => Vector2.Zero;
-        public Func<Color> VisualColor = () => Color.White;
+        public Func<ColorMatrix> VisualColor = () => ColorMatrix.Identity;
 
         public int Frame;
 
@@ -293,6 +338,9 @@ namespace RoguelikeEngine
 
         public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
         public bool Dead => CurrentHP <= 0;
+
+        Vector2 IHasPosition.VisualPosition => VisualPosition();
+        public virtual Vector2 VisualTarget => VisualPosition() + new Vector2(8, 8);
 
         public Creature(SceneGame world)
         {
@@ -308,6 +356,30 @@ namespace RoguelikeEngine
             EffectManager.DeleteHolder(this);
         }
 
+        public Func<T> Flick<T>(Func<T> on, Func<T> off, int time)
+        {
+            int startTime = Frame;
+            return () =>
+            {
+                if (Frame - startTime < time)
+                    return on();
+                else
+                    return off();
+            };
+        }
+
+        public Func<T> Flash<T>(Func<T> on, Func<T> off, int periodOn, int periodOff)
+        {
+            int startTime = Frame;
+            return () =>
+            {
+                if ((Frame - startTime) % (periodOn + periodOff) < periodOn)
+                    return on();
+                else
+                    return off();
+            };
+        }
+
         public Func<Vector2> Slide(Vector2 start, Vector2 end, LerpHelper.Delegate lerp, int time)
         {
             int startTime = Frame;
@@ -318,31 +390,25 @@ namespace RoguelikeEngine
             };
         }
 
-        public Func<CreaturePose> Static(CreaturePose pose)
-        {
-            return () => pose;
-        }
-
-        public Func<Color> Static(Color color)
-        {
-            return () => color;
-        }
-
-        public Func<Vector2> Static(Vector2 pos)
-        {
-            return () => pos;
-        }
-
-        public Func<Color> Flash(Color color1, Color color2, int time)
+        public Func<Vector2> SlideJump(Vector2 start, Vector2 end, float height, LerpHelper.Delegate lerp, int time)
         {
             int startTime = Frame;
             return () =>
             {
-                if ((Frame - startTime) % 4 < 2 && (Frame - startTime) < time)
-                    return color1;
-                else
-                    return color2;
+                float slide = Math.Min(1, (Frame - startTime) / (float)time);
+                var jumpOffset = Vector2.Lerp(new Vector2(0, 0), new Vector2(0, -height), (float)Math.Sin(slide * MathHelper.Pi));
+                return Vector2.Lerp(start, end, (float)lerp(0, 1, slide)) + jumpOffset;
             };
+        }
+
+        public Func<T> Static<T>(T value)
+        {
+            return () => value;
+        }
+
+        public Func<ColorMatrix> Static(Color value)
+        {
+            return () => ColorMatrix.Tint(value);
         }
 
         public Func<CreaturePose> FlickPose(CreaturePose flickPose, CreaturePose restPose, int time)
@@ -357,17 +423,9 @@ namespace RoguelikeEngine
             };
         }
 
-        public void Update()
+        public virtual void Update()
         {
-            ShowPopups();
             Frame++;
-        }
-
-        private Wait ShowPopups()
-        {
-            if (CurrentPopups.Done)
-                CurrentPopups = Scheduler.Instance.RunAndWait(RoutineShowPopups());
-            return CurrentPopups;
         }
 
         public virtual Wait TakeTurn(ActionQueue queue)
@@ -404,17 +462,17 @@ namespace RoguelikeEngine
             SetMask(tile);
         }
 
-        public void MoveTo(Tile tile)
+        public void MoveTo(Tile tile, int time)
         {
             UnsetMask();
             if (tile == null)
                 return;
             SetMask(tile);
-            VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, 10);
+            VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, time);
             VisualCamera = VisualPosition;
         }
 
-        public void Move(int dx, int dy)
+        public void Move(int dx, int dy, int time)
         {
             Tile tile = Tile.GetNeighbor(dx, dy);
             if (tile == null)
@@ -422,18 +480,27 @@ namespace RoguelikeEngine
             var frontier = Mask.GetFrontier(dx, dy);
             if (frontier.Select(p => Tile.GetNeighbor(p.X, p.Y)).Any(front => front.Solid || front.Creatures.Any()))
                 return;
-            MoveTo(tile);
+            MoveTo(tile, time);
+        }
+
+        public void ForceMove(int dx, int dy, int time)
+        {
+            Tile tile = Tile.GetNeighbor(dx, dy);
+            if (tile == null)
+                return;
+            MoveTo(tile, time);
         }
 
         public IEnumerable<Wait> RoutineMove(int dx, int dy)
         {
-            Move(dx, dy);
+            Move(dx, dy, 10);
             VisualPose = FlickPose(CreaturePose.Walk, CreaturePose.Stand, 60);
             yield return new WaitFrames(this, 10);
         }
 
         public IEnumerable<Wait> RoutineAttack(int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
         {
+            yield return PopupManager.Wait;
             var frontier = Mask.GetFrontier(dx, dy);
             List<Wait> waitForDamage = new List<Wait>();
             foreach(var tile in frontier.Select(o => Tile.GetNeighbor(o.X,o.Y)))
@@ -469,7 +536,7 @@ namespace RoguelikeEngine
                 VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
                 VisualPose = Static(CreaturePose.Stand);
                 yield return new WaitFrames(this, 10);
-                yield return ShowPopups();
+                yield return CurrentPopups;
             }
         }
 
@@ -478,10 +545,10 @@ namespace RoguelikeEngine
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             VisualPosition = Slide(pos, pos + new Vector2(dx * 8, dy * 8), LerpHelper.Linear, 20);
             VisualPose = Static(CreaturePose.Stand);
-            VisualColor = Flash(Color.White, Color.Transparent, 100000);
-            yield return ShowPopups();
+            VisualColor = Flash(() => ColorMatrix.Identity, () => ColorMatrix.Tint(Color.Transparent), 2, 2);
+            yield return CurrentPopups;
             yield return new WaitFrames(this, 50);
-            VisualColor = Static(Color.Transparent);
+            VisualColor = () => ColorMatrix.Tint(Color.Transparent);
             if (Dead && this != World.Player)
                 this.Destroy();
         }
@@ -493,7 +560,7 @@ namespace RoguelikeEngine
             while (messages.Any())
             {
                 var message = messages.First();
-                new DamagePopup(World, VisualPosition() + new Vector2(8, 8), message.Text, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 60);
+                new DamagePopup(World, VisualTarget, message.Text, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true), 60);
                 message.Remove();
                 messages = GetEffects<EffectMessage>();
                 yield return new WaitFrames(this, 30);
@@ -611,7 +678,7 @@ namespace RoguelikeEngine
             yield return DrawPass.Creature;
         }
 
-        public void Draw(SceneGame scene, DrawPass pass)
+        public virtual void Draw(SceneGame scene, DrawPass pass)
         {
             Render.Draw(scene, this);
         }

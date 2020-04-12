@@ -15,7 +15,7 @@ namespace RoguelikeEngine
         void Destroy();
     }
 
-    abstract class Tile : IEffectHolder
+    abstract class Tile : IEffectHolder, IHasPosition
     {
         protected MapTile Parent;
         public ReusableID ObjectID
@@ -23,11 +23,16 @@ namespace RoguelikeEngine
             get;
             set;
         }
+        public SceneGame World => Parent.World;
         public Map Map => Parent.Map;
         public int X => Parent.X;
         public int Y => Parent.Y;
+        public Vector2 VisualPosition => new Vector2(X*16,Y*16);
+        public Vector2 VisualTarget => VisualPosition + new Vector2(8, 8);
         public Tile Under => Parent.UnderTile;
         public bool Orphaned => false;
+
+        public Func<Color> VisualUnderColor = () => Color.TransparentBlack;
 
         public string Name;
 
@@ -97,6 +102,14 @@ namespace RoguelikeEngine
             Parent.RestoreUnder();
         }
 
+        public void MakeFloor()
+        {
+            if (Parent.UnderTile != null && !Parent.UnderTile.Solid)
+                Scrape();
+            else
+                Replace(new FloorCave());
+        }
+
         public void SetParent(MapTile parent)
         {
             Parent = parent;
@@ -122,6 +135,11 @@ namespace RoguelikeEngine
             return Map.GetNearby(X, Y, radius);
         }
 
+        public IEnumerable<Tile> GetNearby(Rectangle rectangle, int radius)
+        {
+            return Map.GetNearby(rectangle, radius);
+        }
+
         public void AddPrimary(IEffectHolder holder)
         {
             Effect.Apply(new Effects.OnTile.Primary(Parent, holder));
@@ -130,6 +148,13 @@ namespace RoguelikeEngine
         public void Add(IEffectHolder holder)
         {
             Effect.Apply(new Effects.OnTile(Parent, holder));
+        }
+
+        protected Color GetUnderColor(SceneGame scene)
+        {
+            Color glow = Group.GlowColor(scene.Frame);
+            Color underColor = VisualUnderColor();
+            return new Color(glow.R + underColor.R, glow.G + underColor.G, glow.B + underColor.B, glow.A + underColor.A);
         }
 
         public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
@@ -202,9 +227,29 @@ namespace RoguelikeEngine
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
 
             var color = Group.CaveColor.ToFloor();
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+        }
+    }
+
+    class FloorTiles : Tile
+    {
+        public FloorTiles() : base("Tiled Floor")
+        {
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
+            var cave0 = SpriteLoader.Instance.AddSprite("content/dancefloor_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/dancefloor_layer");
+
+            var color = Group.CaveColor.ToFloor();
             Color glow = Group.GlowColor(scene.Frame);
 
-            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
@@ -226,7 +271,7 @@ namespace RoguelikeEngine
             var color = Group.CaveColor;
             Color glow = Group.GlowColor(scene.Frame);
 
-            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
@@ -434,7 +479,8 @@ namespace RoguelikeEngine
             var cave1 = SpriteLoader.Instance.AddSprite("content/brick_layer");
 
             var color = Group.BrickColor;
-            
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), VisualUnderColor());
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
@@ -502,8 +548,6 @@ namespace RoguelikeEngine
 
     class Smelter : Tile, ITurnTaker
     {
-        SceneGame World;
-
         public double TurnSpeed => 1.0f;
         public double TurnBuildup { get; set; }
         public bool TurnReady => TurnBuildup >= 1;
@@ -522,8 +566,7 @@ namespace RoguelikeEngine
         {
             Solid = true;
 
-            World = world;
-            World.ActionQueue.Add(this);
+            world.ActionQueue.Add(this);
             OreContainer = new Container();
             FuelContainer = new Container();
         }

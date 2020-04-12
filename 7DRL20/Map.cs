@@ -9,12 +9,14 @@ namespace RoguelikeEngine
 {
     class Map
     {
+        public SceneGame World;
         public int Width;
         public int Height;
         MapTile[,] Tiles;
 
-        public Map(int width, int height)
+        public Map(SceneGame world, int width, int height)
         {
+            World = world;
             Width = width;
             Height = height;
             Tiles = new MapTile[width, height];
@@ -52,6 +54,16 @@ namespace RoguelikeEngine
             }
         }
 
+        public IEnumerable<Tile> GetNearby(Rectangle rectangle, int radius)
+        {
+            for (int dx = MathHelper.Clamp(rectangle.Left - radius, 0, Width - 1); dx <= MathHelper.Clamp(rectangle.Right + radius, 0, Width - 1); dx++)
+            {
+                for (int dy = MathHelper.Clamp(rectangle.Top - radius, 0, Height - 1); dy <= MathHelper.Clamp(rectangle.Bottom + radius, 0, Height - 1); dy++)
+                {
+                    yield return GetTile(dx, dy);
+                }
+            }
+        }
 
         public bool InMap(int x, int y)
         {

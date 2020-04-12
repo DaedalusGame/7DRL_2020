@@ -205,7 +205,7 @@ namespace RoguelikeEngine
         public SceneGame(Game game) : base(game)
         {
             Menu = new PlayerUI(this);
-            Map = new Map(250, 250);
+            Map = new Map(this, 250, 250);
             
             MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Random.Next());
             generator.Generate();
@@ -215,16 +215,16 @@ namespace RoguelikeEngine
             var smelterPos = generator.StartRoom;
             Tile startTile = Map.GetTile(smelterPos.X, smelterPos.Y);
             Player = new Hero(this);
-            Player.MoveTo(startTile);
+            Player.MoveTo(startTile,0);
             ActionQueue.Add(Player);
-            /*var testEnemy = new BlueDragon(this);
-            testEnemy.MoveTo(startTile.GetNeighbor(-2, 0));
+            Enemy testEnemy = new EnderErebizo(this);
+            testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
             testEnemy.MakeAggressive(Player);
             ActionQueue.Add(testEnemy);
-            testEnemy = new BlueDragon(this);
-            testEnemy.MoveTo(startTile.GetNeighbor(2,0));
+            testEnemy = new EnderErebizo(this);
+            testEnemy.MoveTo(startTile.GetNeighbor(2,0),0);
             testEnemy.MakeAggressive(Player);
-            ActionQueue.Add(testEnemy);*/
+            ActionQueue.Add(testEnemy);
             /*Player.Pickup(new Ingot(this, Material.Dilithium, 8));
             Player.Pickup(new Ingot(this, Material.Tiberium, 8));
             Player.Pickup(new Ingot(this, Material.Basalt, 8));
@@ -354,6 +354,8 @@ namespace RoguelikeEngine
             if(Player.Dead)
                 Menu.HandleInput(this);
 
+            PopupManager.Update(this);
+
             while (Wait.Done && !Player.Dead)
             {
                 ActionQueue.Step();
@@ -455,6 +457,14 @@ namespace RoguelikeEngine
             Projection = Matrix.CreateOrthographicOffCenter(0, Viewport.Width, Viewport.Height, 0, 0, -1);
             WorldTransform = CreateViewMatrix();
 
+            IEnumerable<ScreenShake> screenShakes = VisualEffects.OfType<ScreenShake>();
+            if (screenShakes.Any())
+            {
+                ScreenShake screenShake = screenShakes.WithMax(effect => effect.Offset.LengthSquared());
+                if (screenShake != null)
+                    WorldTransform *= Matrix.CreateTranslation(screenShake.Offset.X, screenShake.Offset.Y, 0);
+            }
+
             var drawPasses = GameObjects.ToMultiLookup(x => x.GetDrawPasses());
 
             PushSpriteBatch(samplerState: SamplerState.PointClamp, blendState: NonPremultiplied, transform: WorldTransform);
@@ -462,14 +472,25 @@ namespace RoguelikeEngine
 
             drawPasses.DrawPass(this, DrawPass.Tile);
             drawPasses.DrawPass(this, DrawPass.Item);
+            drawPasses.DrawPass(this, DrawPass.EffectLow);
             drawPasses.DrawPass(this, DrawPass.Creature);
             drawPasses.DrawPass(this, DrawPass.Effect);
+            PushSpriteBatch(blendState: BlendState.Additive);
+            drawPasses.DrawPass(this, DrawPass.EffectAdditive);
+            PopSpriteBatch();
             PopSpriteBatch();
 
             GraphicsDevice.SetRenderTarget(null);
 
             //Render to screen
             ColorMatrix color = ColorMatrix.Identity;
+
+            IEnumerable<ScreenFlash> screenFlashes = VisualEffects.OfType<ScreenFlash>();
+            foreach (ScreenFlash screenFlash in screenFlashes)
+            {
+                color *= screenFlash.Color;
+            }
+
             SetupColorMatrix(color, Matrix.Identity);
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, effect: Shader);
             SpriteBatch.Draw(CameraTargetA, CameraTargetA.Bounds, Color.White);

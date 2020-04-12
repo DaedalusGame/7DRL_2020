@@ -9,7 +9,11 @@ namespace RoguelikeEngine.Effects
     class EffectMessage : Effect
     {
         public IEffectHolder Holder;
-        public string Text;
+        public string Text
+        {
+            get;
+            set;
+        }
 
         public EffectMessage(IEffectHolder holder, string text)
         {

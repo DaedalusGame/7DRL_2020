@@ -41,7 +41,7 @@ namespace RoguelikeEngine
                 else if(damage.Value < 0)
                     Defender.Heal(-damage.Value);
                 else
-                    Effect.Apply(new EffectMessage(Defender, $"Immune {damage.Key}"));
+                    PopupManager.Add(new EffectMessage(Defender, $"Immune{Game.FormatElement(damage.Key)}"));
             }
             foreach (var statusEffect in StatusEffects)
                 Defender.AddStatusEffect(statusEffect);

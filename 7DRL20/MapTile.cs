@@ -15,6 +15,7 @@ namespace RoguelikeEngine
             set;
         }
 
+        public SceneGame World => Map.World;
         public Map Map;
         public int X, Y;
 

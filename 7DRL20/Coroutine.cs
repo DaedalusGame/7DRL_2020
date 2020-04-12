@@ -90,6 +90,23 @@ namespace RoguelikeEngine
         }
     }
 
+    class WaitEffect : Wait
+    {
+        VisualEffect Effect;
+
+        public override bool Done => Effect.Destroyed;
+
+        public WaitEffect(VisualEffect effect)
+        {
+            Effect = effect;
+        }
+
+        public override void Update()
+        {
+            //NOOP
+        }
+    }
+
     public class Coroutine
     {
         IEnumerator<Wait> Enumerator;

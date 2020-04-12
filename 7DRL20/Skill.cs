@@ -10,6 +10,7 @@ namespace RoguelikeEngine
 {
     abstract class Skill
     {
+        public const int SkillInfoTime = 200;
         public static Random Random = new Random();
 
         public string Name;
@@ -18,6 +19,8 @@ namespace RoguelikeEngine
         Slider Warmup;
         Slider Cooldown;
         Slider Uses;
+
+        public virtual bool WaitUse => true;
 
         public Skill(string name, string description, int warmup, int cooldown, float uses)
         {
@@ -48,7 +51,7 @@ namespace RoguelikeEngine
         protected void ShowSkill(Creature user, int time)
         {
             new CurrentSkill(user.World, this, time);
-            user.VisualColor = user.Flash(Color.Black, Color.White, 30);
+            user.VisualColor = user.Flick(user.Flash(user.Static(Color.Black), user.Static(ColorMatrix.Greyscale() * ColorMatrix.Scale(2)), 2, 2), user.Static(Color.White), 30);
         }
 
         protected bool InMeleeRange(Creature user)
@@ -69,8 +72,11 @@ namespace RoguelikeEngine
 
         protected bool InLineOfSight(Creature user, Creature target, Facing facing, int distance)
         {
-            int dx = target.X - user.X;
-            int dy = target.Y - user.Y;
+            Rectangle userRect = user.Mask.GetRectangle(user.X, user.Y);
+            Rectangle targetRect = target.Mask.GetRectangle(target.X, target.Y);
+
+            int dx = Util.GetDeltaX(userRect, targetRect);
+            int dy = Util.GetDeltaY(userRect, targetRect);
 
             if (!InRange(user, target, distance))
                 return false;
@@ -95,10 +101,21 @@ namespace RoguelikeEngine
         
         protected bool InRange(Creature user, Creature target, int distance)
         {
-            int dx = target.X - user.X;
-            int dy = target.Y - user.Y;
+            Rectangle userRect = user.Mask.GetRectangle(user.X, user.Y);
+            Rectangle targetRect = target.Mask.GetRectangle(target.X, target.Y);
+
+            int dx = Util.GetDeltaX(userRect, targetRect);
+            int dy = Util.GetDeltaY(userRect, targetRect);
 
             return Math.Abs(dx) <= distance && Math.Abs(dy) <= distance;
+        }
+
+        protected int GetSquareDistance(Tile a, Tile b)
+        {
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+
+            return dx * dx + dy * dy;
         }
 
         public abstract IEnumerable<Wait> RoutineUse(Creature user);

@@ -38,28 +38,33 @@ namespace RoguelikeEngine.Enemies
             return null;
         }
 
-        private void FaceTowards(int dx, int dy)
+        private void FaceTowards(Rectangle target)
         {
-            if(Math.Abs(dx) > Math.Abs(dy))
-            {
-                Facing = dx > 0 ? Facing.East : Facing.West;
-            }
-            else if(Math.Abs(dy) > Math.Abs(dx))
-            {
-                Facing = dy > 0 ? Facing.South : Facing.North;
-            }
+            Rectangle source = Mask.GetRectangle(X,Y);
+
+            int dx = Util.GetDeltaX(source, target);
+            int dy = Util.GetDeltaY(source, target);
+
+            Facing? newFacing = Util.GetFacing(dx, dy);
+            if (newFacing != null)
+                Facing = newFacing.Value;
+        }
+
+        private void FaceTowards(Creature target)
+        {
+            FaceTowards(target.Mask.GetRectangle(target.X,target.Y));
         }
 
         public override Wait TakeTurn(ActionQueue queue)
         {
             this.ResetTurn();
             Wait wait = Wait.NoWait;
-            FaceTowards(AggroTarget.X - X, AggroTarget.Y - Y);
+            FaceTowards(AggroTarget);
             Skill usableSkill = GetUsableSkill();
             if(usableSkill != null)
             {
                 CurrentAction = Scheduler.Instance.RunAndWait(usableSkill.RoutineUse(this));
-                wait = CurrentAction;
+                wait = usableSkill.WaitUse ? CurrentAction : Wait.NoWait;
             }
             else
             {
@@ -121,9 +126,9 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
             {
-                scene.SetupColorMatrix(Color * ColorMatrix.Tint(creature.VisualColor()), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
             });
-            scene.DrawSprite(Sprite, facingOffset + frameOffset, creature.VisualPosition(), mirror, creature.VisualColor(), 0);
+            scene.DrawSprite(Sprite, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
         }
     }
@@ -163,7 +168,7 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
             {
-                scene.SetupColorMatrix(Color * ColorMatrix.Tint(creature.VisualColor()), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
             });
             scene.DrawSprite(fish, facingOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
@@ -204,7 +209,7 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
             {
-                scene.SetupColorMatrix(Color * ColorMatrix.Tint(creature.VisualColor()), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
             });
             scene.DrawSprite(fish, facingOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
@@ -238,13 +243,162 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
             {
-                scene.SetupColorMatrix(Color * ColorMatrix.Tint(creature.VisualColor()), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
             });
             scene.DrawSprite(Sprite, frameOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
         }
     }
 
+    class BigCreatureRender : CreatureRender
+    {
+        public SpriteReference Sprite;
+        public ColorMatrix Color = ColorMatrix.Identity;
+
+        public override void Draw(SceneGame scene, Creature creature)
+        {
+            var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
+            int facingOffset = 0;
+            switch (creature.VisualFacing())
+            {
+                case (Facing.North):
+                    facingOffset = 2;
+                    break;
+                case (Facing.East):
+                    facingOffset = 1;
+                    mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally;
+                    break;
+                case (Facing.South):
+                    facingOffset = 0;
+                    break;
+                case (Facing.West):
+                    facingOffset = 1;
+                    break;
+            }
+
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
+            });
+            scene.DrawSprite(Sprite, facingOffset, creature.VisualPosition(), mirror, 0);
+            scene.PopSpriteBatch();
+        }
+    }
+
+    class Gashwal : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16,16);
+
+        public Gashwal(SceneGame world) : base(world)
+        {
+            Name = "Gashwal";
+            Description = "Let's dance";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/gashwal"),
+                Color = ColorMatrix.TwoColor(new Color(69, 56, 37), new Color(223, 213, 198)),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 50));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+
+            Skills.Add(new SkillDrainTouch());
+            Skills.Add(new SkillLightning());
+            //Skills.Add(new SkillDrainTouch());
+            //Skills.Add(new SkillAttack());
+        }
+    }
+
+    class Erebizo : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public Erebizo(SceneGame world) : base(world)
+        {
+            Name = "Erebizo";
+            Description = "Insatiable";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/erebizo"),
+                Color = ColorMatrix.Identity,
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 50));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+
+            Skills.Add(new SkillDrainTouch());
+            Skills.Add(new SkillLightning());
+            //Skills.Add(new SkillDrainTouch());
+            //Skills.Add(new SkillAttack());
+        }
+    }
+
+    class EnderErebizo : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public EnderErebizo(SceneGame world) : base(world)
+        {
+            Name = "Ender Erebizo";
+            Description = "The end has come";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/ender_erebizo"),
+                Color = ColorMatrix.Identity,
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 50));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+
+            Skills.Add(new SkillEnderRam());
+            Skills.Add(new SkillEnderClaw());
+            Skills.Add(new SkillEnderPowerUp());
+            Skills.Add(new SkillEnderFlare());
+            Skills.Add(new SkillEnderQuake());
+            Skills.Add(new SkillSideJump(3,5));
+            //Skills.Add(new SkillDrainTouch());
+            //Skills.Add(new SkillAttack());
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            SpriteReference cinder = SpriteLoader.Instance.AddSprite("content/cinder_ender");
+
+            BigCreatureRender render = (BigCreatureRender)Render;
+            bool powered = this.HasStatusEffect(statusEffect => statusEffect is PoweredUp);
+            if (powered)
+            {
+                render.Sprite = SpriteLoader.Instance.AddSprite("content/ender_erebizo_powered");
+                for (int i = 0; i < 1; i++)
+                {
+                    Vector2 emitPos = new Vector2(X * 16, Y * 16) + Mask.GetRandomPixel(Random);
+                    Vector2 centerPos = VisualTarget;
+                    Vector2 velocity = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * (Random.NextFloat() + 0.5f);
+                    velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f);
+                    new Cinder(World, cinder, emitPos, velocity, Random.Next(90) + 20);
+                }
+            }
+            else
+                render.Sprite = SpriteLoader.Instance.AddSprite("content/ender_erebizo");
+        }
+    }
 
     class Ctholoid : Enemy
     {

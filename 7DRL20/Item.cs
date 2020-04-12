@@ -540,4 +540,54 @@ namespace RoguelikeEngine
             scene.PopSpriteBatch();
         }
     }
+
+    class ToolPlate : ToolCore
+    {
+        public const int CORE = 0;
+        public const int COMPOSITE = 1;
+        public const int TRIM = 2;
+
+        public static PartType Core = new PartType("Core", "content/plate_");
+        public static PartType Composite = new PartType("Composite", "content/plate_");
+        public static PartType Trim = new PartType("Trim", "content/plate_");
+
+        public static PartType[] Parts = new[] { Core, Composite, Trim };
+
+        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Body, EquipSlot.Offhand, EquipSlot.Mainhand };
+
+        public ToolPlate(SceneGame world) : base(world, "Plate", string.Empty, Parts)
+        {
+
+        }
+
+        public static ToolPlate Create(SceneGame world, Material core, Material composite, Material trim)
+        {
+            ToolPlate tool = new ToolPlate(world);
+            tool.SetMaterial(CORE, core);
+            tool.SetMaterial(COMPOSITE, composite);
+            tool.SetMaterial(TRIM, trim);
+            return tool;
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            Material coreMaterial = GetMaterial(CORE);
+            Material compositeMaterial = GetMaterial(COMPOSITE);
+            Material trimMaterial = GetMaterial(TRIM);
+
+            var core = GetPartSprite(CORE, coreMaterial);
+            var composite = GetPartSprite(COMPOSITE, compositeMaterial);
+            var trim = GetPartSprite(TRIM, trimMaterial);
+
+            PushMaterialBatch(scene, coreMaterial);
+            scene.DrawSprite(core, 0, position - core.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, compositeMaterial);
+            scene.DrawSprite(composite, 0, position - composite.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, trimMaterial);
+            scene.DrawSprite(trim, 0, position - trim.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+    }
 }

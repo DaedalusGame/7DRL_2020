@@ -208,5 +208,15 @@ namespace RoguelikeEngine
         {
             return new Color(Vector4.Transform(color.ToVector4(),Matrix)+Add);
         }
+
+        internal static ColorMatrix Ender()
+        {
+            var color = ColorMatrix.Greyscale();
+            color *= ColorMatrix.Translate(new Color(50, 50, 50));
+            color *= ColorMatrix.TwoColorLight(new Color(103, 21, 138), new Color(196, 223, 251));
+            color = ColorMatrix.Lerp(color, ColorMatrix.Identity, 0.33f);
+            //color *= ColorMatrix.Scale(2);
+            return color;
+        }
     }
 }

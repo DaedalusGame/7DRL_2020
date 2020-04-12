@@ -545,6 +545,10 @@ namespace RoguelikeEngine
             {
                 OpenBlueprintMenu("Adze", ToolAdze.Parts, (materials) => ToolAdze.Create(Scene, materials[0], materials[1], materials[2]));
             }));
+            BlueprintMenu.Add(new ActAction("Plate", () =>
+            {
+                OpenBlueprintMenu("Plate", ToolPlate.Parts, (materials) => ToolPlate.Create(Scene, materials[0], materials[1], materials[2]));
+            }));
             BlueprintMenu.AddDefault(new ActAction("Cancel", () =>
             {
                 BlueprintMenu.Close();

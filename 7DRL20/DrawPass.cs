@@ -9,9 +9,11 @@ namespace RoguelikeEngine
     enum DrawPass
     {
         Tile,
+        EffectLow,
         Item,
         Creature,
         Effect,
+        EffectAdditive,
         UIWorld,
         UI,
     }

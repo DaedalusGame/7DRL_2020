@@ -12,6 +12,7 @@ namespace RoguelikeEngine
     {
         public static GeneratorTile Empty = new GeneratorTile(' ') { Print = (generator, tile, group) => tile.Replace(new WallCave()) };
         public static GeneratorTile Floor = new GeneratorTile('.') { Print = (generator, tile, group) => tile.Replace(new FloorCave()) };
+        public static GeneratorTile FloorBrick = new GeneratorTile('.') { Print = (generator, tile, group) => tile.Replace(new FloorTiles()) };
         public static GeneratorTile Wall = new GeneratorTile('X') { Print = (generator, tile, group) => tile.Replace(new WallCave()) };
         public static GeneratorTile WallBrick = new GeneratorTile('#') { Print = (generator, tile, group) => tile.Replace(new WallBrick()) };
         public static GeneratorTile OreDilithium = new GeneratorTile('G') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Dilithium)) };
@@ -115,7 +116,7 @@ namespace RoguelikeEngine
                     GeneratorCell center = cell.GetNeighbor(offX, offY);
                     center.Tile = GeneratorTile.Floor;
                     center.Group = this;
-                    generator.SpreadCastle(center, 3 + generator.Random.Next(4));
+                    generator.SpreadCastle(center, 3 + generator.Random.Next(4), GeneratorTile.Floor);
                 }
             }
         }
@@ -130,12 +131,31 @@ namespace RoguelikeEngine
 
             public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
             {
-                generator.SpreadCastle(cell, 1);
+                generator.SpreadCastle(cell, 1, GeneratorTile.Floor);
             }
 
             public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
             {
-                generator.SpreadCastle(cell, generator.Random.Next(3,7));
+                generator.SpreadCastle(cell, generator.Random.Next(3,7), GeneratorTile.Floor);
+            }
+        }
+
+        public class Tower : GeneratorGroup
+        {
+            public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
+            {
+                var dijkstraMap = Util.Dijkstra(a, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, generator.GetWeightStraight, generator.GetAllNeighbors);
+                return dijkstraMap.FindPath(b);
+            }
+
+            public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
+            {
+                generator.SpreadCastle(cell, 1, GeneratorTile.Floor);
+            }
+
+            public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
+            {
+                generator.SpreadCastle(cell, generator.Random.Next(3, 7), GeneratorTile.FloorBrick);
             }
         }
 
@@ -452,7 +472,7 @@ namespace RoguelikeEngine
         private IEnumerable<Enemy> SpawnEnemySet(SceneGame world, Tile tile, IList<Func<SceneGame, Enemy>> spawns)
         {
             var enemy = spawns.Pick(Random)(world);
-            enemy.MoveTo(tile);
+            enemy.MoveTo(tile,0);
             return new[] { enemy };
         }
 
@@ -470,7 +490,7 @@ namespace RoguelikeEngine
                 CaveColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160)),
                 BrickColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160))
             };
-            Groups.Add(new GeneratorGroup.Cave() //Fire Cave
+            /*Groups.Add(new GeneratorGroup.Cave() //Fire Cave
             {
                 CaveColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
                 Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton })
@@ -495,14 +515,14 @@ namespace RoguelikeEngine
             {
                 CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
                 Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnBlastCannon, SpawnBlastCannon, SpawnBlastCannon, SpawnAcidBlob, SpawnAcidBlob, SpawnSkeleton })
-            });
+            });*/
             Groups.Add(new GeneratorGroup.Castle() //Dungeon
             {
                 CaveColor = new TileColor(new Color(128, 128, 128), new Color(160, 160, 160)),
                 BrickColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
                 Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton, SpawnSkeleton, SpawnSkeleton, SpawnVorrax, SpawnVorrax, SpawnDeathKnight })
             });
-            Groups.Add(new GeneratorGroup.Castle() //Ivory Tower
+            Groups.Add(new GeneratorGroup.Tower() //Ivory Tower
             {
                 CaveColor = new TileColor(new Color(108, 106, 79), new Color(188, 173, 139)),
                 BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
@@ -655,11 +675,11 @@ namespace RoguelikeEngine
             return point.X >= 0 && point.Y >= 0 && point.X <= Width - 1 && point.Y <= Height - 1;
         }
 
-        public void SpreadCastle(GeneratorCell cell, int n)
+        public void SpreadCastle(GeneratorCell cell, int n, GeneratorTile floor)
         {
             if (n < 0)
                 return;
-            cell.AddSpread(GetAllNeighbors, x => SpreadCastleInternal(x, n, cell.Group));
+            cell.AddSpread(GetAllNeighbors, x => SpreadCastleInternal(x, n, cell.Group, floor));
             /*if (cell.Tile == GeneratorTile.Empty)
             {
                 if (cell.HasCollapse)
@@ -675,7 +695,7 @@ namespace RoguelikeEngine
             }*/
         }
 
-        private void SpreadCastleInternal(GeneratorCell cell, int n, GeneratorGroup group)
+        private void SpreadCastleInternal(GeneratorCell cell, int n, GeneratorGroup group, GeneratorTile floor)
         {
             if (cell.Tile != GeneratorTile.Empty)
                 return;
@@ -687,10 +707,10 @@ namespace RoguelikeEngine
                 }
                 else if (x.Group == group || x.Group == null)
                 {
-                    x.Tile = GeneratorTile.Floor;
+                    x.Tile = floor;
                     x.Group = group;
                     if(!x.HasSpread)
-                        SpreadCastle(x, n - 1);
+                        SpreadCastle(x, n - 1, floor);
                 }
             });
             

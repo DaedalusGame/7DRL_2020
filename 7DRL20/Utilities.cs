@@ -390,6 +390,19 @@ namespace RoguelikeEngine
             }
         }
 
+        public static Vector2 ClampLength(this Vector2 vector, float minLength, float maxLength)
+        {
+            float length = vector.Length();
+            Vector2 normalized = vector / length;
+            length = MathHelper.Clamp(length, minLength, maxLength);
+            return normalized * length;
+        }
+
+        public static float NextFloat(this Random random)
+        {
+            return (float)random.NextDouble();
+        }
+
         public static Vector2 Mirror(this Vector2 vector, SpriteEffects mirror)
         {
             if (mirror.HasFlag(SpriteEffects.FlipHorizontally))
@@ -415,6 +428,99 @@ namespace RoguelikeEngine
                 default:
                     return Point.Zero;
             }
+        }
+
+        public static Facing TurnLeft(this Facing facing)
+        {
+            switch (facing)
+            {
+                case (Facing.North):
+                    return Facing.West;
+                case (Facing.East):
+                    return Facing.North;
+                case (Facing.South):
+                    return Facing.East;
+                case (Facing.West):
+                    return Facing.South;
+                default:
+                    throw new Exception();
+            }
+        }
+
+        public static Facing TurnRight(this Facing facing)
+        {
+            return facing.TurnLeft().Mirror();
+        }
+
+        public static Facing Mirror(this Facing facing)
+        {
+            switch (facing)
+            {
+                case (Facing.North):
+                    return Facing.South;
+                case (Facing.East):
+                    return Facing.West;
+                case (Facing.South):
+                    return Facing.North;
+                case (Facing.West):
+                    return Facing.East;
+                default:
+                    throw new Exception();
+            }
+        }
+
+        public static float GetAngleDistance(float a0, float a1)
+        {
+            var max = Math.PI * 2;
+            var da = (a1 - a0) % max;
+            return (float)(2 * da % max - da);
+        }
+
+        public static float AngleLerp(float a0, float a1, float t)
+        {
+            return a0 + GetAngleDistance(a0, a1) * t;
+        }
+
+        public static Vector2 AngleToVector(float angle)
+        {
+            return new Vector2((float)Math.Sin(angle), (float)-Math.Cos(angle));
+        }
+
+        public static float VectorToAngle(Vector2 vector)
+        {
+            return (float)Math.Atan2(vector.X, -vector.Y);
+        }
+
+        public static int GetSectionDelta(int aMin, int aMax, int bMin, int bMax)
+        {
+            if (aMax < bMin)
+                return Math.Abs(aMax - bMin);
+            if (bMax < aMin)
+                return -Math.Abs(bMax - aMin);
+            return 0;
+        }
+
+        public static int GetDeltaX(Rectangle a, Rectangle b)
+        {
+            return GetSectionDelta(a.Left, a.Right-1, b.Left, b.Right-1);
+        }
+
+        public static int GetDeltaY(Rectangle a, Rectangle b)
+        {
+            return GetSectionDelta(a.Top, a.Bottom-1, b.Top, b.Bottom-1);
+        }
+
+        public static Facing? GetFacing(int dx, int dy)
+        {
+            if (Math.Abs(dx) > Math.Abs(dy))
+            {
+                return dx > 0 ? Facing.East : Facing.West;
+            }
+            else if (Math.Abs(dy) > Math.Abs(dx))
+            {
+                return dy > 0 ? Facing.South : Facing.North;
+            }
+            return null;
         }
     }
 }

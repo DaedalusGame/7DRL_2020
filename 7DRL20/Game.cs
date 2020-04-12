@@ -121,6 +121,7 @@ namespace RoguelikeEngine
             FontUtil.CharInfo[FORMAT_SUBSCRIPT] = new CharInfo(0, 0, true);
             FontUtil.CharInfo[FORMAT_SUPERSCRIPT] = new CharInfo(0, 0, true);
             FontUtil.CharInfo[FORMAT_BLANK] = new CharInfo(0, 0, true);
+            FontUtil.CharInfo[FORMAT_ICON] = new CharInfo(0, 16, true);
             for (char i = FORMAT_DYNAMIC_BEGIN; i < FORMAT_DYNAMIC_END; i++)
                 FontUtil.CharInfo[i] = new CharInfo(0, 0, true);
         }
@@ -196,9 +197,10 @@ namespace RoguelikeEngine
         public const char FORMAT_SUBSCRIPT = (char)(FORMAT_CODES_BEGIN + 3);
         public const char FORMAT_SUPERSCRIPT = (char)(FORMAT_CODES_BEGIN + 4);
         public const char FORMAT_ICON = (char)(FORMAT_CODES_BEGIN + 5);
-        public const char FORMAT_COLOR = (char)(FORMAT_CODES_BEGIN + 6);
-        public const char FORMAT_BORDER = (char)(FORMAT_CODES_BEGIN + 7);
-        public const char FORMAT_BLANK = (char)(FORMAT_CODES_BEGIN + 8);
+        public const char FORMAT_ELEMENT_ICON = (char)(FORMAT_CODES_BEGIN + 6);
+        public const char FORMAT_COLOR = (char)(FORMAT_CODES_BEGIN + 7);
+        public const char FORMAT_BORDER = (char)(FORMAT_CODES_BEGIN + 8);
+        public const char FORMAT_BLANK = (char)(FORMAT_CODES_BEGIN + 9);
         public const char FORMAT_DYNAMIC_BEGIN = (char)(FORMAT_CODES_BEGIN + 1024);
         public const char FORMAT_DYNAMIC_END = (char)(FORMAT_DYNAMIC_BEGIN + 512);
 
@@ -244,6 +246,14 @@ namespace RoguelikeEngine
             builder.Append(FORMAT_ICON);
             for(int i = 0; i < bufferObjectID.Length; i += sizeof(char))
                 builder.Append(BitConverter.ToChar(bufferObjectID, i));
+            return builder.ToString();
+        }
+
+        public static string FormatElement(Element element)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_ELEMENT_ICON);
+            builder.Append((char)element.ID);
             return builder.ToString();
         }
 
@@ -307,12 +317,12 @@ namespace RoguelikeEngine
                 if (totalindex > parameters.DialogIndex)
                     break;
                 char chrTrue = chr;
+                FormatCode formatCode = FontUtil.GetFormatCode(chr);
                 FormatCodeIcon icon = null;
 
-                if (FontUtil.DynamicFormat.ContainsKey(chr))
+                if (formatCode != null)
                 {
-                    FormatCode code = FontUtil.DynamicFormat[chr];
-                    if(code is FormatCodeColor codeColor)
+                    if(formatCode is FormatCodeColor codeColor)
                     {
                         if (codeColor.Color != null)
                             parameters.Color = codeColor.Color;
@@ -320,7 +330,7 @@ namespace RoguelikeEngine
                             parameters.Border = codeColor.Border;
                         chrTrue = FORMAT_BLANK;
                     }
-                    if(code is FormatCodeIcon codeIcon)
+                    if(formatCode is FormatCodeIcon codeIcon)
                     {
                         icon = codeIcon;
                         chrTrue = FORMAT_ICON;
@@ -382,11 +392,7 @@ namespace RoguelikeEngine
 
                 if (icon != null)
                 {
-                    var holder = EffectManager.GetHolder(icon.ObjectID);
-                    if(holder is Item item)
-                    {
-                        item.DrawIcon(item.World, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset) + new Vector2(8,8));
-                    }
+                    icon.Draw(Scene, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset));
                 }
 
                 pos += width;
