@@ -102,7 +102,11 @@ namespace RoguelikeEngine
 
     class ScreenFlashLocal : ScreenFlash
     {
-        Vector2 Position;
+        public virtual Vector2 Position
+        {
+            get;
+            set;
+        }
         Func<ColorMatrix> ColorFunction;
 
         float FullRadius;
@@ -147,6 +151,37 @@ namespace RoguelikeEngine
                 return (float)LerpHelper.CubicIn(1, 0, (length - FullRadius) / FalloffRadius) * timeFalloff;
             else
                 return 0.0f;
+        }
+    }
+
+    class ScreenFlashPowerUp : ScreenFlashLocal
+    {
+        Creature Creature;
+
+        public override Vector2 Position
+        {
+            get
+            {
+                return Creature.VisualTarget;
+            }
+            set
+            {
+                //NOOP
+            }
+        }
+
+        public ScreenFlashPowerUp(Creature creature, Func<ColorMatrix> colorFunction, float fullRadius, float falloffRadius, int time, int falloffTime) : base(creature.World, colorFunction, Vector2.Zero, fullRadius, falloffRadius, time, falloffTime)
+        {
+            Creature = creature;
+        }
+
+        public override void Update()
+        {
+            if(Creature.HasStatusEffect(statusEffect => statusEffect is PoweredUp))
+            {
+                Frame.Time = 0;
+            }
+            base.Update();
         }
     }
 

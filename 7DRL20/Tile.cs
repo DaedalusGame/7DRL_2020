@@ -57,7 +57,6 @@ namespace RoguelikeEngine
         public IEnumerable<Item> Items => Contents.OfType<Item>();
 
         List<Effect> TileEffects = new List<Effect>();
-
         
         public Tile(string name)
         {

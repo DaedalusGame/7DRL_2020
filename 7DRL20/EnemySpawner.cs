@@ -20,6 +20,7 @@ namespace RoguelikeEngine
         SceneGame World;
         Slider Encounter;
         List<Enemy> Enemies = new List<Enemy>();
+        List<Enemy> Bosses = new List<Enemy>();
 
         public EnemySpawner(SceneGame world, int time)
         {

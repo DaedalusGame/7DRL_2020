@@ -220,7 +220,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderRam : SkillRamBase
     {
-        public SkillEnderRam() : base("Attack", "Ender Ram", 1, 1, float.PositiveInfinity)
+        public SkillEnderRam() : base("Attack", "Ender Ram", 1, 5, float.PositiveInfinity)
         {
             MaxTotalHits = 6;
             MaxWallHits = 4;
@@ -576,7 +576,7 @@ namespace RoguelikeEngine.Skills
                 yield return user.WaitSome(50);
                 SpriteReference cinder = SpriteLoader.Instance.AddSprite("content/cinder_ender");
                 new FlarePower(user.World, cinder, user, 50);
-                new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 30, 100, 50, 50);
+                new ScreenFlashPowerUp(user, () => ColorMatrix.Ender(), 30, 100, 50, 50);
                 user.AddStatusEffect(new PoweredUp());
                 yield return user.WaitSome(20);
             }
