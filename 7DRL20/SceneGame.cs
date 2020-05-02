@@ -579,8 +579,7 @@ namespace RoguelikeEngine
 
             foreach (Tile tile in EnumerateCloseTiles(map, drawX, drawY, drawRadius))
             {
-                if (tile.IsVisible())
-                    tile.Draw(this);
+                tile.Draw(this);
             }
         }
 

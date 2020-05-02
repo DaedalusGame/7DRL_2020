@@ -44,7 +44,7 @@ namespace RoguelikeEngine
                         Enemies.Add(enemy);
                         enemy.MakeAggressive(World.Player);
                         World.ActionQueue.Add(enemy);
-                        new Smoke(World, new Vector2(spawnTile.X * 16 + 8, spawnTile.Y * 16 + 8), Vector2.Zero, 15);
+                        new Smoke(World, new Vector2(spawnTile.X * 16 + 8, spawnTile.Y * 16 + 8), Vector2.Zero, 0, 15);
                     }
                 }
 

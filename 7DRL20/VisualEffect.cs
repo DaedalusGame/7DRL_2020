@@ -273,12 +273,14 @@ namespace RoguelikeEngine
     {
         public SpriteReference Sprite;
         public Vector2 Velocity;
+        public float Angle;
 
-        public Explosion(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, int time) : base(world, position)
+        public Explosion(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float angle, int time) : base(world, position)
         {
             Sprite = sprite;
             Frame = new Slider(time);
             Velocity = velocity;
+            Angle = angle;
         }
 
         public override void Update()
@@ -296,34 +298,48 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            scene.DrawSprite(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), Position - Sprite.Middle, SpriteEffects.None, 0);
+            scene.DrawSpriteExt(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), Position - Sprite.Middle, Sprite.Middle, Angle, SpriteEffects.None, 0);
         }
     }
 
     class FireExplosion : Explosion
     {
-        public FireExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/explosion"), position, velocity, time)
+        public FireExplosion(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/explosion"), position, velocity, angle, time)
+        {
+        }
+    }
+
+    class FlameBig : Explosion
+    {
+        public FlameBig(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/fire_big"), position, velocity, angle, time)
+        {
+        }
+    }
+
+    class FlameSmall : Explosion
+    {
+        public FlameSmall(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/fire_small"), position, velocity, angle, time)
         {
         }
     }
 
     class Smoke : Explosion
     {
-        public Smoke(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/smoke"), position, velocity, time)
+        public Smoke(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/smoke"), position, velocity, angle, time)
         {
         }
     }
 
     class WaterSplash : Explosion
     {
-        public WaterSplash(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/splash"), position, velocity, time)
+        public WaterSplash(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/splash"), position, velocity, angle, time)
         {
         }
     }
 
     class LightningFlash : Explosion
     {
-        public LightningFlash(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_flash"), position, velocity, time)
+        public LightningFlash(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_flash"), position, velocity, angle, time)
         {
         }
 
@@ -332,22 +348,22 @@ namespace RoguelikeEngine
             base.Update();
             if(Frame.Done)
             {
-                new LightningExplosion(World, Position + new Vector2(4, -8), Velocity, 15);
-                new LightningExplosion(World, Position + new Vector2(-4, 8), Velocity, 15);
+                new LightningExplosion(World, Position + new Vector2(4, -8), Velocity, 0, 15);
+                new LightningExplosion(World, Position + new Vector2(-4, 8), Velocity, 0, 15);
             }
         }
     }
 
     class LightningExplosion : Explosion
     {
-        public LightningExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_explosion"), position, velocity, time)
+        public LightningExplosion(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_explosion"), position, velocity, angle, time)
         {
         }
     }
 
     class EnderExplosion : Explosion
     {
-        public EnderExplosion(SceneGame world, Vector2 position, Vector2 velocity, int time) : base(world, SpriteLoader.Instance.AddSprite("content/ender_explosion"), position, velocity, time)
+        public EnderExplosion(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/ender_explosion"), position, velocity, angle, time)
         {
         }
 
@@ -581,14 +597,55 @@ namespace RoguelikeEngine
         }
     }
 
+    class FireField : VisualEffect
+    {
+        public List<Tile> Tiles = new List<Tile>();
+
+        public FireField(SceneGame world, IEnumerable<Tile> tiles, int time) : base(world)
+        {
+            Tiles.AddRange(tiles);
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+
+            if (Random.NextDouble() < LerpHelper.Linear(0, 0.5, Frame.Slide))
+            {
+                Tile startTile = Tiles.Pick(Random);
+                Vector2 startOffset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                new FlameSmall(World, startTile.VisualTarget + startOffset, Vector2.Zero, 0, 8);
+                float angle = Random.NextFloat() * MathHelper.TwoPi;
+                float distance = Random.NextFloat() * 200;
+                Vector2 offset = Util.AngleToVector(angle) * distance;
+                Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f) * 1 + new Vector2(0f, -1.5f);
+                new Cinder(World, SpriteLoader.Instance.AddSprite("content/cinder"), startTile.VisualTarget + startOffset, velocity, Random.Next(20) + 60);
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
     class LightningField : VisualEffect
     {
         public SpriteReference Sprite;
         public List<Tile> Tiles = new List<Tile>();
 
-        public LightningField(SceneGame world, IEnumerable<Tile> tiles, int time) : base(world)
+        public LightningField(SceneGame world, SpriteReference sprite, IEnumerable<Tile> tiles, int time) : base(world)
         {
             Tiles.AddRange(tiles);
+            Sprite = sprite;
             Frame = new Slider(time);
         }
 
@@ -606,7 +663,7 @@ namespace RoguelikeEngine
                 {
                     Vector2 startOffset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
                     Vector2 endOffset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
-                    new LightningSpark(World, SpriteLoader.Instance.AddSprite("content/lightning_ender"), startTile.VisualTarget + startOffset, endTile.VisualTarget + endOffset, 2);
+                    new LightningSpark(World, Sprite, startTile.VisualTarget + startOffset, endTile.VisualTarget + endOffset, 2);
                 }
             }
         }
@@ -707,7 +764,7 @@ namespace RoguelikeEngine
 
         public override void Impact(Vector2 position)
         {
-            new LightningFlash(World, position, Vector2.Zero, 6);
+            new LightningFlash(World, position, Vector2.Zero, 0, 6);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()

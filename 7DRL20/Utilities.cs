@@ -430,6 +430,11 @@ namespace RoguelikeEngine
             }
         }
 
+        internal static Color AddColor(Color a, Color b)
+        {
+            return new Color(a.R + b.R, a.G + b.G, a.B + b.B, a.A + b.A);
+        }
+
         public static Facing TurnLeft(this Facing facing)
         {
             switch (facing)

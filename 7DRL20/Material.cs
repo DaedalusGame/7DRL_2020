@@ -251,7 +251,7 @@ namespace RoguelikeEngine
                 var attacker = attack.Attacker;
                 if (random.NextDouble() < 0.3 && attack.Defender is Creature defender)
                 {
-                    new FireExplosion(defender.World, new Vector2(defender.X * 16 + 8, defender.Y * 18 + 8), Vector2.Zero, 15);
+                    new FireExplosion(defender.World, new Vector2(defender.X * 16 + 8, defender.Y * 18 + 8), Vector2.Zero, 0, 15);
                     //attacker.TakeDamage(5, Element.Fire);
                     //defender.TakeDamage(5, Element.Fire);
                 }
@@ -260,7 +260,7 @@ namespace RoguelikeEngine
             {
                 if (mine.Success && random.NextDouble() < 0.3 && mine.Mineable is Tile tile)
                 {
-                    new FireExplosion(mine.Miner.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 15);
+                    new FireExplosion(mine.Miner.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 0, 15);
                     //mine.Miner.TakeDamage(5, Element.Fire);
                 }
             }));
@@ -477,7 +477,7 @@ namespace RoguelikeEngine
             {
                 var subject = attack.Defender;
                 if(random.NextDouble() < 0.2 && subject is Creature creature)
-                new Smoke(creature.World, new Vector2(creature.X * 16 + 8, creature.Y * 18 + 8), Vector2.Zero, 15);
+                new Smoke(creature.World, new Vector2(creature.X * 16 + 8, creature.Y * 18 + 8), Vector2.Zero, 0, 15);
             }));
         }
     }

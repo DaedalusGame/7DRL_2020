@@ -308,6 +308,7 @@ namespace RoguelikeEngine
                 return null;
             }
         }
+        public Map Map => Tile.Map;
         public IEnumerable<Tile> Tiles => Mask.Select(point => Tile.GetNeighbor(point.X, point.Y));
 
         public string Name;

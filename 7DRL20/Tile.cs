@@ -17,6 +17,8 @@ namespace RoguelikeEngine
 
     abstract class Tile : IEffectHolder, IHasPosition
     {
+        public static TileColor HiddenColor = new TileColor(Color.Black, Color.Black);
+
         protected MapTile Parent;
         public ReusableID ObjectID
         {
@@ -153,7 +155,10 @@ namespace RoguelikeEngine
         {
             Color glow = Group.GlowColor(scene.Frame);
             Color underColor = VisualUnderColor();
-            return new Color(glow.R + underColor.R, glow.G + underColor.G, glow.B + underColor.B, glow.A + underColor.A);
+            if (IsVisible())
+                return new Color(glow.R + underColor.R, glow.G + underColor.G, glow.B + underColor.B, glow.A + underColor.A);
+            else
+                return underColor;
         }
 
         public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
@@ -227,6 +232,9 @@ namespace RoguelikeEngine
 
             var color = Group.CaveColor.ToFloor();
 
+            if (!IsVisible())
+                color = HiddenColor;
+
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
@@ -247,6 +255,9 @@ namespace RoguelikeEngine
 
             var color = Group.CaveColor.ToFloor();
             Color glow = Group.GlowColor(scene.Frame);
+
+            if (!IsVisible())
+                color = HiddenColor;
 
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
@@ -269,6 +280,9 @@ namespace RoguelikeEngine
 
             var color = Group.CaveColor;
             Color glow = Group.GlowColor(scene.Frame);
+
+            if (!IsVisible())
+                color = HiddenColor;
 
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
@@ -315,6 +329,8 @@ namespace RoguelikeEngine
         {
             if (Under != null)
                 Under.Draw(scene);
+            if (!IsVisible())
+                return;
             var ore = SpriteLoader.Instance.AddSprite("content/ore");
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
@@ -358,10 +374,22 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene)
         {
+            var color = new TileColor(new Color(69 / 2, 54 / 2, 75 / 2), new Color(157, 143, 167));
+            Color glow = Color.TransparentBlack;
+
+            if (!IsVisible())
+            {
+                color = HiddenColor;
+                glow = Color.TransparentBlack;
+            }
+
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
-            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(69 / 2, 54 / 2, 75 / 2), 0);
-            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(157, 143, 167), 0);
+
+            glow = Util.AddColor(glow, VisualUnderColor());
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
         public void Mine(MineEvent mine)
@@ -397,14 +425,22 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene)
         {
+            var color = new TileColor(new Color(69, 75, 54), new Color(157, 167, 143));
+            Color glow = Color.Lerp(new Color(16, 4, 1), new Color(255, 64, 16), 0.5f + 0.5f * (float)Math.Sin(scene.Frame / 60f));
+
+            if (!IsVisible())
+            {
+                color = HiddenColor;
+                glow = Color.TransparentBlack;
+            }
+
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
 
-            Color glow = Color.Lerp(new Color(16, 4, 1), new Color(255, 64, 16), 0.5f+0.5f*(float)Math.Sin(scene.Frame / 60f));
-
-            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16*Parent.X,16*Parent.Y,16,16), glow);
-            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(69, 75, 54), 0);
-            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(157, 167, 143), 0);
+            glow = Util.AddColor(glow, VisualUnderColor());
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
         public void Mine(MineEvent mine)
@@ -440,11 +476,22 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene)
         {
+            var color = new TileColor(new Color(169, 169, 169), new Color(239, 236, 233));
+            Color glow = new Color(128, 128, 128);
+
+            if (!IsVisible())
+            {
+                color = HiddenColor;
+                glow = Color.TransparentBlack;
+            }
+
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
-            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Color(128, 128, 128));
-            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(169, 169, 169), 0);
-            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(239, 236, 233), 0);
+
+            glow = Util.AddColor(glow, VisualUnderColor());
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
         public void Mine(MineEvent mine)
@@ -478,6 +525,9 @@ namespace RoguelikeEngine
             var cave1 = SpriteLoader.Instance.AddSprite("content/brick_layer");
 
             var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
 
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), VisualUnderColor());
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
@@ -534,6 +584,8 @@ namespace RoguelikeEngine
 
             if (Under != null)
                 Under.Draw(scene);
+            if (!IsVisible())
+                return;
 
             scene.DrawSprite(anvil, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
         }
@@ -688,6 +740,9 @@ namespace RoguelikeEngine
         {
             var smelter = SpriteLoader.Instance.AddSprite("content/smelter_receptacle");
             var smelter_overlay = SpriteLoader.Instance.AddSprite("content/smelter_receptacle_overlay");
+
+            if (!IsVisible())
+                return;
 
             scene.DrawSprite(smelter, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
 

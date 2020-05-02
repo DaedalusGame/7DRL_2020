@@ -130,10 +130,10 @@ namespace RoguelikeEngine.Skills
         {
             Consume();
             var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, PoisonAttack);
+            return user.RoutineAttack(offset.X, offset.Y, EnderAttack);
         }
 
-        private Attack PoisonAttack(Creature attacker, IEffectHolder defender)
+        private Attack EnderAttack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
             attack.Elements.Add(Element.Slash, 0.5);
@@ -266,7 +266,7 @@ namespace RoguelikeEngine.Skills
                 var shootTile = user.Tile.GetNeighbor(i * offset.X, i * offset.Y);
                 foreach(var target in shootTile.Creatures)
                 {
-                    new FireExplosion(target.World, new Vector2(shootTile.X * 16 + 8, shootTile.Y * 16 + 8), Vector2.Zero, 15);
+                    new FireExplosion(target.World, new Vector2(shootTile.X * 16 + 8, shootTile.Y * 16 + 8), Vector2.Zero, 0, 15);
                     yield return user.Attack(target, offset.X, offset.Y, ExplosionAttack);
                     hit = true;
                     break;
@@ -333,6 +333,130 @@ namespace RoguelikeEngine.Skills
                 break;
             }
             yield return user.WaitSome(20);
+        }
+    }
+
+    abstract class SkillBreathBase : Skill
+    {
+        public SkillBreathBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            return base.CanUse(user);
+        }
+
+        private float GetFacingAngle(Facing facing)
+        {
+            switch (facing)
+            {
+                default:
+                case (Facing.North): return 0;
+                case (Facing.East): return MathHelper.PiOver2;
+                case (Facing.South): return MathHelper.Pi;
+                case (Facing.West): return MathHelper.Pi + MathHelper.PiOver2;
+            }
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            float centerAngle = GetFacingAngle(user.Facing);
+
+            float startAngle = centerAngle - MathHelper.PiOver2;
+            float endAngle = centerAngle + MathHelper.PiOver2;
+            float radius = 4;
+
+            float arcLength = (endAngle - startAngle) * radius;
+            float arcSpeed = 1;
+            float increment = arcLength / arcSpeed;
+
+            List<Wait> breaths = new List<Wait>();
+            for(float slide = 0; slide <= arcLength; slide += arcSpeed)
+            {
+                float angle = MathHelper.Lerp(startAngle, endAngle, slide / arcLength);
+                breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius)));
+                yield return user.WaitSome(5);
+            }
+            yield return new WaitAll(breaths);
+        }
+
+        private IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius)
+        {
+            Vector2 direction = Util.AngleToVector(angle);
+            Vector2 offset = direction * radius;
+            BreathVisual(user, angle, radius, direction);
+            int tileX = (int)(user.VisualTarget.X / 16f + offset.X);
+            int tileY = (int)(user.VisualTarget.Y / 16f + offset.Y);
+            Tile tile = user.Tile.Map.GetTile(tileX, tileY);
+            if (tile != null)
+                yield return Impact(user, tile);
+        }
+
+        public abstract void BreathVisual(Creature user, float angle, float radius, Vector2 direction);
+
+        public abstract Wait Impact(Creature user, Tile tile);
+    }
+
+    class SkillFireBreath : SkillBreathBase
+    {
+        public SkillFireBreath() : base("Fire Breath", "Description", 1, 1, float.PositiveInfinity)
+        {
+        }
+
+        public override void BreathVisual(Creature user, float angle, float radius, Vector2 direction)
+        {
+            new FireExplosion(user.World, user.VisualTarget, direction * radius * 16f / 20f, angle, 20);
+        }
+
+        public override Wait Impact(Creature user, Tile tile)
+        {
+            return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1));
+        }
+
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius)
+        {
+            var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle();
+            int chargeTime = Random.Next(10) + 30;
+            foreach (Tile tile in tileSet)
+                tile.VisualUnderColor = ChargeColor(user, chargeTime);
+            new FireField(user.World, tileSet, chargeTime);
+            new ScreenShakeRandom(user.World, 2, chargeTime + 30, LerpHelper.Invert(LerpHelper.Linear));
+            yield return user.WaitSome(chargeTime);
+            new ScreenShakeRandom(user.World, 4, 60, LerpHelper.Linear);
+            foreach (Tile tile in tileSet)
+            {
+                Vector2 offset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                if (Random.NextDouble() < 0.3)
+                    new FireExplosion(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
+                else if (Random.NextDouble() < 0.7)
+                    new FlameBig(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
+                tile.VisualUnderColor = () => Color.TransparentBlack;
+            }
+        }
+
+        private Func<Color> ChargeColor(Creature user, int time)
+        {
+            Color black = Color.TransparentBlack;
+            Color red = new Color(117, 46, 11);
+            Color orange = new Color(241, 153, 20);
+            Color yellow = new Color(254, 241, 169);
+            int startTime = user.Frame;
+            return () =>
+            {
+                float slide = (float)(user.Frame - startTime) / time;
+                if (slide < 0.25f)
+                    return Color.Lerp(black, red, slide / 0.25f);
+                else if (slide < 0.25f * 2)
+                    return Color.Lerp(red, orange, (slide - 0.25f) / 0.25f);
+                else if (slide < 0.25f * 3)
+                    return Color.Lerp(orange, yellow, (slide - 0.25f * 2) / 0.25f);
+                else
+                {
+                    Color glow = Color.Lerp(Color.Black, Color.White, 0.5f + (float)Math.Sin((user.Frame + time) * 0.4) * 0.5f);
+                    return Color.Lerp(yellow, glow, (slide - 0.25f * 3) / 0.25f);
+                }
+            };
         }
     }
 
@@ -478,12 +602,12 @@ namespace RoguelikeEngine.Skills
             yield return user.CurrentAction;
             Consume();
             Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
-            new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 12);
+            new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);
             user.VisualColor = user.Static(Color.Transparent);
             var nearbyTiles = user.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
             user.MoveTo(nearbyTiles.Pick(Random),0);
             yield return user.WaitSome(5);
-            new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 12);
+            new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);
             user.VisualColor = user.Static(Color.White);
         }
     }
@@ -672,14 +796,14 @@ namespace RoguelikeEngine.Skills
                 tile.VisualUnderColor = ChargeColor(user,chargeTime);
             new ScreenShakeRandom(user.World, 4, chargeTime + 60, LerpHelper.Invert(LerpHelper.Linear));
             yield return user.WaitSome(chargeTime);
-            new LightningField(user.World, tileSet, 60);
+            new LightningField(user.World, SpriteLoader.Instance.AddSprite("content/lightning_ender"), tileSet, 60);
             yield return user.WaitSome(60);
             new ScreenShakeRandom(user.World, 8, 60, LerpHelper.Linear);
             foreach (Tile tile in tileSet)
             {
                 Vector2 offset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
                 if (Random.NextDouble() < 0.7)
-                    new EnderExplosion(user.World, tile.VisualTarget + offset, Vector2.Zero, Random.Next(14) + 6);
+                    new EnderExplosion(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
                 tile.VisualUnderColor = () => Color.TransparentBlack;
             }
         }
