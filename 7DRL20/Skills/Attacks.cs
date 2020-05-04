@@ -144,6 +144,7 @@ namespace RoguelikeEngine.Skills
 
     abstract class SkillRamBase : Skill
     {
+        protected int MaxDistance;
         protected int MaxCreatureHits;
         protected int MaxWallHits;
         protected int MaxTotalHits;
@@ -155,7 +156,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, 9))
+            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
                 return false;
             return base.CanUse(user);
         }
@@ -171,7 +172,7 @@ namespace RoguelikeEngine.Skills
                 var frontier = user.Mask.GetFrontier(offset.X, offset.Y);
                 int creatureHits = 0;
                 int wallHits = 0;
-                for (int i = 0; i < 9; i++)
+                for (int i = 0; i < MaxDistance; i++)
                 { 
                     if (!user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)).Any(front => front.Solid || front.Creatures.Any(creature => creature != user)))
                         lastSafeTile = user.Tile;
@@ -222,10 +223,32 @@ namespace RoguelikeEngine.Skills
     {
         public SkillEnderRam() : base("Attack", "Ender Ram", 1, 5, float.PositiveInfinity)
         {
+            MaxDistance = 9;
             MaxTotalHits = 6;
             MaxWallHits = 4;
             MaxCreatureHits = 999999;
             DestroyWalls = true;
+        }
+
+        protected override Attack RamAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 0.5);
+            attack.Elements.Add(Element.Pierce, 0.5);
+            attack.Elements.Add(Element.TheEnd, 0.5);
+            return attack;
+        }
+    }
+
+    class SkillEnderMow : SkillRamBase
+    {
+        public SkillEnderMow() : base("Attack", "Ender Mow", 1, 3, float.PositiveInfinity)
+        {
+            MaxDistance = 2;
+            MaxTotalHits = 2;
+            MaxWallHits = 0;
+            MaxCreatureHits = 999999;
+            DestroyWalls = false;
         }
 
         protected override Attack RamAttack(Creature attacker, IEffectHolder defender)
@@ -359,6 +382,15 @@ namespace RoguelikeEngine.Skills
             }
         }
 
+        protected Tile GetImpactTile(Creature user, float angle, float radius)
+        {
+            Vector2 direction = Util.AngleToVector(angle);
+            Vector2 offset = direction * radius;
+            int tileX = (int)(user.VisualTarget.X / 16f + offset.X);
+            int tileY = (int)(user.VisualTarget.Y / 16f + offset.Y);
+            return user.Tile.Map.GetTile(tileX, tileY);
+        }
+
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             float centerAngle = GetFacingAngle(user.Facing);
@@ -372,30 +404,23 @@ namespace RoguelikeEngine.Skills
             float increment = arcLength / arcSpeed;
 
             List<Wait> breaths = new List<Wait>();
+            HashSet<Tile> tiles = new HashSet<Tile>(); 
             for(float slide = 0; slide <= arcLength; slide += arcSpeed)
             {
                 float angle = MathHelper.Lerp(startAngle, endAngle, slide / arcLength);
-                breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius)));
+                breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius, tiles)));
                 yield return user.WaitSome(5);
             }
             yield return new WaitAll(breaths);
+            AfterBreath(user, tiles);
         }
 
-        private IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius)
+        public abstract IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles);
+
+        public virtual void AfterBreath(Creature user, IEnumerable<Tile> tiles)
         {
-            Vector2 direction = Util.AngleToVector(angle);
-            Vector2 offset = direction * radius;
-            BreathVisual(user, angle, radius, direction);
-            int tileX = (int)(user.VisualTarget.X / 16f + offset.X);
-            int tileY = (int)(user.VisualTarget.Y / 16f + offset.Y);
-            Tile tile = user.Tile.Map.GetTile(tileX, tileY);
-            if (tile != null)
-                yield return Impact(user, tile);
+
         }
-
-        public abstract void BreathVisual(Creature user, float angle, float radius, Vector2 direction);
-
-        public abstract Wait Impact(Creature user, Tile tile);
     }
 
     class SkillFireBreath : SkillBreathBase
@@ -404,22 +429,28 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override void BreathVisual(Creature user, float angle, float radius, Vector2 direction)
+        public override IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles)
         {
-            new FireExplosion(user.World, user.VisualTarget, direction * radius * 16f / 20f, angle, 20);
+            Tile tile = GetImpactTile(user, angle, radius);
+            Vector2 direction = Util.AngleToVector(angle);
+            Vector2 offset = direction * radius;
+            new FireExplosion(user.World, user.VisualTarget, offset * 16f / 20f, angle, 20);
+            if (tile != null)
+                yield return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1, tiles));
         }
 
-        public override Wait Impact(Creature user, Tile tile)
-        {
-            return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1));
-        }
-
-        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius)
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
         {
             var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle();
             int chargeTime = Random.Next(10) + 30;
+            List<Tile> damageTiles = new List<Tile>();
             foreach (Tile tile in tileSet)
+            {
                 tile.VisualUnderColor = ChargeColor(user, chargeTime);
+                if (!tiles.Contains(tile))
+                    damageTiles.Add(tile);
+                tiles.Add(tile);
+            }
             new FireField(user.World, tileSet, chargeTime);
             new ScreenShakeRandom(user.World, 2, chargeTime + 30, LerpHelper.Invert(LerpHelper.Linear));
             yield return user.WaitSome(chargeTime);
@@ -433,6 +464,21 @@ namespace RoguelikeEngine.Skills
                     new FlameBig(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
                 tile.VisualUnderColor = () => Color.TransparentBlack;
             }
+            foreach (Tile tile in damageTiles)
+            {
+                foreach(Creature target in tile.Creatures)
+                {
+                    user.Attack(target, 0, 0, ExplosionAttack);
+                }
+            }
+        }
+
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Fire, 1.0);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
         }
 
         private Func<Color> ChargeColor(Creature user, int time)
@@ -778,9 +824,10 @@ namespace RoguelikeEngine.Skills
                 new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
                 var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle();
                 List<Wait> quakes = new List<Wait>();
+                HashSet<Tile> tiles = new HashSet<Tile>();
                 foreach(Tile tile in tileSet.Take(8))
                 {
-                    quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3)));
+                    quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3, tiles)));
                 }
                 new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
                 yield return new WaitAll(quakes);
@@ -788,12 +835,19 @@ namespace RoguelikeEngine.Skills
             }
         }
 
-        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius)
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
         {
             var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile,tile) <= radius*radius).Shuffle();
             int chargeTime = Random.Next(10) + 60;
+            List<Tile> damageTiles = new List<Tile>();
             foreach (Tile tile in tileSet)
-                tile.VisualUnderColor = ChargeColor(user,chargeTime);
+            {
+                tile.VisualUnderColor = ChargeColor(user, chargeTime);
+                if (!tiles.Contains(tile))
+                    damageTiles.Add(tile);
+                tiles.Add(tile);
+                
+            }
             new ScreenShakeRandom(user.World, 4, chargeTime + 60, LerpHelper.Invert(LerpHelper.Linear));
             yield return user.WaitSome(chargeTime);
             new LightningField(user.World, SpriteLoader.Instance.AddSprite("content/lightning_ender"), tileSet, 60);
@@ -806,6 +860,20 @@ namespace RoguelikeEngine.Skills
                     new EnderExplosion(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
                 tile.VisualUnderColor = () => Color.TransparentBlack;
             }
+            foreach (Tile tile in damageTiles)
+            {
+                foreach(Creature creature in tile.Creatures)
+                {
+                    user.Attack(creature, 0, 0, AttackQuake);
+                }
+            }
+        }
+
+        private Attack AttackQuake(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.TheEnd, 1.0);
+            return attack;
         }
 
         private Func<Color> ChargeColor(Creature user, int time)

@@ -205,7 +205,7 @@ namespace RoguelikeEngine
         public SceneGame(Game game) : base(game)
         {
             Menu = new PlayerUI(this);
-            Map = new Map(this, 250, 250);
+            Map = new Map(this, 100, 100);
             
             MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Random.Next());
             generator.Generate();

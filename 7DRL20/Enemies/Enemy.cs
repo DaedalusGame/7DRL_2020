@@ -362,11 +362,12 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 50));
+            Effect.Apply(new EffectStat(this, Stat.HP, 500));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
-            Skills.Add(new SkillFireBreath());
+            //Skills.Add(new SkillFireBreath());
             Skills.Add(new SkillEnderRam());
+            Skills.Add(new SkillEnderMow());
             Skills.Add(new SkillEnderClaw());
             Skills.Add(new SkillEnderPowerUp());
             Skills.Add(new SkillEnderFlare());

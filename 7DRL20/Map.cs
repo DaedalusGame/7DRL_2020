@@ -13,6 +13,7 @@ namespace RoguelikeEngine
         public int Width;
         public int Height;
         MapTile[,] Tiles;
+        public MapTile Outside;
 
         public Map(SceneGame world, int width, int height)
         {
@@ -21,6 +22,7 @@ namespace RoguelikeEngine
             Height = height;
             Tiles = new MapTile[width, height];
             Init((x, y) => new FloorCave());
+            Outside = new MapTile.FakeOutside(this, -1, -1);
         }
 
         public void Init(Func<int,int,Tile> generator)
@@ -40,7 +42,7 @@ namespace RoguelikeEngine
             if (InMap(x, y))
                 return Tiles[x, y].Tile;
             else
-                return null;
+                return new Tile.FakeOutside(this, x, y);
         }
 
         public IEnumerable<Tile> GetNearby(int x, int y, int radius)

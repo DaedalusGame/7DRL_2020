@@ -17,21 +17,61 @@ namespace RoguelikeEngine
 
     abstract class Tile : IEffectHolder, IHasPosition
     {
+        public class FakeOutside : Tile //Subtype that handles the tiles outside the map.
+        {
+            Map _Map;
+            int _X;
+            int _Y;
+
+            public override ReusableID ObjectID
+            {
+                get
+                {
+                    return ReusableID.Null;
+                }
+                set
+                {
+                    //NOOP
+                }
+            }
+
+            public override SceneGame World => _Map.World;
+            public override Map Map => _Map;
+            public override int X => _X;
+            public override int Y => _Y;
+            public override Tile Under => null;
+
+            public FakeOutside(Map map, int x, int y) : base()
+            {
+                _Map = map;
+                _X = x;
+                _Y = y;
+                Parent = map.Outside;
+                Opaque = true;
+                Solid = true;
+            }
+
+            public override void Draw(SceneGame scene)
+            {
+                //NOOP
+            }
+        }
+
         public static TileColor HiddenColor = new TileColor(Color.Black, Color.Black);
 
         protected MapTile Parent;
-        public ReusableID ObjectID
+        public virtual ReusableID ObjectID
         {
             get;
             set;
         }
-        public SceneGame World => Parent.World;
-        public Map Map => Parent.Map;
-        public int X => Parent.X;
-        public int Y => Parent.Y;
+        public virtual SceneGame World => Parent.World;
+        public virtual Map Map => Parent.Map;
+        public virtual int X => Parent.X;
+        public virtual int Y => Parent.Y;
         public Vector2 VisualPosition => new Vector2(X*16,Y*16);
         public Vector2 VisualTarget => VisualPosition + new Vector2(8, 8);
-        public Tile Under => Parent.UnderTile;
+        public virtual Tile Under => Parent.UnderTile;
         public bool Orphaned => false;
 
         public Func<Color> VisualUnderColor = () => Color.TransparentBlack;
@@ -53,13 +93,18 @@ namespace RoguelikeEngine
             }
         }
 
-        public Tile NewTile => Parent.Tile;
-        public IEnumerable<IEffectHolder> Contents => Parent.GetEffects<Effects.OnTile>().Select(x => x.Holder);
+        public virtual Tile NewTile => Parent.Tile;
+        public virtual IEnumerable<IEffectHolder> Contents => Parent.GetEffects<Effects.OnTile>().Select(x => x.Holder);
         public IEnumerable<Creature> Creatures => Contents.OfType<Creature>();
         public IEnumerable<Item> Items => Contents.OfType<Item>();
 
         List<Effect> TileEffects = new List<Effect>();
         
+        private Tile()
+        {
+
+        }
+
         public Tile(string name)
         {
             ObjectID = EffectManager.NewID(this);

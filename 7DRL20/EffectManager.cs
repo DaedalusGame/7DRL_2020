@@ -9,9 +9,11 @@ namespace RoguelikeEngine
 {
     struct ReusableID
     {
+        public static ReusableID Null = new ReusableID(-1, 0);
+
         public int ID;
         public int Generation;
-        public bool Valid => EffectManager.HasHolder(this);
+        public bool Valid => ID >= 0 && EffectManager.HasHolder(this);
 
         public ReusableID(int id, int generation)
         {
@@ -99,9 +101,11 @@ namespace RoguelikeEngine
 
             public void Add(IEffectHolder holder, Effect effect)
             {
+                if (holder.ObjectID == ReusableID.Null)
+                    return;
                 if (Has(holder))
                     Effects[holder.ObjectID].Add(effect);
-                else 
+                else
                 {
                     if (Effects.Capacity > holder.ObjectID && Effects[holder.ObjectID] != null)
                         foreach (var straggler in Effects[holder.ObjectID])
@@ -112,6 +116,8 @@ namespace RoguelikeEngine
 
             public void Remove(IEffectHolder holder, Effect effect)
             {
+                if (holder.ObjectID == ReusableID.Null)
+                    return;
                 if (Has(holder))
                     Effects[holder.ObjectID].Remove(effect);
             }
@@ -122,8 +128,15 @@ namespace RoguelikeEngine
         static Dictionary<Type, Drawer> Drawers = new Dictionary<Type, Drawer>();
         static Dictionary<int, IEffectHolder> Holders = new Dictionary<int, IEffectHolder>();
 
+        static EffectManager()
+        {
+
+        }
+
         public static IEnumerable<T> GetEffects<T>(IEffectHolder holder) where T : Effect
         {
+            if (holder.ObjectID == ReusableID.Null)
+                return Enumerable.Empty<T>();
             return GetDrawer(typeof(T)).Get(holder).OfType<T>();
         }
 
@@ -375,6 +388,8 @@ namespace RoguelikeEngine
 
         public static void DeleteHolder(IEffectHolder holder)
         {
+            if (holder.ObjectID == ReusableID.Null)
+                return;
             ReusableIDs.Enqueue(holder.ObjectID.NextGeneration);
             Holders.Remove(holder.ObjectID);
         }
