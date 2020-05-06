@@ -554,7 +554,7 @@ namespace RoguelikeEngine
                 this.Destroy();
         }
 
-        public IEnumerable<Wait> RoutineShowPopups()
+        /*public IEnumerable<Wait> RoutineShowPopups()
         {
             var messages = GetEffects<EffectMessage>();
             yield return new WaitFrames(this, 10);
@@ -566,7 +566,7 @@ namespace RoguelikeEngine
                 messages = GetEffects<EffectMessage>();
                 yield return new WaitFrames(this, 30);
             }
-        }
+        }*/
 
         public static Attack MeleeAttack(Creature attacker, IEffectHolder defender)
         {

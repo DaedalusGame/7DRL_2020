@@ -149,6 +149,7 @@ namespace RoguelikeEngine.Skills
         protected int MaxWallHits;
         protected int MaxTotalHits;
         protected bool DestroyWalls;
+        protected bool CheckTarget = true;
 
         public SkillRamBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
         {
@@ -156,7 +157,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
+            if (CheckTarget && user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
                 return false;
             return base.CanUse(user);
         }
@@ -173,8 +174,8 @@ namespace RoguelikeEngine.Skills
                 int creatureHits = 0;
                 int wallHits = 0;
                 for (int i = 0; i < MaxDistance; i++)
-                { 
-                    if (!user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)).Any(front => front.Solid || front.Creatures.Any(creature => creature != user)))
+                {
+                    if (!IsUnsafe(user))
                         lastSafeTile = user.Tile;
                     List<Wait> waitForDamage = new List<Wait>();
                     foreach (var tile in frontier.Select(o => user.Tile.GetNeighbor(o.X, o.Y)))
@@ -196,9 +197,15 @@ namespace RoguelikeEngine.Skills
                     user.ForceMove(offset.X, offset.Y, 3);
                     yield return user.WaitSome(3);
                 }
-                user.MoveTo(lastSafeTile,10);
+                if (IsUnsafe(user))
+                    user.MoveTo(lastSafeTile,10);
                 yield return user.WaitSome(20);
             }
+        }
+
+        private static bool IsUnsafe(Creature user)
+        {
+            return user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)).Any(front => front.Solid || front.Creatures.Any(creature => creature != user));
         }
 
         protected abstract Attack RamAttack(Creature attacker, IEffectHolder defender);
@@ -244,11 +251,12 @@ namespace RoguelikeEngine.Skills
     {
         public SkillEnderMow() : base("Attack", "Ender Mow", 1, 3, float.PositiveInfinity)
         {
-            MaxDistance = 2;
+            MaxDistance = 3;
             MaxTotalHits = 2;
             MaxWallHits = 0;
             MaxCreatureHits = 999999;
             DestroyWalls = false;
+            CheckTarget = false;
         }
 
         protected override Attack RamAttack(Creature attacker, IEffectHolder defender)

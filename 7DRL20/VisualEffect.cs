@@ -1,6 +1,7 @@
 ﻿using LibNoise.Primitive;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1028,14 +1029,16 @@ namespace RoguelikeEngine
 
     class DamagePopup : Particle
     {
+        public EffectMessage Message;
         public string Text;
         public TextParameters Parameters;
-        public Vector2 Offset => new Vector2(0, -16) * (float)LerpHelper.QuadraticOut(0, 1, Frame.Slide);
+        public Vector2 Offset => new Vector2(0, -32) * (float)LerpHelper.QuadraticOut(0, 1, Frame.Slide);
 
-        public DamagePopup(SceneGame world, Vector2 position, string text, TextParameters parameters, int time) : base(world, position)
+        public DamagePopup(SceneGame world, Vector2 position, EffectMessage message, int time) : base(world, position)
         {
-            Text = text;
-            Parameters = parameters;
+            Message = message;
+            Text = message.Text;
+            Parameters = new TextParameters().SetColor(Color.White, Color.Black).SetBold(true);
             Frame = new Slider(time);
         }
 

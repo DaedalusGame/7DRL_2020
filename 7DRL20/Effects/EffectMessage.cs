@@ -14,6 +14,7 @@ namespace RoguelikeEngine.Effects
             get;
             set;
         }
+        public int Time;
 
         public EffectMessage(IEffectHolder holder, string text)
         {

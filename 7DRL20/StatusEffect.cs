@@ -23,6 +23,8 @@ namespace RoguelikeEngine
         public Slider Duration = new Slider(float.PositiveInfinity);
         public string DurationText => float.IsInfinity(Duration.EndTime) ? string.Empty : $"({Duration.EndTime - Duration.Time} Turns)";
 
+        public bool Hidden;
+
         public abstract string Name
         {
             get;
@@ -103,25 +105,29 @@ namespace RoguelikeEngine
             int lastStacks = Stacks;
             Buildup += buildup;
             Buildup = Math.Max(0, Buildup);
-            PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(buildup)}"));
+            if (!Hidden)
+                PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(buildup)}"));
             if (Stacks > lastStacks)
                 OnStackChange(Stacks - lastStacks);
         }
 
         public virtual void OnAdd()
         {
-            PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(Buildup)}"));
+            if(!Hidden)
+                PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(Buildup)}"));
         }
 
         public virtual void OnRemove()
         {
-            PopupManager.Add(new EffectMessage(Creature, $"{Game.FormatColor(Microsoft.Xna.Framework.Color.Gray)}{Name}"));
+            if (!Hidden)
+                PopupManager.Add(new EffectMessage(Creature, $"{Game.FormatColor(Microsoft.Xna.Framework.Color.Gray)}{Name}"));
         }
 
         public virtual void OnStackChange(int delta)
         {
             LastChange += delta;
-            PopupManager.Add(new EffectMessage(Creature, $"{Name} {StackText}"));
+            if (!Hidden)
+                PopupManager.Add(new EffectMessage(Creature, $"{Name} {StackText}"));
         }
     }
 
@@ -278,6 +284,7 @@ namespace RoguelikeEngine
 
         public Undead() : base()
         {
+            Hidden = true;
             Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
         }
 
@@ -299,14 +306,9 @@ namespace RoguelikeEngine
 
         public override int MaxStacks => 1;
 
-        public override void OnAdd()
+        public PoweredUp() : base()
         {
-            //NOOP
-        }
-
-        public override void OnRemove()
-        {
-            //NOOP
+            Hidden = true;
         }
     }
 }
