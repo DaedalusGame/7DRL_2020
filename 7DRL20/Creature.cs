@@ -504,6 +504,7 @@ namespace RoguelikeEngine
             yield return PopupManager.Wait;
             var frontier = Mask.GetFrontier(dx, dy);
             List<Wait> waitForDamage = new List<Wait>();
+            PopupManager.StartCollect();
             foreach(var tile in frontier.Select(o => Tile.GetNeighbor(o.X,o.Y)))
             {
                 if (tile is IMineable mineable)
@@ -518,11 +519,13 @@ namespace RoguelikeEngine
                     }
                 }
             }
+           
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
             VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
             yield return new WaitFrames(this,10);
             yield return new WaitAll(waitForDamage);
+            PopupManager.FinishCollect();
         }
 
         public IEnumerable<Wait> RoutineHit(int dx, int dy, Attack attack)
@@ -681,7 +684,8 @@ namespace RoguelikeEngine
 
         public virtual void Draw(SceneGame scene, DrawPass pass)
         {
-            Render.Draw(scene, this);
+            if(Tiles.Any(tile => !tile.Opaque))
+                Render.Draw(scene, this);
         }
 
         public override string ToString()

@@ -52,7 +52,7 @@
     <Compile Include="Effects\EffectItemInventory.cs" />
     <Compile Include="Effects\EffectLevelUp.cs" />
     <Compile Include="Effects\EffectElement.cs" />
-    <Compile Include="Effects\EffectMessage.cs" />
+    <Compile Include="Message.cs" />
     <Compile Include="Effects\EffectStatusEffect.cs" />
     <Compile Include="Effects\EffectItemEquipped.cs" />
     <Compile Include="EffectManager.cs" />

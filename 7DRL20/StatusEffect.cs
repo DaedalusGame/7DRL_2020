@@ -106,7 +106,7 @@ namespace RoguelikeEngine
             Buildup += buildup;
             Buildup = Math.Max(0, Buildup);
             if (!Hidden)
-                PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(buildup)}"));
+                PopupManager.Add(new MessageStatusBuildup(Creature, this, buildup));
             if (Stacks > lastStacks)
                 OnStackChange(Stacks - lastStacks);
         }
@@ -114,20 +114,20 @@ namespace RoguelikeEngine
         public virtual void OnAdd()
         {
             if(!Hidden)
-                PopupManager.Add(new EffectMessage(Creature, $"{Name} {BuildupText(Buildup)}"));
+                PopupManager.Add(new MessageStatusBuildup(Creature, this, Buildup));
         }
 
         public virtual void OnRemove()
         {
             if (!Hidden)
-                PopupManager.Add(new EffectMessage(Creature, $"{Game.FormatColor(Microsoft.Xna.Framework.Color.Gray)}{Name}"));
+                PopupManager.Add(new MessageStatusEffect(Creature, this));
         }
 
         public virtual void OnStackChange(int delta)
         {
             LastChange += delta;
             if (!Hidden)
-                PopupManager.Add(new EffectMessage(Creature, $"{Name} {StackText}"));
+                PopupManager.Add(new MessageStatusEffect(Creature, this));
         }
     }
 

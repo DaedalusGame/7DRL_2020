@@ -12,7 +12,7 @@ namespace RoguelikeEngine
     {
         class WaitPopup : Wait
         {
-            public override bool Done => PopupManager.CurrentMessage == null && PopupManager.Messages.Count <= 0;
+            public override bool Done => Messages.Empty();
 
             public override void Update()
             {
@@ -20,29 +20,27 @@ namespace RoguelikeEngine
             }
         }
 
-        static Stack<List<EffectMessage>> Collections = new Stack<List<EffectMessage>>();
-        static List<EffectMessage> Messages = new List<EffectMessage>();
+        static Stack<List<Message>> Collections = new Stack<List<Message>>();
+        static List<Message> Messages = new List<Message>();
         static List<DamagePopup> CurrentMessages = new List<DamagePopup>();
-        static DamagePopup CurrentMessage;
 
-        static int PopupDelay;
         static public Wait Wait = new WaitPopup();
 
-        public static void AddInternal(EffectMessage message)
+        public static void AddInternal(Message message)
         {
             Messages.Insert(0, message);
         }
 
         public static void StartCollect()
         {
-            Collections.Push(new List<EffectMessage>());
+            Collections.Push(new List<Message>());
         }
 
-        public static void Add(EffectMessage message)
+        public static void Add(Message message)
         {
             if(Collections.Count > 0)
             {
-                List<EffectMessage> messages = Collections.Peek();
+                List<Message> messages = Collections.Peek();
                 messages.Add(message);
             }
             else
@@ -53,11 +51,39 @@ namespace RoguelikeEngine
 
         public static void FinishCollect()
         {
-            List<EffectMessage> messages = Collections.Pop();
-            foreach(var message in messages)
+            List<Message> messages = Collections.Pop();
+            foreach(var message in CombineMessages(messages))
             {
                 AddInternal(message);
             }
+        }
+
+        public static IEnumerable<Message> CombineMessages(IEnumerable<Message> messages)
+        {
+            List<Message> shunt = new List<Message>();
+            foreach(Message message in messages)
+            {
+                bool combined = false;
+                for(int i = shunt.Count-1; i >= 0; i--)
+                {
+                    Message existing = shunt[i];
+                    if(existing.CanCombine(message))
+                    {
+                        shunt.RemoveAt(i);
+                        foreach(Message toAdd in existing.Combine(message))
+                        {
+                            shunt.Insert(i, toAdd);
+                        }
+                        combined = true;
+                        break;
+                    }
+                }
+                if(!combined)
+                {
+                    shunt.Insert(0, message);
+                }
+            }
+            return shunt;
         }
 
         public static void Update(SceneGame scene)
@@ -77,7 +103,7 @@ namespace RoguelikeEngine
             var lookupCurrent = CurrentMessages.ToLookup(x => x.Message.Holder);
             for (int i = Messages.Count - 1; i >= 0; i--)
             {
-                EffectMessage message = Messages[i];
+                Message message = Messages[i];
                 DamagePopup current = lookupCurrent[message.Holder].FirstOrDefault();
 
                 if (current == null || current.Frame.Time > 15)
@@ -85,7 +111,7 @@ namespace RoguelikeEngine
                     CurrentMessages.Remove(current);
                     Messages.RemoveAt(i);
                     if (message.Holder is IHasPosition position)
-                        CurrentMessages.Add(new DamagePopup(scene, position.VisualTarget, message, 60));
+                        CurrentMessages.Add(new DamagePopup(scene, () => position.VisualTarget, message, 60));
                     break;
                 }
             }

@@ -173,6 +173,7 @@ namespace RoguelikeEngine.Skills
                 var frontier = user.Mask.GetFrontier(offset.X, offset.Y);
                 int creatureHits = 0;
                 int wallHits = 0;
+                PopupManager.StartCollect();
                 for (int i = 0; i < MaxDistance; i++)
                 {
                     if (!IsUnsafe(user))
@@ -199,6 +200,7 @@ namespace RoguelikeEngine.Skills
                 }
                 if (IsUnsafe(user))
                     user.MoveTo(lastSafeTile,10);
+                PopupManager.FinishCollect();
                 yield return user.WaitSome(20);
             }
         }
@@ -412,14 +414,16 @@ namespace RoguelikeEngine.Skills
             float increment = arcLength / arcSpeed;
 
             List<Wait> breaths = new List<Wait>();
-            HashSet<Tile> tiles = new HashSet<Tile>(); 
-            for(float slide = 0; slide <= arcLength; slide += arcSpeed)
+            HashSet<Tile> tiles = new HashSet<Tile>();
+            PopupManager.StartCollect();
+            for (float slide = 0; slide <= arcLength; slide += arcSpeed)
             {
                 float angle = MathHelper.Lerp(startAngle, endAngle, slide / arcLength);
                 breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius, tiles)));
                 yield return user.WaitSome(5);
             }
             yield return new WaitAll(breaths);
+            PopupManager.FinishCollect();
             AfterBreath(user, tiles);
         }
 
@@ -804,6 +808,95 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillEnderBlast : Skill
+    {
+        public SkillEnderBlast() : base("Ender Blast", "Frees Ender Erebizo from rock.", 0, 0, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            if (user.Tiles.Any(tile => !tile.Opaque))
+                return false;
+            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 8)))
+                return false;
+            return base.CanUse(user);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            if (user is Enemy enemy)
+            {
+                Consume();
+                yield return user.WaitSome(50);
+                var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 1).Shuffle();
+                List<Wait> quakes = new List<Wait>();
+                HashSet<Tile> tiles = new HashSet<Tile>();
+                PopupManager.StartCollect();
+                foreach (Tile tile in tileSet.Take(5))
+                {
+                    quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 2, tiles)));
+                }
+                new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
+                yield return new WaitAll(quakes);
+                PopupManager.FinishCollect();
+                yield return user.WaitSome(20);
+            }
+        }
+
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
+        {
+            var tileSet = impactTile.GetNearby(radius).Where(tile => tile.Opaque).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle();
+            int chargeTime = 60;
+            List<Tile> damageTiles = new List<Tile>();
+            foreach (Tile tile in tileSet)
+            {
+                tile.VisualUnderColor = ChargeColor(user, chargeTime);
+                if (!tiles.Contains(tile))
+                    damageTiles.Add(tile);
+                tiles.Add(tile);
+
+            }
+            new ScreenShakeRandom(user.World, 4, chargeTime + 60, LerpHelper.Invert(LerpHelper.Linear));
+            yield return user.WaitSome(chargeTime);
+            new LightningField(user.World, SpriteLoader.Instance.AddSprite("content/lightning_ender"), tileSet, 60);
+            yield return user.WaitSome(60);
+            new ScreenShakeRandom(user.World, 8, 60, LerpHelper.Linear);
+            foreach (Tile tile in tileSet)
+            {
+                Vector2 offset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                if (Random.NextDouble() < 0.7)
+                    new EnderExplosion(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
+                tile.VisualUnderColor = () => Color.TransparentBlack;
+                tile.MakeFloor();
+            }
+        }
+
+        private Func<Color> ChargeColor(Creature user, int time)
+        {
+            Color black = Color.TransparentBlack;
+            Color darkPurple = new Color(103, 21, 138);
+            Color purple = new Color(174, 56, 224);
+            Color blue = new Color(196, 223, 251);
+            int startTime = user.Frame;
+            return () =>
+            {
+                float slide = (float)(user.Frame - startTime) / time;
+                if (slide < 0.25f)
+                    return Color.Lerp(black, darkPurple, slide / 0.25f);
+                else if (slide < 0.25f * 2)
+                    return Color.Lerp(darkPurple, purple, (slide - 0.25f) / 0.25f);
+                else if (slide < 0.25f * 3)
+                    return Color.Lerp(purple, blue, (slide - 0.25f * 2) / 0.25f);
+                else
+                {
+                    Color glow = Color.Lerp(Color.Black, Color.White, 0.5f + (float)Math.Sin((user.Frame + time) * 0.4) * 0.5f);
+                    return Color.Lerp(blue, glow, (slide - 0.25f * 3) / 0.25f);
+                }
+            };
+        }
+    }
+
     class SkillEnderQuake : Skill
     {
         public SkillEnderQuake() : base("Ender Quake", "Ranged The End Attack.", 3, 10, float.PositiveInfinity)
@@ -833,12 +926,14 @@ namespace RoguelikeEngine.Skills
                 var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle();
                 List<Wait> quakes = new List<Wait>();
                 HashSet<Tile> tiles = new HashSet<Tile>();
-                foreach(Tile tile in tileSet.Take(8))
+                PopupManager.StartCollect();
+                foreach (Tile tile in tileSet.Take(8))
                 {
                     quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3, tiles)));
                 }
                 new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
                 yield return new WaitAll(quakes);
+                PopupManager.FinishCollect();
                 yield return user.WaitSome(20);
             }
         }

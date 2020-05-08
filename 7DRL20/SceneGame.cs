@@ -248,6 +248,8 @@ namespace RoguelikeEngine
             Material[] possibleMaterials = new[] { Material.Karmesine, Material.Ovium, Material.Jauxum, Material.Basalt, Material.Coal };
             for(int i = 0; i < 25; i++)
             {
+                if (startFloors.Count() <= 2 + i)
+                    break;
                 var pick = possibleMaterials.Pick(Random);
                 var pickFloor = startFloors.ElementAt(2 + i);
 

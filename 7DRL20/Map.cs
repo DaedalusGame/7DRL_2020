@@ -58,9 +58,9 @@ namespace RoguelikeEngine
 
         public IEnumerable<Tile> GetNearby(Rectangle rectangle, int radius)
         {
-            for (int dx = MathHelper.Clamp(rectangle.Left - radius, 0, Width - 1); dx <= MathHelper.Clamp(rectangle.Right + radius, 0, Width - 1); dx++)
+            for (int dx = MathHelper.Clamp(rectangle.Left - radius, 0, Width - 1); dx <= MathHelper.Clamp(rectangle.Right - 1 + radius, 0, Width - 1); dx++)
             {
-                for (int dy = MathHelper.Clamp(rectangle.Top - radius, 0, Height - 1); dy <= MathHelper.Clamp(rectangle.Bottom + radius, 0, Height - 1); dy++)
+                for (int dy = MathHelper.Clamp(rectangle.Top - radius, 0, Height - 1); dy <= MathHelper.Clamp(rectangle.Bottom - 1 + radius, 0, Height - 1); dy++)
                 {
                     yield return GetTile(dx, dy);
                 }

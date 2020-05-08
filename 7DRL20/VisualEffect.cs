@@ -656,7 +656,7 @@ namespace RoguelikeEngine
             if (Frame.Done)
                 this.Destroy();
 
-            if (Random.NextDouble() < LerpHelper.Linear(0,0.5,Frame.Slide))
+            if (Random.NextDouble() < LerpHelper.Linear(0,0.5,Frame.Slide) && Tiles.Any())
             {
                 Tile startTile = Tiles.Pick(Random);
                 Tile endTile = Tiles.Pick(Random);
@@ -1029,13 +1029,28 @@ namespace RoguelikeEngine
 
     class DamagePopup : Particle
     {
-        public EffectMessage Message;
+        protected Func<Vector2> Anchor;
+
+        public Message Message;
         public string Text;
         public TextParameters Parameters;
+
+        public override Vector2 Position
+        {
+            get
+            {
+                return Anchor();
+            }
+            set
+            {
+                //NOOP
+            }
+        }
         public Vector2 Offset => new Vector2(0, -32) * (float)LerpHelper.QuadraticOut(0, 1, Frame.Slide);
 
-        public DamagePopup(SceneGame world, Vector2 position, EffectMessage message, int time) : base(world, position)
+        public DamagePopup(SceneGame world, Func<Vector2> anchor, Message message, int time) : base(world, Vector2.Zero)
         {
+            Anchor = anchor;
             Message = message;
             Text = message.Text;
             Parameters = new TextParameters().SetColor(Color.White, Color.Black).SetBold(true);

@@ -365,7 +365,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, 500));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
-            //Skills.Add(new SkillFireBreath());
+            Skills.Add(new SkillEnderBlast());
             Skills.Add(new SkillEnderRam());
             Skills.Add(new SkillEnderMow());
             Skills.Add(new SkillEnderClaw());
