@@ -470,7 +470,7 @@ namespace RoguelikeEngine
 
             var drawPasses = GameObjects.ToMultiLookup(x => x.GetDrawPasses());
 
-            PushSpriteBatch(samplerState: SamplerState.PointClamp, blendState: NonPremultiplied, transform: WorldTransform);
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
             DrawMap(Map);
 
             drawPasses.DrawPass(this, DrawPass.Tile);

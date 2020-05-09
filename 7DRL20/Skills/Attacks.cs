@@ -758,7 +758,7 @@ namespace RoguelikeEngine.Skills
                 yield return user.WaitSome(50);
                 SpriteReference cinder = SpriteLoader.Instance.AddSprite("content/cinder_ender");
                 new FlarePower(user.World, cinder, user, 50);
-                new ScreenFlashPowerUp(user, () => ColorMatrix.Ender(), 30, 100, 50, 50);
+                new ScreenFlashPowerUp(user, () => ColorMatrix.Ender(), 100, 100, 50, 50);
                 user.AddStatusEffect(new PoweredUp());
                 yield return user.WaitSome(20);
             }
@@ -923,6 +923,7 @@ namespace RoguelikeEngine.Skills
                 user.VisualPosition = user.SlideJump(user.VisualPosition(), new Vector2(user.X, user.Y) * 16, 16, LerpHelper.Linear, 20);
                 yield return user.WaitSome(20);
                 new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
+                new SeismArea(user.World, user.Tiles, 10);
                 var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle();
                 List<Wait> quakes = new List<Wait>();
                 HashSet<Tile> tiles = new HashSet<Tile>();
@@ -949,7 +950,6 @@ namespace RoguelikeEngine.Skills
                 if (!tiles.Contains(tile))
                     damageTiles.Add(tile);
                 tiles.Add(tile);
-                
             }
             new ScreenShakeRandom(user.World, 4, chargeTime + 60, LerpHelper.Invert(LerpHelper.Linear));
             yield return user.WaitSome(chargeTime);

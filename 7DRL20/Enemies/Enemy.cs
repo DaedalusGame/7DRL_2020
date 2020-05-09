@@ -366,15 +366,13 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
             Skills.Add(new SkillEnderBlast());
-            Skills.Add(new SkillEnderRam());
-            Skills.Add(new SkillEnderMow());
-            Skills.Add(new SkillEnderClaw());
+            //Skills.Add(new SkillEnderRam());
+            //Skills.Add(new SkillEnderMow());
+            //Skills.Add(new SkillEnderClaw());
             Skills.Add(new SkillEnderPowerUp());
-            Skills.Add(new SkillEnderFlare());
+            //Skills.Add(new SkillEnderFlare());
             Skills.Add(new SkillEnderQuake());
-            Skills.Add(new SkillSideJump(3,5));
-            //Skills.Add(new SkillDrainTouch());
-            //Skills.Add(new SkillAttack());
+            //Skills.Add(new SkillSideJump(3,5));
         }
 
         public override void Update()

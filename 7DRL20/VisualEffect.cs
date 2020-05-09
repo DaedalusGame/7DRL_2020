@@ -788,6 +788,94 @@ namespace RoguelikeEngine
         }
     }
 
+    class Seism : Particle
+    {
+        protected SpriteReference Sprite;
+        protected float Distance;
+        protected int RandomOffset;
+
+        Vector2 Offset => new Vector2(0,(float)LerpHelper.QuadraticOut(0, -Distance, Frame.Slide));
+
+        public Seism(SceneGame world, SpriteReference sprite, Vector2 position, float distance, int time) : base(world, position)
+        {
+            Frame = new Slider(time);
+            Sprite = sprite;
+            Distance = distance;
+            RandomOffset = Random.Next();
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.SpriteBatch.Draw(Sprite.Texture, Position + Offset + new Vector2(Sprite.Middle.X,Sprite.Height), new Rectangle(RandomOffset % 16, 0, Sprite.Width, Sprite.Height), Color.White, 0, Sprite.Middle, Vector2.One, SpriteEffects.None, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
+    class SeismSmall : VisualEffect
+    {
+        public SeismSmall(SceneGame world, Tile tile, int time) : base(world)
+        {
+            SpriteReference seism0 = SpriteLoader.Instance.AddSprite("content/seism_0");
+            SpriteReference seism1 = SpriteLoader.Instance.AddSprite("content/seism_1");
+            SpriteReference seism2 = SpriteLoader.Instance.AddSprite("content/seism_2");
+            new Seism(world, seism0, tile.VisualPosition, 8, (time * 1) / 4);
+            new Seism(world, seism0, tile.VisualPosition, 12, (time * 2) / 4);
+            new Seism(world, seism1, tile.VisualPosition, 14, (time * 3) / 4);
+            new Seism(world, seism2, tile.VisualPosition, 16, (time * 4) / 4);
+            this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class SeismArea : VisualEffect
+    {
+        public List<Tile> Tiles = new List<Tile>();
+
+        public SeismArea(SceneGame world, IEnumerable<Tile> tiles, int time) : base(world)
+        {
+            var lookup = tiles.ToHashSet();
+            foreach(Tile tile in tiles)
+            {
+                Tile bottom = tile.GetNeighbor(0, 1);
+                Tile top = tile.GetNeighbor(0, -1);
+                if (lookup.Contains(bottom))
+                    continue;
+                new SeismSmall(world, tile, time);
+            }
+            this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
     class Cinder : Particle
     {
         static SimplexPerlin Noise = new SimplexPerlin();
