@@ -226,6 +226,15 @@ namespace RoguelikeEngine
             return !enumerable.Any();
         }
 
+        public static TValue GetOrDefault<TKey,TValue>(this IDictionary<TKey,TValue> dict, TKey key, TValue defaultValue)
+        {
+            TValue value;
+            if (dict.TryGetValue(key, out value))
+                return value;
+            else
+                return defaultValue;
+        }
+
         public static IEnumerable<T> GetAndClean<T>(this List<T> enumerable, Predicate<T> shouldClean)
         {
             enumerable.RemoveAll(shouldClean);

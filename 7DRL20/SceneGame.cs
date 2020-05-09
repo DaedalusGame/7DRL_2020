@@ -217,14 +217,15 @@ namespace RoguelikeEngine
             Player = new Hero(this);
             Player.MoveTo(startTile,0);
             ActionQueue.Add(Player);
-            Enemy testEnemy = new EnderErebizo(this);
+            /*Enemy testEnemy = new EnderErebizo(this);
             testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
             testEnemy.MakeAggressive(Player);
             ActionQueue.Add(testEnemy);
             testEnemy = new EnderErebizo(this);
             testEnemy.MoveTo(startTile.GetNeighbor(2,0),0);
             testEnemy.MakeAggressive(Player);
-            ActionQueue.Add(testEnemy);
+            ActionQueue.Add(testEnemy);*/
+
             /*Player.Pickup(new Ingot(this, Material.Dilithium, 8));
             Player.Pickup(new Ingot(this, Material.Tiberium, 8));
             Player.Pickup(new Ingot(this, Material.Basalt, 8));

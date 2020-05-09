@@ -32,7 +32,7 @@ namespace RoguelikeEngine
             Attacker.OnStartAttack(this);
             Defender.OnStartDefend(this);
 
-            FinalDamage = Elements.ToDictionary(pair => pair.Key, pair => CalculateElementalDamage(pair.Key, pair.Value));
+            FinalDamage = Elements.ToDictionary(pair => pair.Key, pair => CalculateSplitElement(pair.Key, pair.Value * Damage));
 
             foreach (var damage in FinalDamage)
             {
@@ -56,11 +56,50 @@ namespace RoguelikeEngine
             Damage = Math.Max(attack - defense, 0);
         }
 
-        private double CalculateElementalDamage(Element element, double rate)
+        private double CalculateSplitElement(Element element, double damage)
+        {
+            Dictionary<Element, double> finalDamage = new Dictionary<Element, double>() { { element, damage } };
+            while (finalDamage.Any(pair => pair.Key.CanSplit()))
+                finalDamage = SplitElementalDamage(finalDamage);
+            finalDamage = CalculateElementalDamage(finalDamage);
+            return finalDamage.Sum(x => x.Value);
+        }
+
+        private Dictionary<Element, double> SplitElementalDamage(IDictionary<Element, double> elementDamage)
+        {
+            Dictionary<Element, double> finalDamage = new Dictionary<Element, double>();
+
+            foreach(var pair in elementDamage)
+            {
+                if (pair.Key.CanSplit())
+                {
+                    double toSplit = CalculateElementalDamagePart(pair.Key, pair.Value);
+                    foreach (var split in pair.Key.Split())
+                    {
+                        double damage = finalDamage.GetOrDefault(split.Key, 0);
+                        finalDamage[split.Key] = damage + pair.Value * split.Value;
+                    }
+                }
+                else
+                {
+                    double damage = finalDamage.GetOrDefault(pair.Key, 0);
+                    finalDamage[pair.Key] = damage + pair.Value;
+                }
+            }
+
+            return finalDamage;
+        }
+
+        private Dictionary<Element, double> CalculateElementalDamage(IDictionary<Element, double> elementDamage)
+        {
+            return elementDamage.ToDictionary(pair => pair.Key, pair => CalculateElementalDamagePart(pair.Key, pair.Value));
+        }
+
+        private double CalculateElementalDamagePart(Element element, double damage)
         {
             double damageRate = Defender.GetStat(element.DamageRate);
             double resistance = Defender.GetStat(element.Resistance);
-            return Math.Max(0,Damage * rate - resistance) * damageRate;
+            return Math.Max(0, damage - resistance) * damageRate;
         }
     }
 

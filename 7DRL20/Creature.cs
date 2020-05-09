@@ -30,6 +30,16 @@ namespace RoguelikeEngine
             AllElements.Add(this);
         }
 
+        public virtual bool CanSplit()
+        {
+            return false;
+        }
+
+        public virtual IDictionary<Element, double> Split()
+        {
+            return null;
+        }
+
         public override string ToString()
         {
             return Name;
@@ -49,12 +59,177 @@ namespace RoguelikeEngine
         public static Element Dark = new Element("Dark", SpriteLoader.Instance.AddSprite("content/element_dark"));
 
         //Combination Elements
-        public static Element TheEnd = new Element("The End", SpriteLoader.Instance.AddSprite("content/element_the_end"));
+        public static Element Light = new ElementCombined("Light", SpriteLoader.Instance.AddSprite("content/element_light"), new Dictionary<Element, double>()
+        {
+            { Thunder, 0.7 },
+            { Fire, 0.7 }
+        });
+        public static Element Hellfire = new ElementCombined("Hellfire", SpriteLoader.Instance.AddSprite("content/element_hellfire"), new Dictionary<Element, double>()
+        {
+            { Holy, 0.7 },
+            { Fire, 0.7 }
+        });
+        public static Element Drought = new ElementCombined("Drought", SpriteLoader.Instance.AddSprite("content/element_drought"), new Dictionary<Element, double>()
+        {
+            { Water, 1.0 },
+            { Ice, 1.0 }
+        });
+        public static Element BlackFlame = new ElementCombined("Black Flame", SpriteLoader.Instance.AddSprite("content/element_black_flame"), new Dictionary<Element, double>()
+        {
+            { Fire, 0.5 },
+            { Dark, 1.5 }
+        });
+        public static Element RedDevil = new ElementCombined("Red Devil", SpriteLoader.Instance.AddSprite("content/element_red_devil"), new Dictionary<Element, double>()
+        {
+            { Fire, 1.5 },
+            { Dark, 0.5 }
+        });
+        public static Element Darkness = new ElementCombined("Darkness", SpriteLoader.Instance.AddSprite("content/element_darkness"), new Dictionary<Element, double>()
+        {
+            { Ice, 0.8 },
+            { Dark, 0.8 }
+        });
+        public static Element Emperor = new ElementCombined("Emperor", SpriteLoader.Instance.AddSprite("content/element_emperor"), new Dictionary<Element, double>()
+        {
+            { Thunder, 1.5 },
+            { Dark, 0.5 }
+        });
+        public static Element HeavenThunder = new ElementCombined("Heavenly Thunder", SpriteLoader.Instance.AddSprite("content/element_heaven_thunder"), new Dictionary<Element, double>()
+        {
+            { Thunder, 1.5 },
+            { Holy, 0.5 }
+        });
+        public static Element ThunderPole = new ElementCombined("Thunder Pole", SpriteLoader.Instance.AddSprite("content/element_thunderpole"), new Dictionary<Element, double>()
+        {
+            { Thunder, 0.7 },
+            { Earth, 0.7 }
+        });
+        public static Element Steam = new ElementCombined("Steam", SpriteLoader.Instance.AddSprite("content/element_steam"), new Dictionary<Element, double>()
+        {
+            { Water, 0.6 },
+            { Fire, 0.4 }
+        });
+        public static Element Sand = new ElementCombined("Sand", SpriteLoader.Instance.AddSprite("content/element_sand"), new Dictionary<Element, double>()
+        {
+            { Earth, 0.5 },
+            { Wind, 0.5 }
+        });
+        public static Element Mud = new ElementCombined("Mud", SpriteLoader.Instance.AddSprite("content/element_mud"), new Dictionary<Element, double>()
+        {
+            { Water, 0.5 },
+            { Earth, 0.5 }
+        });
+        public static Element Permafrost = new ElementCombined("Permafrost", SpriteLoader.Instance.AddSprite("content/element_permafrost"), new Dictionary<Element, double>()
+        {
+            { Ice, 0.6 },
+            { Earth, 0.6 }
+        });
+        public static Element Storm = new ElementCombined("Storm", SpriteLoader.Instance.AddSprite("content/element_storm"), new Dictionary<Element, double>()
+        {
+            { Water, 0.6 },
+            { Wind, 0.6 }
+        });
+        public static Element Magma = new ElementCombined("Magma", SpriteLoader.Instance.AddSprite("content/element_magma"), new Dictionary<Element, double>()
+        {
+            { Earth, 0.4 },
+            { Fire, 0.8 }
+        });
+        public static Element Metal = new ElementCombined("Metal", SpriteLoader.Instance.AddSprite("content/element_metal"), new Dictionary<Element, double>()
+        {
+            { Earth, 0.6 },
+            { Holy, 0.4 }
+        });
+        public static Element Inferno = new ElementCombined("Inferno", SpriteLoader.Instance.AddSprite("content/element_inferno"), new Dictionary<Element, double>()
+        {
+            { Wind, 0.5 },
+            { Fire, 0.5 }
+        });
+        public static Element Blizzard = new ElementCombined("Blizzard", SpriteLoader.Instance.AddSprite("content/element_blizzard"), new Dictionary<Element, double>()
+        {
+            { Wind, 0.5 },
+            { Ice, 0.5 }
+        });
+        public static Element Arcane = new ElementCombined("Arcane", SpriteLoader.Instance.AddSprite("content/element_arcane"), new Dictionary<Element, double>()
+        {
+            { Dark, 0.5 },
+            { Holy, 0.5 }
+        });
+        public static Element Origin = new ElementCombined("Origin", SpriteLoader.Instance.AddSprite("content/element_origin"), new Dictionary<Element, double>()
+        {
+            { BlackFlame, 0.2 },
+            { Darkness, 0.2 },
+            { RedDevil, 0.2 },
+            { Light, 0.2 },
+            { HeavenThunder, 0.2 },
+            { Drought, 0.2 },
+        });
+        public static Element Chaos = new ElementRandom("Chaos", SpriteLoader.Instance.AddSprite("content/element_demon"), new List<Element>()
+        {
+            Fire,
+            Ice,
+            Water,
+            Thunder,
+            Earth,
+            Wind,
+            Dark,
+            Holy
+        },1);
+        public static Element TheEnd = new ElementCombined("The End", SpriteLoader.Instance.AddSprite("content/element_the_end"), new Dictionary<Element, double>()
+        {
+            { Dark, 2.0 },
+            { Holy, 0.3 }
+        });
 
         public static Element Healing = new Element("Healing", SpriteLoader.Instance.AddSprite("content/element_healing"));
 
         public static Element[] PhysicalElements = new Element[] { Bludgeon, Slash, Pierce };
         public static Element[] MagicalElements = new Element[] { Fire, Ice, Thunder, Water, Wind, Earth, Holy, Dark };
+    }
+
+    class ElementCombined : Element
+    {
+        Dictionary<Element, double> Composites = new Dictionary<Element, double>();
+
+        public ElementCombined(string name, SpriteReference sprite, Dictionary<Element, double> composites) : base(name, sprite)
+        {
+            Composites = composites;
+        }
+
+        public override bool CanSplit()
+        {
+            return true;
+        }
+
+        public override IDictionary<Element, double> Split()
+        {
+            return Composites;
+        }
+    }
+
+    class ElementRandom : Element
+    {
+        Random Random = new Random();
+        List<Element> Composites = new List<Element>();
+        double Total;
+
+        public ElementRandom(string name, SpriteReference sprite, List<Element> composites, double total) : base(name, sprite)
+        {
+            Composites = composites;
+            Total = total;
+        }
+
+        public override bool CanSplit()
+        {
+            return true;
+        }
+
+        public override IDictionary<Element, double> Split()
+        {
+            var pick = Composites.Shuffle().Take(Random.Next(1, Composites.Count));
+            var rates = pick.ToDictionary(x => x, x => Random.NextDouble());
+            var total = rates.Sum(x => x.Value);
+            return rates.ToDictionary(x => x.Key, x => x.Value * Total / total);
+        }
     }
 
     class Stat
@@ -553,7 +728,7 @@ namespace RoguelikeEngine
             yield return CurrentPopups;
             yield return new WaitFrames(this, 50);
             VisualColor = () => ColorMatrix.Tint(Color.Transparent);
-            if (Dead && this != World.Player)
+            if (Dead && !Destroyed && this != World.Player)
                 this.Destroy();
         }
 

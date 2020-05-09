@@ -17,21 +17,62 @@ namespace RoguelikeEngine
         public bool TurnReady => TurnBuildup >= 1;
         public bool RemoveFromQueue => false;
 
-        SceneGame World;
-        Slider Encounter;
-        List<Enemy> Enemies = new List<Enemy>();
-        List<Enemy> Bosses = new List<Enemy>();
+        public Random Random = new Random();
+
+        List<BossData> BossDatabase = new List<BossData>();
+
+        public SceneGame World;
+        public Slider Encounter;
+        public Slider EncounterBoss;
+        public List<Enemy> Enemies = new List<Enemy>();
+        public List<Enemy> Bosses = new List<Enemy>();
+
+        public int SpawnRadius = 6;
+        public int DespawnRadius = 16;
 
         public EnemySpawner(SceneGame world, int time)
         {
             World = world;
             Encounter = new Slider(time);
+            EncounterBoss = new Slider(time);
+
+            BossDatabase.Add(new BossData(this, (tile) =>
+            {
+                var testEnemy = new EnderErebizo(World);
+                testEnemy.MoveTo(tile, 0);
+                testEnemy.MakeAggressive(World.Player);
+                World.ActionQueue.Add(testEnemy);
+                return new[] { testEnemy };
+            })
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 1.0)
+            .SetTile(tile => tile.Opaque, tile => {
+                var rectangle = new Rectangle(tile.X, tile.Y, 2, 2);
+                var checkTiles = tile.GetNearby(rectangle, 0);
+                return checkTiles.All(t => t.Opaque);
+            }));
+        }
+
+        public IEnumerable<Tile> GetValidSpawnLocations(Tile center, Func<Tile,bool> condition, int minRadius)
+        {
+            return center.GetNearby(SpawnRadius)
+                .Where(tile => Math.Abs(tile.X - center.X) >= minRadius && Math.Abs(tile.Y - center.Y) >= minRadius)
+                .Where(condition)
+                .Shuffle(Random);
         }
 
         public Wait TakeTurn(ActionQueue queue)
         {
             Encounter += 1;
+            EncounterBoss += 1;
             Cleanup();
+            SpawnEnemies();
+            SpawnBosses();
+            this.ResetTurn();
+            return Wait.NoWait;
+        }
+
+        private void SpawnEnemies()
+        {
             if (Encounter.Done && Enemies.Count <= 1)
             {
                 var baseTile = World.Player.Tile;
@@ -50,8 +91,22 @@ namespace RoguelikeEngine
 
                 Encounter.Time = 0;
             }
-            this.ResetTurn();
-            return Wait.NoWait;
+        }
+
+        private void SpawnBosses()
+        {
+            if (EncounterBoss.Done)
+            {
+                foreach (BossData bossData in BossDatabase)
+                {
+                    bossData.RuminateSlow();
+                }
+                EncounterBoss.Time = 0;
+            }
+            foreach (BossData bossData in BossDatabase)
+            {
+                bossData.RuminateFast();
+            }
         }
 
         private void Cleanup()
@@ -66,6 +121,7 @@ namespace RoguelikeEngine
                     enemy.Destroy();
             }
             Enemies.RemoveAll(enemy => enemy.Destroyed);
+            Bosses.RemoveAll(enemy => enemy.Destroyed);
         }
     }
 }

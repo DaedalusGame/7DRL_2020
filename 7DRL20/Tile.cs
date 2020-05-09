@@ -373,7 +373,10 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene)
         {
             if (Under != null)
+            {
+                Under.VisualUnderColor = VisualUnderColor;
                 Under.Draw(scene);
+            }
             if (!IsVisible())
                 return;
             var ore = SpriteLoader.Instance.AddSprite("content/ore");

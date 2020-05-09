@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -361,7 +362,10 @@ namespace RoguelikeEngine
         private static ReusableID NewID()
         {
             if (ReusableIDs.Count > 0)
+            {
+                Console.WriteLine("Reusing ID");
                 return ReusableIDs.Dequeue();
+            }
             CurrentID = CurrentID.Next;
             return CurrentID;
         }
@@ -388,6 +392,7 @@ namespace RoguelikeEngine
 
         public static void DeleteHolder(IEffectHolder holder)
         {
+            Debug.Assert(!ReusableIDs.Contains(holder.ObjectID.NextGeneration));
             if (holder.ObjectID == ReusableID.Null)
                 return;
             ReusableIDs.Enqueue(holder.ObjectID.NextGeneration);

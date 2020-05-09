@@ -131,6 +131,120 @@ namespace RoguelikeEngine
         }
     }
 
+    class BleedLesser : StatusEffect
+    { 
+         public static Element Element = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
+
+        public override string Name => $"Lesser Bleed";
+        public override string Description => $"Lose HP over time.";
+
+        public override int MaxStacks => 3;
+
+        public BleedLesser() : base()
+        {
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is DefenseDown;
+        }
+
+        public override void OnStackChange(int delta)
+        {
+            base.OnStackChange(delta);
+            if(Stacks >= MaxStacks)
+            {
+                Remove();
+            }
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Stacks >= 1)
+                Creature.TakeDamage(1, Element);
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class BleedGreater : StatusEffect
+    {
+        public override string Name => $"Greater Bleed";
+        public override string Description => $"Sudden HP damage on each buildup.";
+
+        public double BloodLoss;
+
+        public BleedGreater() : base()
+        {
+        }
+
+        public override void OnStackChange(int delta)
+        {
+            if (delta > 0)
+            {
+                Creature.TakeDamage(delta * 30, BleedLesser.Element);
+                BloodLoss += delta * 30;
+            }
+            if (BloodLoss >= Creature.GetStat(Stat.HP))
+            {
+                //Proc Anemia
+            }
+            base.OnStackChange(delta);
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is BleedGreater;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Stacks >= 1)
+            {
+                Creature.TakeDamage(5, BleedLesser.Element);
+                BloodLoss += 5;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks} ({BloodLoss} Blood Loss)";
+        }
+    }
+
+    class DefenseDownPoison : StatusEffect
+    {
+        public override string Name => $"Defense Poison";
+        public override string Description => "Escalating Defense Down until cured";
+
+        public override int MaxStacks => 1;
+
+        public DefenseDownPoison() : base()
+        {
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Stacks >= 1)
+                Creature.AddStatusEffect(new DefenseDown()
+                {
+                    Buildup = 0.1,
+                    Duration = new Slider(20),
+                });
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is DefenseDownPoison;
+        }
+    }
+
     class DefenseDown : StatusEffect
     {
         public override string Name => $"Defense Down";
@@ -201,37 +315,6 @@ namespace RoguelikeEngine
             base.Update();
             if (Stacks >= 1)
                 Creature.TakeDamage(Math.Pow(2, Stacks - 1), Element);
-        }
-
-        public override string ToString()
-        {
-            return $"{base.ToString()} x{Stacks}";
-        }
-    }
-
-    class Bleeding : StatusEffect
-    {
-        public override string Name => $"Bleeding";
-        public override string Description => $"Sudden HP damage on each buildup.";
-
-        public static Element Element = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
-
-        public Bleeding() : base()
-        {
-        }
-
-        public override void OnStackChange(int delta)
-        {
-            if(delta > 0)
-            {
-                Creature.TakeDamage(delta * 30, Element);
-            }
-            base.OnStackChange(delta);
-        }
-
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is Bleeding;
         }
 
         public override string ToString()

@@ -441,7 +441,7 @@ namespace RoguelikeEngine
             AddHeadEffect(new Trait(this, "Sharp", "Causes bleeding."));
             AddHeadEffect(new OnStartAttack(this, attack =>
             {
-                attack.StatusEffects.Add(new Bleeding() { Buildup = 0.3, Duration = new Slider(20) });
+                attack.StatusEffects.Add(new BleedLesser() { Buildup = 0.3, Duration = new Slider(20) });
             }));
             AddFullEffect(new Trait(this, "Stiff", "Reduce damage taken."));
             AddFullEffect(new OnStartDefend(this, attack =>
