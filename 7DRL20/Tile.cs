@@ -245,8 +245,8 @@ namespace RoguelikeEngine
 
     struct TileColor
     {
-        static ColorMatrix FloorBackground = ColorMatrix.Saturate(0.5f) * ColorMatrix.Scale(0.25f);
-        static ColorMatrix FloorForeground = ColorMatrix.Saturate(0.5f) * ColorMatrix.Scale(0.35f);
+        static ColorMatrix FloorBackground = ColorMatrix.Scale(0.25f) * ColorMatrix.Saturate(0.5f);
+        static ColorMatrix FloorForeground = ColorMatrix.Scale(0.35f) * ColorMatrix.Saturate(0.5f);
 
         public Color Background;
         public Color Foreground;

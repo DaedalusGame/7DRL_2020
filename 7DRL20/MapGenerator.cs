@@ -350,7 +350,7 @@ namespace RoguelikeEngine
 
         public void Generate()
         {
-            SetupPoints(250, 10);
+            SetupPoints(50, 10);
             ConnectPoints();
             ConnectGroups();
             Expand();

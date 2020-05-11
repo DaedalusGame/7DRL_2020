@@ -142,6 +142,145 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    abstract class SkillProjectileBase : Skill
+    {
+        protected delegate IEnumerable<Wait> TrailDelegate(Creature user, Tile tile);
+        protected delegate bool CanCollideDelegate(Creature user, Tile tile);
+        protected delegate IEnumerable<Wait> ImpactDelegate(Creature user, Tile tile);
+
+        public SkillProjectileBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        //TODO: Probably add projectile class so we can have stuff like mirror spells
+        protected IEnumerable<Wait> ShootStraight(Creature user, Tile tile, Point velocity, int time, int maxDistance, Bullet bullet, TrailDelegate trail, CanCollideDelegate canCollide, ImpactDelegate impact)
+        {
+            bullet.Setup(tile.VisualPosition, time * maxDistance);
+            bool impacted = false;
+            List<Wait> waits = new List<Wait>();
+            for(int i = 0; i < maxDistance && !impacted; i++)
+            {
+                Tile nextTile = tile.GetNeighbor(velocity.X, velocity.Y);
+                impacted = canCollide(user, nextTile);
+                bullet.Move(nextTile.VisualPosition, time);
+                if (impacted)
+                {
+                    yield return user.WaitSome(time/2);
+                    bullet.Destroy();
+                    waits.Add(Scheduler.Instance.RunAndWait(impact(user, nextTile)));
+                }
+                else
+                {
+                    yield return user.WaitSome(time);
+                    waits.Add(Scheduler.Instance.RunAndWait(trail(user, nextTile)));
+                }
+                tile = nextTile;
+            }
+            yield return new WaitAll(waits);
+        }
+
+        protected IEnumerable<Wait> NoTrail(Creature user, Tile tile)
+        {
+            return Enumerable.Empty<Wait>();
+        }
+
+        protected bool CollideSolid(Creature user, Tile tile)
+        {
+            return tile.Solid || tile.Creatures.Any(x => x != user);
+        }
+    }
+
+    class SkillBloodSword : SkillProjectileBase
+    {
+        public SkillBloodSword() : base("Attack", "Blood Sword", 1, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, 8))
+                return false;
+            return base.CanUse(user);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            Point velocity = user.Facing.ToOffset();
+            Consume();
+            yield return user.WaitSome(20);
+            var pos = new Vector2(user.X * 16, user.Y * 16);
+            user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
+            user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+            yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+        }
+
+        private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.TwoColor(new Color(129, 166, 0), new Color(237, 255, 106)), Color.Red, 0);
+            return ShootStraight(user, tile, velocity, 3, 10, bullet, NoTrail, CollideSolid, Impact);
+            //new Color(225, 174, 210)
+        }
+
+        public IEnumerable<Wait> Impact(Creature user, Tile tile)
+        {
+            foreach (Creature creature in tile.Creatures)
+                user.Attack(creature, 0, 0, BulletAttack);
+            yield return user.WaitSome(0);
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new AttackDrain(attacker, defender, 1.0);
+            attack.Elements.Add(Element.Slash, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillDeathSword : SkillProjectileBase
+    {
+        public SkillDeathSword() : base("Attack", "Death Sword", 1, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            Point velocity = user.Facing.ToOffset();
+            Consume();
+            yield return user.WaitSome(20);
+            var pos = new Vector2(user.X * 16, user.Y * 16);
+            user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
+            user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+            List<Wait> bulletWaits = new List<Wait>();
+            Point sideOffset = user.Facing.TurnRight().ToOffset();
+            for (int i = -1; i <= 1; i++)
+            {
+                bulletWaits.Add(Scheduler.Instance.RunAndWait(Shoot(user, user.Tile.GetNeighbor(sideOffset.X * i, sideOffset.Y * i), velocity)));
+            }
+            yield return new WaitAll(bulletWaits);
+        }
+
+        private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.Tint(new Color(225, 174, 210)), Color.Black, 0);
+            return ShootStraight(user, tile, velocity, 3, 10, bullet, NoTrail, CollideSolid, Impact);
+        }
+
+        public IEnumerable<Wait> Impact(Creature user, Tile tile)
+        {
+            foreach (Creature creature in tile.Creatures)
+                user.Attack(creature, 0, 0, BulletAttack);
+            yield return user.WaitSome(0);
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Slash, 1.0);
+            return attack;
+        }
+    }
+
+
     abstract class SkillRamBase : Skill
     {
         protected int MaxDistance;
@@ -195,6 +334,7 @@ namespace RoguelikeEngine.Skills
                     }
                     if (creatureHits > MaxCreatureHits || wallHits > MaxWallHits || creatureHits + wallHits > MaxTotalHits)
                         break;
+                    new SeismArea(user.World, user.Tiles, 8);
                     user.ForceMove(offset.X, offset.Y, 3);
                     yield return user.WaitSome(3);
                 }
@@ -705,7 +845,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillIronMaiden : Skill
     {
-        public SkillIronMaiden() : base("Iron Maiden", "Lowers enemy defense.", 2, 5, float.PositiveInfinity)
+        public SkillIronMaiden() : base("Iron Maiden", "Lowers enemy defense.", 4, 10, float.PositiveInfinity)
         {
         }
 

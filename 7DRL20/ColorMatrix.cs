@@ -206,7 +206,7 @@ namespace RoguelikeEngine
 
         public Color Transform(Color color)
         {
-            return new Color(Vector4.Transform(color.ToVector4(),Matrix)+Add);
+            return new Color(Vector4.Transform(color.ToVector4(),Matrix.Transpose(Matrix))+Add);
         }
 
         internal static ColorMatrix Ender()

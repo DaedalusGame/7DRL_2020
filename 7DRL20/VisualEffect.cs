@@ -711,6 +711,123 @@ namespace RoguelikeEngine
         public abstract void Impact(Vector2 position);
     }
 
+    abstract class Bullet : Projectile
+    {
+        public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MoveFrame.Slide);
+
+        public Slider MoveFrame;
+
+        public Bullet(SceneGame world, Vector2 positionStart, int time) : base(world, positionStart, positionStart, time)
+        {
+            MoveFrame = new Slider(1);
+        }
+
+        public void Setup(Vector2 position, int time)
+        {
+            PositionStart = PositionEnd = position;
+            Frame = new Slider(time);
+        }
+
+        public void Move(Vector2 position, int time)
+        {
+            PositionStart = Position;
+            PositionEnd = position;
+            MoveFrame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            MoveFrame += 1;
+        }
+    }
+
+    class Trail : Particle
+    {
+        public SpriteReference Sprite;
+        public Vector2 Velocity;
+        public float Angle;
+        public Color Color;
+
+        public Trail(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float angle, Color color, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Frame = new Slider(time);
+            Velocity = velocity;
+            Angle = angle;
+            Color = color;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            Position += Velocity;
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectLow;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            Color color = new Color(Color.R, Color.G, Color.B, (int)MathHelper.Lerp(Color.A, 0, Frame.Slide));
+            scene.DrawSpriteExt(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), Position, Sprite.Middle, Angle, Vector2.One, SpriteEffects.None, color, 0);
+        }
+    }
+
+    class BulletAngular : Bullet
+    {
+        protected SpriteReference Sprite;
+        protected ColorMatrix Color;
+
+        public BulletAngular(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix color, int time) : base(world, positionStart, time)
+        {
+            Sprite = sprite;
+            Color = color;
+        }
+
+        public override void Impact(Vector2 position)
+        {
+            //NOOP
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            float angle = Util.VectorToAngle(PositionEnd - PositionStart);
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(Color, matrix);
+            });
+            scene.DrawSpriteExt(Sprite, 0, Position, Sprite.Middle, angle, SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
+    class BulletTrail : BulletAngular
+    {
+        Color TrailColor;
+
+        public BulletTrail(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix color, Color trailColor, int time) : base(world, sprite, positionStart, color, time)
+        {
+            TrailColor = trailColor;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            float angle = Util.VectorToAngle(PositionEnd - PositionStart);
+            new Trail(World, Sprite, Position, Vector2.Zero, angle, TrailColor, 10);
+        }
+    }
+
     class LightningSpark : Particle
     {
         public SpriteReference Sprite;
