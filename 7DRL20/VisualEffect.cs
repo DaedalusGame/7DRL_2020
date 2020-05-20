@@ -39,9 +39,14 @@ namespace RoguelikeEngine
         public abstract IEnumerable<DrawPass> GetDrawPasses();
 
         public abstract void Draw(SceneGame scene, DrawPass pass);
+
+        public virtual bool ShouldDraw(Map map)
+        {
+            return true;
+        }
     }
 
-    class CurrentSkill : VisualEffect
+    /*class CurrentSkill : VisualEffect
     {
         public Skill Skill;
 
@@ -67,7 +72,7 @@ namespace RoguelikeEngine
         {
             return Enumerable.Empty<DrawPass>();
         }
-    }
+    }*/
 
     abstract class ScreenFlash : VisualEffect
     {
@@ -75,6 +80,7 @@ namespace RoguelikeEngine
         {
             get;
         }
+        public bool Delete = true;
 
         public ScreenFlash(SceneGame world, float time) : base(world)
         {
@@ -84,7 +90,7 @@ namespace RoguelikeEngine
         public override void Update()
         {
             base.Update();
-            if (Frame.Done)
+            if (Frame.Done && Delete)
             {
                 this.Destroy();
             }
@@ -183,6 +189,21 @@ namespace RoguelikeEngine
                 Frame.Time = 0;
             }
             base.Update();
+        }
+    }
+
+    class ScreenFade : ScreenFlash
+    {
+        Func<ColorMatrix> ColorFunction;
+        LerpHelper.Delegate Lerp;
+
+        public override ColorMatrix Color => ColorMatrix.Lerp(ColorMatrix.Identity, ColorFunction(), (float)Lerp(0,1,Frame.Slide));
+
+        public ScreenFade(SceneGame world, Func<ColorMatrix> color, LerpHelper.Delegate lerp, bool delete, float time) : base(world, time)
+        {
+            ColorFunction = color;
+            Lerp = lerp;
+            Delete = delete;
         }
     }
 

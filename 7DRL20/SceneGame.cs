@@ -184,9 +184,10 @@ namespace RoguelikeEngine
         public RenderTarget2D Lava;
         public RenderTarget2D Water;
 
+        public Map CameraMap;
         public Vector2 Camera => Player.VisualCamera() + new Vector2(8,8);
         public Vector2 CameraSize => new Vector2(Viewport.Width / 2, Viewport.Height / 2);
-        public Vector2 CameraPosition => FitCamera(Camera - CameraSize / 2, new Vector2(Map.Width * 16, Map.Height * 16));
+        public Vector2 CameraPosition => CameraMap != null ? FitCamera(Camera - CameraSize / 2, new Vector2(CameraMap.Width * 16, CameraMap.Height * 16)) : (Camera - CameraSize / 2);
 
         public Creature Player;
         public IEnumerable<Creature> Entities => GameObjects.OfType<Creature>();
@@ -197,7 +198,7 @@ namespace RoguelikeEngine
         public Queue<IGameObject> ToAdd = new Queue<IGameObject>();
 
         public List<Quest> Quests = new List<Quest>();
-        public CurrentSkill CurrentSkill => GameObjects.OfType<CurrentSkill>().FirstOrDefault();
+        public Skill CurrentSkill;
 
         string Tooltip = "Test";
         Point? TileCursor;
@@ -206,7 +207,7 @@ namespace RoguelikeEngine
         {
             Menu = new PlayerUI(this);
             Map = new Map(this, 100, 100);
-            
+
             MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Random.Next());
             generator.Generate();
             generator.Print(Map);
@@ -226,6 +227,8 @@ namespace RoguelikeEngine
             testEnemy.MakeAggressive(Player);
             ActionQueue.Add(testEnemy);*/
 
+            CameraMap = Map;
+
             /*Player.Pickup(new Ingot(this, Material.Dilithium, 8));
             Player.Pickup(new Ingot(this, Material.Tiberium, 8));
             Player.Pickup(new Ingot(this, Material.Basalt, 8));
@@ -243,7 +246,7 @@ namespace RoguelikeEngine
             var anvilTile = startFloors.ElementAt(0);
             var smelterTile = startFloors.ElementAt(1);
 
-            anvilTile.PlaceOn(new Anvil());
+            anvilTile.Replace(new StairUp());
             smelterTile.PlaceOn(new Smelter(this));
 
             Material[] possibleMaterials = new[] { Material.Karmesine, Material.Ovium, Material.Jauxum, Material.Basalt, Material.Coal };
@@ -398,9 +401,9 @@ namespace RoguelikeEngine
                 TileCursor = null;
 
             Tooltip = string.Empty;
-            if (TileCursor.HasValue)
+            if (TileCursor.HasValue && CameraMap != null)
             {
-                Tile tile = Map.GetTile(TileCursor.Value.X, TileCursor.Value.Y);
+                Tile tile = CameraMap.GetTile(TileCursor.Value.X, TileCursor.Value.Y);
                 if(tile != null && tile.IsVisible())
                     tile.AddTooltip(ref Tooltip);
             }
@@ -460,7 +463,8 @@ namespace RoguelikeEngine
             Projection = Matrix.CreateOrthographicOffCenter(0, Viewport.Width, Viewport.Height, 0, 0, -1);
             WorldTransform = CreateViewMatrix();
 
-            IEnumerable<ScreenShake> screenShakes = VisualEffects.OfType<ScreenShake>();
+            IEnumerable<VisualEffect> visualEffects = VisualEffects.Where(x => x.ShouldDraw(CameraMap));
+            IEnumerable<ScreenShake> screenShakes = visualEffects.OfType<ScreenShake>();
             if (screenShakes.Any())
             {
                 ScreenShake screenShake = screenShakes.WithMax(effect => effect.Offset.LengthSquared());
@@ -468,10 +472,10 @@ namespace RoguelikeEngine
                     WorldTransform *= Matrix.CreateTranslation(screenShake.Offset.X, screenShake.Offset.Y, 0);
             }
 
-            var drawPasses = GameObjects.ToMultiLookup(x => x.GetDrawPasses());
+            var drawPasses = GameObjects.Where(x => x.ShouldDraw(CameraMap)).ToMultiLookup(x => x.GetDrawPasses());
 
             PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
-            DrawMap(Map);
+            DrawMap(CameraMap);
 
             drawPasses.DrawPass(this, DrawPass.Tile);
             drawPasses.DrawPass(this, DrawPass.Item);
@@ -488,7 +492,7 @@ namespace RoguelikeEngine
             //Render to screen
             ColorMatrix color = ColorMatrix.Identity;
 
-            IEnumerable<ScreenFlash> screenFlashes = VisualEffects.OfType<ScreenFlash>();
+            IEnumerable<ScreenFlash> screenFlashes = visualEffects.OfType<ScreenFlash>();
             foreach (ScreenFlash screenFlash in screenFlashes)
             {
                 color *= screenFlash.Color;
@@ -510,7 +514,7 @@ namespace RoguelikeEngine
                 DrawSprite(cursor_tile, Frame / 8, new Vector2(TileCursor.Value.X * 16, TileCursor.Value.Y * 16), SpriteEffects.None, 0);
             }
 
-            DrawQuests(Map);
+            DrawQuests(CameraMap);
 
             drawPasses.DrawPass(this, DrawPass.UIWorld);
 
@@ -522,7 +526,7 @@ namespace RoguelikeEngine
 
             PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap);
 
-            DrawQuestText(Map);
+            DrawQuestText(CameraMap);
 
             drawPasses.DrawPass(this, DrawPass.UI);
 
@@ -576,6 +580,9 @@ namespace RoguelikeEngine
 
         private void DrawMap(Map map)
         {
+            if (map == null)
+                return;
+
             int drawX = (int)(Camera.X / 16);
             int drawY = (int)(Camera.Y / 16);
             int drawRadius = 30;
@@ -588,6 +595,9 @@ namespace RoguelikeEngine
 
         private void DrawQuests(Map map)
         {
+            if (map == null)
+                return;
+
             SpriteReference cursor_tile = SpriteLoader.Instance.AddSprite("content/cursor_tile");
 
             int drawX = (int)(Camera.X / 16);
@@ -608,6 +618,9 @@ namespace RoguelikeEngine
 
         private void DrawQuestText(Map map)
         {
+            if (map == null)
+                return;
+
             HashSet<Quest> RenderedQuests = new HashSet<Quest>();
 
             int drawX = (int)(Camera.X / 16);

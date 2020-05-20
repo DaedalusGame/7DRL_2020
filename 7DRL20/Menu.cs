@@ -54,7 +54,7 @@ namespace RoguelikeEngine
     {
         public SceneGame Scene;
         Menu SubMenu;
-        InfoBox SkillInfo;
+        SkillBox SkillInfo;
 
         Slider GameOver = new Slider(100);
         MenuTextSelection GameOverMenu;
@@ -98,13 +98,12 @@ namespace RoguelikeEngine
             if (SkillInfo != null)
             {
                 SkillInfo.Update(scene);
-                if (Scene.CurrentSkill == null)
+                if (SkillInfo.ShouldClose)
                     SkillInfo = null;
             }
             else if (Scene.CurrentSkill != null)
             {
-                var skill = Scene.CurrentSkill.Skill;
-                SkillInfo = new InfoBox(() => skill.Name, () => skill.Description, new Vector2(Scene.Viewport.Width / 2, 64), 300, 32);
+                SkillInfo = new SkillBox(Scene, new Vector2(Scene.Viewport.Width / 2, 64), 300, 32);
             }
 
             if (SubMenu != null)
@@ -938,6 +937,26 @@ namespace RoguelikeEngine
                 DrawLabelledUI(scene, textbox, rect, openCoeff >= 1 ? Name() : string.Empty);
             if (openCoeff >= 1)
                 scene.DrawText(Text(), new Vector2(x, y), Alignment.Left, new TextParameters().SetColor(Color.White,Color.Black).SetConstraints(Width - 16, Height));
+        }
+    }
+
+    class SkillBox : InfoBox
+    {
+        SceneGame Scene;
+        Skill Skill => Scene.CurrentSkill;
+
+        public SkillBox(SceneGame scene, Vector2 position, int width, int height) : base(null, null, position, width, height)
+        {
+            Scene = scene;
+            Name = () => Skill?.Name ?? "";
+            Text = () => Skill?.Description ?? "";
+        }
+
+        public override void Update(SceneGame scene)
+        {
+            base.Update(scene);
+            if (Skill == null)
+                ShouldClose = true;
         }
     }
 

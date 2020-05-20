@@ -8,44 +8,48 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Skills
 {
-    class SkillAttack : Skill
+    abstract class SkillAttackBase : Skill
+    {
+        public override bool Hidden => true;
+
+        public SkillAttackBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            return base.CanUse(user) && InMeleeRange(user);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            Consume();
+            var offset = user.Facing.ToOffset();
+            return user.RoutineAttack(offset.X, offset.Y, Attack);
+        }
+
+        protected abstract Attack Attack(Creature attacker, IEffectHolder defender);
+    }
+
+    class SkillAttack : SkillAttackBase
     {
         public SkillAttack() : base("Attack", "Physical Attack", 0, 0, float.PositiveInfinity)
         {
         }
 
-        public override bool CanUse(Creature user)
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
-            return base.CanUse(user) && InMeleeRange(user);
-        }
-
-        public override IEnumerable<Wait> RoutineUse(Creature user)
-        {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack);
+            return Creature.MeleeAttack(attacker, defender);
         }
     }
 
-    class SkillDrainTouch : Skill
+    class SkillDrainTouch : SkillAttackBase
     {
         public SkillDrainTouch() : base("Attack", "Drain Touch", 0, 3, float.PositiveInfinity)
         {
         }
 
-        public override bool CanUse(Creature user)
-        {
-            return base.CanUse(user) && InMeleeRange(user);
-        }
-
-        public override IEnumerable<Wait> RoutineUse(Creature user)
-        {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, DrainAttack);
-        }
-
-        private Attack DrainAttack(Creature attacker, IEffectHolder defender)
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new AttackDrain(attacker, defender, 0.6);
             attack.Elements.Add(Element.Pierce, 2.0);
@@ -53,25 +57,13 @@ namespace RoguelikeEngine.Skills
         }
     }
 
-    class SkillAcidTouch : Skill
+    class SkillAcidTouch : SkillAttackBase
     {
         public SkillAcidTouch() : base("Attack", "Acid Touch", 0, 1, float.PositiveInfinity)
         {
         }
 
-        public override bool CanUse(Creature user)
-        {
-            return base.CanUse(user) && InMeleeRange(user);
-        }
-
-        public override IEnumerable<Wait> RoutineUse(Creature user)
-        {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, AcidAttack);
-        }
-
-        private Attack AcidAttack(Creature attacker, IEffectHolder defender)
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
             attack.Elements.Add(Element.Bludgeon, 0.5);
@@ -84,25 +76,13 @@ namespace RoguelikeEngine.Skills
         }
     }
 
-    class SkillPoisonTouch : Skill
+    class SkillPoisonTouch : SkillAttackBase
     {
         public SkillPoisonTouch() : base("Attack", "Poison Touch", 0, 1, float.PositiveInfinity)
         {
         }
 
-        public override bool CanUse(Creature user)
-        {
-            return base.CanUse(user) && InMeleeRange(user);
-        }
-
-        public override IEnumerable<Wait> RoutineUse(Creature user)
-        {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, PoisonAttack);
-        }
-
-        private Attack PoisonAttack(Creature attacker, IEffectHolder defender)
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
             attack.Elements.Add(Element.Bludgeon, 0.5);
@@ -115,25 +95,13 @@ namespace RoguelikeEngine.Skills
         }
     }
 
-    class SkillEnderClaw : Skill
+    class SkillEnderClaw : SkillAttackBase
     {
         public SkillEnderClaw() : base("Attack", "Ender Claw", 0, 1, float.PositiveInfinity)
         {
         }
 
-        public override bool CanUse(Creature user)
-        {
-            return base.CanUse(user) && InMeleeRange(user);
-        }
-
-        public override IEnumerable<Wait> RoutineUse(Creature user)
-        {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, EnderAttack);
-        }
-
-        private Attack EnderAttack(Creature attacker, IEffectHolder defender)
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
             attack.Elements.Add(Element.Slash, 0.5);
@@ -155,23 +123,25 @@ namespace RoguelikeEngine.Skills
         //TODO: Probably add projectile class so we can have stuff like mirror spells
         protected IEnumerable<Wait> ShootStraight(Creature user, Tile tile, Point velocity, int time, int maxDistance, Bullet bullet, TrailDelegate trail, CanCollideDelegate canCollide, ImpactDelegate impact)
         {
-            bullet.Setup(tile.VisualPosition, time * maxDistance);
+            bullet?.Setup(tile.VisualPosition, time * maxDistance);
             bool impacted = false;
             List<Wait> waits = new List<Wait>();
             for(int i = 0; i < maxDistance && !impacted; i++)
             {
                 Tile nextTile = tile.GetNeighbor(velocity.X, velocity.Y);
                 impacted = canCollide(user, nextTile);
-                bullet.Move(nextTile.VisualPosition, time);
+                bullet?.Move(nextTile.VisualPosition, time);
                 if (impacted)
                 {
-                    yield return user.WaitSome(time/2);
-                    bullet.Destroy();
+                    if(time > 0)
+                        yield return user.WaitSome(time/2);
+                    bullet?.Destroy();
                     waits.Add(Scheduler.Instance.RunAndWait(impact(user, nextTile)));
                 }
                 else
                 {
-                    yield return user.WaitSome(time);
+                    if (time > 0)
+                        yield return user.WaitSome(time);
                     waits.Add(Scheduler.Instance.RunAndWait(trail(user, nextTile)));
                 }
                 tile = nextTile;
@@ -192,13 +162,15 @@ namespace RoguelikeEngine.Skills
 
     class SkillBloodSword : SkillProjectileBase
     {
-        public SkillBloodSword() : base("Attack", "Blood Sword", 1, 3, float.PositiveInfinity)
+        int MaxDistance = 10;
+
+        public SkillBloodSword() : base("Blood Sword", "Drain HP", 1, 3, float.PositiveInfinity)
         {
         }
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, 8))
+            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
                 return false;
             return base.CanUse(user);
         }
@@ -207,6 +179,7 @@ namespace RoguelikeEngine.Skills
         {
             Point velocity = user.Facing.ToOffset();
             Consume();
+            ShowSkill(user);
             yield return user.WaitSome(20);
             var pos = new Vector2(user.X * 16, user.Y * 16);
             user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
@@ -217,14 +190,15 @@ namespace RoguelikeEngine.Skills
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
             Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.TwoColor(new Color(129, 166, 0), new Color(237, 255, 106)), Color.Red, 0);
-            return ShootStraight(user, tile, velocity, 3, 10, bullet, NoTrail, CollideSolid, Impact);
+            return ShootStraight(user, tile, velocity, 3, MaxDistance, bullet, NoTrail, CollideSolid, Impact);
             //new Color(225, 174, 210)
         }
 
         public IEnumerable<Wait> Impact(Creature user, Tile tile)
         {
+            Point velocity = user.Facing.ToOffset();
             foreach (Creature creature in tile.Creatures)
-                user.Attack(creature, 0, 0, BulletAttack);
+                user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
             yield return user.WaitSome(0);
         }
 
@@ -236,9 +210,60 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillCannonShot : SkillProjectileBase
+    {
+        int MaxDistance = 8;
+
+        public SkillCannonShot() : base("Cannon", "Ranged Fire Attack", 2, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
+                return false;
+            return base.CanUse(user);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            Consume();
+            var velocity = user.Facing.ToOffset();
+            Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
+            ShowSkill(user);
+            yield return user.WaitSome(50);
+            user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * -8, velocity.Y * -8), pos, LerpHelper.Linear, 10);
+            yield return user.WaitSome(20);
+            yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+        }
+
+        private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            return ShootStraight(user, tile, velocity, 0, MaxDistance, null, NoTrail, CollideSolid, Impact);
+            //new Color(225, 174, 210)
+        }
+
+        public IEnumerable<Wait> Impact(Creature user, Tile tile)
+        {
+            Point velocity = user.Facing.ToOffset();
+            new FireExplosion(user.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 0, 15);
+            foreach (Creature creature in tile.Creatures)
+                user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
+            yield return user.WaitSome(0);
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Fire, 1.0);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
+
     class SkillDeathSword : SkillProjectileBase
     {
-        public SkillDeathSword() : base("Attack", "Death Sword", 1, 3, float.PositiveInfinity)
+        public SkillDeathSword() : base("Death Blade", "Wide-range slashing attack", 1, 3, float.PositiveInfinity)
         {
         }
 
@@ -267,8 +292,9 @@ namespace RoguelikeEngine.Skills
 
         public IEnumerable<Wait> Impact(Creature user, Tile tile)
         {
+            Point velocity = user.Facing.ToOffset();
             foreach (Creature creature in tile.Creatures)
-                user.Attack(creature, 0, 0, BulletAttack);
+                user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
             yield return user.WaitSome(0);
         }
 
@@ -355,6 +381,8 @@ namespace RoguelikeEngine.Skills
 
     class SkillRam : SkillRamBase
     {
+        public override bool Hidden => true;
+
         public SkillRam() : base("Attack", "Ram", 1, 1, float.PositiveInfinity)
         {
 
@@ -370,7 +398,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderRam : SkillRamBase
     {
-        public SkillEnderRam() : base("Attack", "Ender Ram", 1, 5, float.PositiveInfinity)
+        public SkillEnderRam() : base("Ender Ram", "Physical The End attack. Destroys terrain.", 1, 5, float.PositiveInfinity)
         {
             MaxDistance = 9;
             MaxTotalHits = 6;
@@ -391,7 +419,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderMow : SkillRamBase
     {
-        public SkillEnderMow() : base("Attack", "Ender Mow", 1, 3, float.PositiveInfinity)
+        public SkillEnderMow() : base("Ender Mow", "Physical The End attack", 1, 3, float.PositiveInfinity)
         {
             MaxDistance = 3;
             MaxTotalHits = 2;
@@ -411,7 +439,7 @@ namespace RoguelikeEngine.Skills
         }
     }
 
-    class SkillCannon : Skill
+    /*class SkillCannon : Skill
     {
         public SkillCannon() : base("Cannon", "Ranged Fire Attack", 2, 3, float.PositiveInfinity)
         {
@@ -430,7 +458,7 @@ namespace RoguelikeEngine.Skills
             var offset = user.Facing.ToOffset();
             bool hit = false;
             Vector2 pos = new Vector2(user.X*16, user.Y*16);
-            ShowSkill(user, SkillInfoTime);
+            ShowSkill(user);
             yield return user.WaitSome(50);
             user.VisualPosition = user.Slide(pos + new Vector2(offset.X * -8, offset.Y * -8), pos, LerpHelper.Linear, 10);
             yield return user.WaitSome(20);
@@ -439,7 +467,7 @@ namespace RoguelikeEngine.Skills
                 var shootTile = user.Tile.GetNeighbor(i * offset.X, i * offset.Y);
                 foreach(var target in shootTile.Creatures)
                 {
-                    new FireExplosion(target.World, new Vector2(shootTile.X * 16 + 8, shootTile.Y * 16 + 8), Vector2.Zero, 0, 15);
+                    
                     yield return user.Attack(target, offset.X, offset.Y, ExplosionAttack);
                     hit = true;
                     break;
@@ -456,7 +484,7 @@ namespace RoguelikeEngine.Skills
             attack.Elements.Add(Element.Bludgeon, 1.0);
             return attack;
         }
-    }
+    }*/
 
     class SkillLightning : Skill
     {
@@ -474,7 +502,7 @@ namespace RoguelikeEngine.Skills
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             Consume();
-            ShowSkill(user, SkillInfoTime);
+            ShowSkill(user);
             yield return user.WaitSome(50);
 
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
@@ -660,6 +688,8 @@ namespace RoguelikeEngine.Skills
 
     abstract class SkillJumpBase : Skill
     {
+        public override bool Hidden => true;
+
         public struct TileDirection
         {
             public Tile Tile;
@@ -789,6 +819,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillDive : Skill
     {
+        public override bool Hidden => true;
         public override bool WaitUse => true;
 
         public SkillDive() : base("Dive", "Move to tile nearby", 2, 3, float.PositiveInfinity)
@@ -812,6 +843,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillWarp : Skill
     {
+        public override bool Hidden => true;
         public override bool WaitUse => true;
 
         public SkillWarp() : base("Warp", "Move to chase enemy", 0, 2, float.PositiveInfinity)
@@ -861,7 +893,7 @@ namespace RoguelikeEngine.Skills
             if (user is Enemy enemy)
             {
                 Consume();
-                ShowSkill(user, SkillInfoTime);
+                ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
                 var target = enemy.AggroTarget;
@@ -878,6 +910,8 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderPowerUp : Skill
     {
+        public override bool Hidden => true;
+
         public SkillEnderPowerUp() : base("Power Up", "Enrage.", 3, 10, float.PositiveInfinity)
         {
         }
@@ -923,7 +957,7 @@ namespace RoguelikeEngine.Skills
             if (user is Enemy enemy)
             {
                 Consume();
-                ShowSkill(user, SkillInfoTime);
+                ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
                 var target = enemy.AggroTarget;
@@ -950,6 +984,8 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderBlast : Skill
     {
+        public override bool Hidden => true;
+
         public SkillEnderBlast() : base("Ender Blast", "Frees Ender Erebizo from rock.", 0, 0, float.PositiveInfinity)
         {
         }
@@ -1055,7 +1091,7 @@ namespace RoguelikeEngine.Skills
             if (user is Enemy enemy)
             {
                 Consume();
-                ShowSkill(user, SkillInfoTime);
+                ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 //TODO: roar?
                 //TODO: jump visual, screenshake, screen distort

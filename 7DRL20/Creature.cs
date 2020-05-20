@@ -483,7 +483,7 @@ namespace RoguelikeEngine
                 return null;
             }
         }
-        public Map Map => Tile.Map;
+        public Map Map => Tile?.Map;
         public IEnumerable<Tile> Tiles => Mask.Select(point => Tile.GetNeighbor(point.X, point.Y));
 
         public string Name;
@@ -852,6 +852,11 @@ namespace RoguelikeEngine
                 tooltip += $"{Game.FORMAT_BOLD}{statusEffect.Name}{Game.FORMAT_BOLD} {statusEffect.BuildupTooltip} {statusEffect.DurationText}\n";
                 tooltip += $"{statusEffect.Description}\n";
             }
+        }
+
+        public bool ShouldDraw(Map map)
+        {
+            return Map == map;
         }
 
         public IEnumerable<DrawPass> GetDrawPasses() 

@@ -38,11 +38,11 @@ namespace RoguelikeEngine
 
             BossDatabase.Add(new BossData(this, (tile) =>
             {
-                var testEnemy = new EnderErebizo(World);
-                testEnemy.MoveTo(tile, 0);
-                testEnemy.MakeAggressive(World.Player);
-                World.ActionQueue.Add(testEnemy);
-                return new[] { testEnemy };
+                var boss = new EnderErebizo(World);
+                boss.MoveTo(tile, 0);
+                boss.MakeAggressive(World.Player);
+                World.ActionQueue.Add(boss);
+                return new[] { boss };
             })
             .SetSlowChance(data => data.AliveBosses.Count < 2, 1.0)
             .SetTile(tile => tile.Opaque, tile => {

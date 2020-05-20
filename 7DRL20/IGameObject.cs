@@ -29,6 +29,8 @@ namespace RoguelikeEngine
 
         void OnDestroy();
 
+        bool ShouldDraw(Map map);
+
         IEnumerable<DrawPass> GetDrawPasses();
 
         void Draw(SceneGame scene, DrawPass pass);

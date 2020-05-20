@@ -20,6 +20,7 @@ namespace RoguelikeEngine
         Slider Cooldown;
         Slider Uses;
 
+        public virtual bool Hidden => false;
         public virtual bool WaitUse => true;
 
         public Skill(string name, string description, int warmup, int cooldown, float uses)
@@ -42,16 +43,35 @@ namespace RoguelikeEngine
             Uses += 1;
         }
 
+        public string GetTimeTooltip()
+        {
+            var WarmupLeft = Math.Max(0, Warmup.EndTime - Warmup.Time);
+            var CooldownLeft = Math.Max(0, Cooldown.EndTime - Cooldown.Time);
+
+            if (WarmupLeft > 0)
+                return $"{WarmupLeft} WU";
+            else if(CooldownLeft > 0)
+                return $"{CooldownLeft} CD";
+            else
+                return $"Ready";
+        }
+
         public virtual void Update()
         {
             Warmup += 1;
             Cooldown += 1;
         }
 
-        protected void ShowSkill(Creature user, int time)
+        public void ShowSkill(Creature user)
         {
-            new CurrentSkill(user.World, this, time);
+            //new CurrentSkill(user.World, this, time);
             user.VisualColor = user.Flick(user.Flash(user.Static(Color.Black), user.Static(ColorMatrix.Greyscale() * ColorMatrix.Scale(2)), 2, 2), user.Static(Color.White), 30);
+            user.World.CurrentSkill = this;
+        }
+
+        public void HideSkill(Creature user)
+        {
+            user.World.CurrentSkill = null;
         }
 
         protected bool InMeleeRange(Creature user)

@@ -12,7 +12,7 @@ namespace RoguelikeEngine
     {
         public static GeneratorTile Empty = new GeneratorTile(' ') { Print = (generator, tile, group) => tile.Replace(new WallCave()) };
         public static GeneratorTile Floor = new GeneratorTile('.') { Print = (generator, tile, group) => tile.Replace(new FloorCave()) };
-        public static GeneratorTile FloorBrick = new GeneratorTile('.') { Print = (generator, tile, group) => tile.Replace(new FloorTiles()) };
+        public static GeneratorTile FloorBrick = new GeneratorTile('.') { Print = (generator, tile, group) => tile.Replace(new FloorBigTile()) };
         public static GeneratorTile Wall = new GeneratorTile('X') { Print = (generator, tile, group) => tile.Replace(new WallCave()) };
         public static GeneratorTile WallBrick = new GeneratorTile('#') { Print = (generator, tile, group) => tile.Replace(new WallBrick()) };
         public static GeneratorTile OreDilithium = new GeneratorTile('G') { Print = (generator, tile, group) => PrintOre(generator, tile, group, new WallOre(Material.Dilithium)) };
@@ -113,10 +113,14 @@ namespace RoguelikeEngine
                 {
                     int offX = generator.Random.Next(-5, 6);
                     int offY = generator.Random.Next(-5, 6);
+
                     GeneratorCell center = cell.GetNeighbor(offX, offY);
-                    center.Tile = GeneratorTile.Floor;
-                    center.Group = this;
-                    generator.SpreadCastle(center, 3 + generator.Random.Next(4), GeneratorTile.Floor);
+                    if (center.Tile == GeneratorTile.Empty)
+                    {
+                        center.Tile = GeneratorTile.FloorBrick;
+                        center.Group = this;
+                        generator.SpreadCastle(center, 3 + generator.Random.Next(4), GeneratorTile.FloorBrick);
+                    }
                 }
             }
         }
@@ -516,7 +520,7 @@ namespace RoguelikeEngine
                 CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
                 Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnBlastCannon, SpawnBlastCannon, SpawnBlastCannon, SpawnAcidBlob, SpawnAcidBlob, SpawnSkeleton })
             });*/
-            Groups.Add(new GeneratorGroup.Castle() //Dungeon
+            /*Groups.Add(new GeneratorGroup.Castle() //Dungeon
             {
                 CaveColor = new TileColor(new Color(128, 128, 128), new Color(160, 160, 160)),
                 BrickColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
@@ -527,7 +531,7 @@ namespace RoguelikeEngine
                 CaveColor = new TileColor(new Color(108, 106, 79), new Color(188, 173, 139)),
                 BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 Spawn = (world, tile) => SpawnEnemySet(world, tile, new[] { SpawnSkeleton, SpawnSkeleton, SpawnDeathKnight, SpawnBlueDragon, SpawnBlueDragon })
-            });
+            });*/
             Groups.Add(new GeneratorGroup.Castle() //Dark Castle
             {
                 CaveColor = new TileColor(new Color(29, 50, 56), new Color(131, 138, 167)),

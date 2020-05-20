@@ -24,6 +24,8 @@ namespace RoguelikeEngine
         public string StatString => string.Join(",\n", GetEffects<EffectStat>().GroupBy(stat => stat.Stat).Select(stat => $"{stat.Key} {stat.Sum(x => x.Amount)}"));
         public string EquipEffectsString => string.Join(",\n", GetEquipEffects().Select(x => x.ToString()));
 
+        public int X => Tile.X;
+        public int Y => Tile.Y;
         public Tile Tile
         {
             get
@@ -34,6 +36,7 @@ namespace RoguelikeEngine
                 return null;
             }
         }
+        public Map Map => Tile?.Map;
 
         public virtual string Name
         {
@@ -140,6 +143,11 @@ namespace RoguelikeEngine
             Tile tile = Tile;
             if(tile != null)
                 DrawIcon(scene, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8));
+        }
+
+        public bool ShouldDraw(Map map)
+        {
+            return Map == map;
         }
 
         public abstract void DrawIcon(SceneGame scene, Vector2 position);

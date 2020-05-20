@@ -58,12 +58,14 @@ namespace RoguelikeEngine.Enemies
         public override Wait TakeTurn(ActionQueue queue)
         {
             this.ResetTurn();
+            if (Dead)
+                return Wait.NoWait;
             Wait wait = Wait.NoWait;
             FaceTowards(AggroTarget);
             Skill usableSkill = GetUsableSkill();
-            if(usableSkill != null)
+            if (usableSkill != null)
             {
-                CurrentAction = Scheduler.Instance.RunAndWait(usableSkill.RoutineUse(this));
+                CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(this, usableSkill));
                 wait = usableSkill.WaitUse ? CurrentAction : Wait.NoWait;
             }
             else
@@ -77,6 +79,23 @@ namespace RoguelikeEngine.Enemies
             foreach (StatusEffect statusEffect in this.GetStatusEffects())
                 statusEffect.Update();
             return wait;
+        }
+
+        private IEnumerable<Wait> RoutineUseSkill(Creature user, Skill skill)
+        {
+            foreach(Wait wait in skill.RoutineUse(user))
+                yield return wait;
+            skill.HideSkill(user);
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            base.AddTooltip(ref tooltip);
+            foreach(Skill skill in Skills)
+            {
+                if(!skill.Hidden)
+                    tooltip += $"- {skill.Name}: {skill.GetTimeTooltip()}\n";
+            }
         }
     }
 
@@ -368,11 +387,11 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillEnderBlast());
             Skills.Add(new SkillEnderRam());
             Skills.Add(new SkillEnderMow());
-            //Skills.Add(new SkillEnderClaw());
+            Skills.Add(new SkillEnderClaw());
             Skills.Add(new SkillEnderPowerUp());
-            //Skills.Add(new SkillEnderFlare());
-            //Skills.Add(new SkillEnderQuake());
-            //Skills.Add(new SkillSideJump(3,5));
+            Skills.Add(new SkillEnderFlare());
+            Skills.Add(new SkillEnderQuake());
+            Skills.Add(new SkillSideJump(3,5));
         }
 
         public override void Update()
@@ -432,7 +451,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, 600));
             Effect.Apply(new EffectStat(this, Stat.Attack, 25));
 
-            Skills.Add(new SkillCannon());
+            Skills.Add(new SkillCannonShot());
         }
     }
 
@@ -455,11 +474,11 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 40));
             this.AddStatusEffect(new Undead());
 
-            Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillAttack());
-            Skills.Add(new SkillIronMaiden());
-            Skills.Add(new SkillBloodSword());
+            Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillDeathSword());
+            Skills.Add(new SkillBloodSword());
+            Skills.Add(new SkillIronMaiden());
             Skills.Add(new SkillWarp());
         }
     }

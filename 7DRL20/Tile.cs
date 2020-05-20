@@ -263,6 +263,48 @@ namespace RoguelikeEngine
         }
     }
 
+    class StairUp : Tile
+    {
+        private bool StairsHidden => HasContent(this) || HasContent(GetNeighbor(0, -1));
+
+        public StairUp() : base("Stairs")
+        {
+        }
+
+        private bool HasContent(Tile tile)
+        {
+            return tile != null && tile.Contents.Any();
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var hidden0 = SpriteLoader.Instance.AddSprite("content/upstairs_base");
+            var hidden1 = SpriteLoader.Instance.AddSprite("content/upstairs_layer");
+            var stairs0 = SpriteLoader.Instance.AddSprite("content/stairs_base");
+            var stairs1 = SpriteLoader.Instance.AddSprite("content/stairs_layer");
+
+            var hidden = StairsHidden;
+            var color = Group.BrickColor;
+
+            if (hidden)
+                color = Group.CaveColor.ToFloor();
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            if (StairsHidden)
+            {
+                scene.DrawSprite(hidden0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+                scene.DrawSprite(hidden1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            }
+            else
+            {
+                scene.DrawSprite(stairs0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y - 16), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+                scene.DrawSprite(stairs1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y - 16), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            }
+        }
+    }
+
     class FloorCave : Tile
     {
         public FloorCave() : base("Cave Floor")
@@ -297,6 +339,29 @@ namespace RoguelikeEngine
             var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
             var cave0 = SpriteLoader.Instance.AddSprite("content/dancefloor_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/dancefloor_layer");
+
+            var color = Group.CaveColor.ToFloor();
+            Color glow = Group.GlowColor(scene.Frame);
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+        }
+    }
+
+    class FloorBigTile : Tile
+    {
+        public FloorBigTile() : base("Tiled Floor")
+        {
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/bigtile_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/bigtile_layer");
 
             var color = Group.CaveColor.ToFloor();
             Color glow = Group.GlowColor(scene.Frame);
