@@ -58,11 +58,13 @@ namespace RoguelikeEngine.Enemies
         public override Wait TakeTurn(ActionQueue queue)
         {
             this.ResetTurn();
-            if (Dead)
-                return Wait.NoWait;
             Wait wait = Wait.NoWait;
+            if (Dead)
+                return wait;
             FaceTowards(AggroTarget);
             Skill usableSkill = GetUsableSkill();
+            foreach (Skill skill in Skills)
+                skill.Update();
             if (usableSkill != null)
             {
                 CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(this, usableSkill));
@@ -74,8 +76,6 @@ namespace RoguelikeEngine.Enemies
                 CurrentAction = Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y));
             }
 
-            foreach (Skill skill in Skills)
-                skill.Update();
             foreach (StatusEffect statusEffect in this.GetStatusEffects())
                 statusEffect.Update();
             return wait;
@@ -94,7 +94,7 @@ namespace RoguelikeEngine.Enemies
             foreach(Skill skill in Skills)
             {
                 if(!skill.Hidden)
-                    tooltip += $"- {skill.Name}: {skill.GetTimeTooltip()}\n";
+                    tooltip += $"{skill.GetTooltip()}\n";
             }
         }
     }

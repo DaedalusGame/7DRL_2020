@@ -177,6 +177,22 @@ namespace RoguelikeEngine
         }
     }
 
+    class FormatCodeStatIcon : FormatCodeIcon
+    {
+        public Stat Stat;
+
+        public FormatCodeStatIcon(Stat stat)
+        {
+            Stat = stat;
+        }
+
+        public override void Draw(Scene scene, Vector2 pos)
+        {
+            scene.DrawSprite(Stat.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+    }
+
+
     abstract class FormatCodeIcon : FormatCode
     {
         public FormatCodeIcon() : base(16)
@@ -195,6 +211,7 @@ namespace RoguelikeEngine
             Border,
             Icon,
             ElementIcon,
+            StatIcon,
         }
 
         public class Gibberish
@@ -366,6 +383,9 @@ namespace RoguelikeEngine
                             case (Game.FORMAT_ELEMENT_ICON):
                                 state = FormatState.ElementIcon;
                                 break;
+                            case (Game.FORMAT_STAT_ICON):
+                                state = FormatState.StatIcon;
+                                break;
                             default:
                                 builder.Append(c);
                                 break;
@@ -410,6 +430,13 @@ namespace RoguelikeEngine
                         DynamicFormat.Add(dynamicCode++, new FormatCodeElementIcon(element));
                         state = FormatState.None;
                         break;
+                    case FormatState.StatIcon:
+                        int statID = (int)c;
+                        Stat stat = Stat.AllStats[statID];
+                        builder.Append(dynamicCode);
+                        DynamicFormat.Add(dynamicCode++, new FormatCodeStatIcon(stat));
+                        state = FormatState.None;
+                        break;
                 }
             }
 
@@ -446,6 +473,9 @@ namespace RoguelikeEngine
                             case (Game.FORMAT_ELEMENT_ICON):
                                 state = FormatState.ElementIcon;
                                 break;
+                            case (Game.FORMAT_STAT_ICON):
+                                state = FormatState.StatIcon;
+                                break;
                             default:
                                 builder.Append(c);
                                 break;
@@ -469,6 +499,10 @@ namespace RoguelikeEngine
                         }
                         break;
                     case FormatState.ElementIcon:
+                        builder.Append(Game.FORMAT_ICON);
+                        state = FormatState.None;
+                        break;
+                    case FormatState.StatIcon:
                         builder.Append(Game.FORMAT_ICON);
                         state = FormatState.None;
                         break;

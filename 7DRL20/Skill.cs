@@ -19,9 +19,10 @@ namespace RoguelikeEngine
         Slider Warmup;
         Slider Cooldown;
         Slider Uses;
+        public bool IsReady => Warmup.Done && Cooldown.Done && !Uses.Done;
 
         public virtual bool Hidden => false;
-        public virtual bool WaitUse => true;
+        public virtual bool WaitUse => true;  
 
         public Skill(string name, string description, int warmup, int cooldown, float uses)
         {
@@ -43,17 +44,23 @@ namespace RoguelikeEngine
             Uses += 1;
         }
 
-        public string GetTimeTooltip()
+        public string GetTooltip()
         {
             var WarmupLeft = Math.Max(0, Warmup.EndTime - Warmup.Time);
             var CooldownLeft = Math.Max(0, Cooldown.EndTime - Cooldown.Time);
+            string name;
+
+            if (IsReady)
+                name = $"{Name}";
+            else
+                name = $"{Game.FormatColor(Color.Gray)}{Name}{Game.FormatColor(Color.White)}";
 
             if (WarmupLeft > 0)
-                return $"{WarmupLeft} WU";
+                return $"- {name} {Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}{WarmupLeft}{Game.FormatStat(Stat.Warmup)}{Game.FORMAT_BOLD}{Game.FormatColor(Color.White)}";
             else if(CooldownLeft > 0)
-                return $"{CooldownLeft} CD";
+                return $"- {name} {Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}{CooldownLeft}{Game.FormatStat(Stat.Cooldown)}{Game.FORMAT_BOLD}{Game.FormatColor(Color.White)}";
             else
-                return $"Ready";
+                return $"- {name}";
         }
 
         public virtual void Update()

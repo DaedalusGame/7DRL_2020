@@ -25,8 +25,8 @@ namespace RoguelikeEngine
             ID = AllElements.Count;
             Name = name;
             Sprite = sprite;
-            Resistance = new Stat($"{Name} Resistance", 0);
-            DamageRate = new Stat($"{Name} Damage Rate", 1);
+            Resistance = new Stat($"{Name} Resistance", 0, SpriteLoader.Instance.AddSprite("content/"));
+            DamageRate = new Stat($"{Name} Damage Rate", 1, SpriteLoader.Instance.AddSprite("content/"));
             AllElements.Add(this);
         }
 
@@ -234,13 +234,20 @@ namespace RoguelikeEngine
 
     class Stat
     {
+        public static List<Stat> AllStats = new List<Stat>();
+
+        public int ID;
         public string Name;
         public double DefaultStat;
+        public SpriteReference Sprite;
 
-        public Stat(string name, double defaultStat)
+        public Stat(string name, double defaultStat, SpriteReference sprite)
         {
+            ID = AllStats.Count;
             Name = name;
             DefaultStat = defaultStat;
+            Sprite = sprite;
+            AllStats.Add(this);
         }
 
         public override string ToString()
@@ -248,15 +255,18 @@ namespace RoguelikeEngine
             return Name;
         }
 
-        public static Stat HP = new Stat("HP", 0);
-        public static Stat Attack = new Stat("Attack", 0);
-        public static Stat Defense = new Stat("Defense", 0);
-        public static Stat AlchemyPower = new Stat("Alchemy Power", 0);
+        public static Stat HP = new Stat("HP", 0, SpriteLoader.Instance.AddSprite("content/stat_hp"));
+        public static Stat Attack = new Stat("Attack", 0, SpriteLoader.Instance.AddSprite("content/stat_attack"));
+        public static Stat Defense = new Stat("Defense", 0, SpriteLoader.Instance.AddSprite("content/stat_defense"));
+        public static Stat AlchemyPower = new Stat("Alchemy Power", 0, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
 
-        public static Stat DamageRate = new Stat("Damage Rate", 1);
+        public static Stat DamageRate = new Stat("Damage Rate", 1, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"));
 
-        public static Stat MiningLevel = new Stat("Mining Level", 0);
-        public static Stat MiningSpeed = new Stat("Mining Speed", 1);
+        public static Stat MiningLevel = new Stat("Mining Level", 0, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
+        public static Stat MiningSpeed = new Stat("Mining Speed", 1, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
+
+        public static Stat Cooldown = new Stat("Cooldown", 0, SpriteLoader.Instance.AddSprite("content/stat_cooldown"));
+        public static Stat Warmup = new Stat("Warmup", 0, SpriteLoader.Instance.AddSprite("content/stat_warmup"));
 
         public static Stat[] Stats = new Stat[] { HP, Attack, Defense, AlchemyPower, DamageRate };
     }

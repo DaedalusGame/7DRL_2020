@@ -201,6 +201,7 @@ namespace RoguelikeEngine
         public const char FORMAT_COLOR = (char)(FORMAT_CODES_BEGIN + 7);
         public const char FORMAT_BORDER = (char)(FORMAT_CODES_BEGIN + 8);
         public const char FORMAT_BLANK = (char)(FORMAT_CODES_BEGIN + 9);
+        public const char FORMAT_STAT_ICON = (char)(FORMAT_CODES_BEGIN + 10);
         public const char FORMAT_DYNAMIC_BEGIN = (char)(FORMAT_CODES_BEGIN + 1024);
         public const char FORMAT_DYNAMIC_END = (char)(FORMAT_DYNAMIC_BEGIN + 512);
 
@@ -254,6 +255,14 @@ namespace RoguelikeEngine
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_ELEMENT_ICON);
             builder.Append((char)element.ID);
+            return builder.ToString();
+        }
+
+        public static string FormatStat(Stat stat)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_STAT_ICON);
+            builder.Append((char)stat.ID);
             return builder.ToString();
         }
 
