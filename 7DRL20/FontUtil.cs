@@ -188,7 +188,7 @@ namespace RoguelikeEngine
 
         public override void Draw(Scene scene, Vector2 pos)
         {
-            scene.DrawSprite(Stat.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            Stat.DrawIcon(scene, pos);
         }
     }
 

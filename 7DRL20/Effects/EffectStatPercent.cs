@@ -20,6 +20,8 @@ namespace RoguelikeEngine.Effects
             set;
         }
 
+        public override double VisualPriority => Stat.Priority + 0.1;
+
         public EffectStatPercent(IEffectHolder holder, Stat stat, double percentage)
         {
             Holder = holder;

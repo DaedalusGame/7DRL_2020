@@ -21,7 +21,7 @@ namespace RoguelikeEngine
         Slider Uses;
         public bool IsReady => Warmup.Done && Cooldown.Done && !Uses.Done;
 
-        public virtual bool Hidden => false;
+        public virtual bool Hidden(Creature user) => false;
         public virtual bool WaitUse => true;  
 
         public Skill(string name, string description, int warmup, int cooldown, float uses)

@@ -17,6 +17,8 @@ namespace RoguelikeEngine.Effects
         public double MaxValue;
         public double MinValue;
 
+        public override double VisualPriority => Stat.Priority + 0.9;
+
         public EffectStatLock(IEffectHolder holder, Stat stat, double min, double max)
         {
             Holder = holder;

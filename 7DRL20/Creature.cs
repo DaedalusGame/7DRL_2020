@@ -14,19 +14,32 @@ namespace RoguelikeEngine
     {
         public static List<Element> AllElements = new List<Element>();
 
+        public static void Init()
+        {
+            var sorted = AllElements.OrderBy(element => element.Priority);
+            int index = 0;
+            foreach(Element element in sorted)
+            {
+                element.Priority = index++;
+            }
+        }
+
         public int ID;
         public string Name;
         public SpriteReference Sprite;
         public Stat Resistance;
         public Stat DamageRate;
 
+        public double Priority;
+
         public Element(string name, SpriteReference sprite)
         {
             ID = AllElements.Count;
             Name = name;
             Sprite = sprite;
-            Resistance = new Stat($"{Name} Resistance", 0, SpriteLoader.Instance.AddSprite("content/"));
-            DamageRate = new Stat($"{Name} Damage Rate", 1, SpriteLoader.Instance.AddSprite("content/"));
+            Priority = ID;
+            Resistance = new ElementStat(this, $"{Name} Resistance", 0, 4, 0, SpriteLoader.Instance.AddSprite("content/stat_element_defense"));
+            DamageRate = new ElementStat(this, $"{Name} Damage Rate", 1, 4, 0.5, SpriteLoader.Instance.AddSprite("content/stat_element_rate"));
             AllElements.Add(this);
         }
 
@@ -57,6 +70,10 @@ namespace RoguelikeEngine
         public static Element Earth = new Element("Earth", SpriteLoader.Instance.AddSprite("content/element_earth"));
         public static Element Holy = new Element("Holy", SpriteLoader.Instance.AddSprite("content/element_holy"));
         public static Element Dark = new Element("Dark", SpriteLoader.Instance.AddSprite("content/element_dark"));
+
+        //Status Elements
+        public static Element Bleed = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
+        public static Element Poison = new Element("Poison", SpriteLoader.Instance.AddSprite("content/element_poison"));
 
         //Combination Elements
         public static Element Light = new ElementCombined("Light", SpriteLoader.Instance.AddSprite("content/element_light"), new Dictionary<Element, double>()
@@ -236,17 +253,31 @@ namespace RoguelikeEngine
     {
         public static List<Stat> AllStats = new List<Stat>();
 
+        public static void Init()
+        {
+            var sorted = AllStats.OrderBy(stat => stat.EffectivePriority);
+            int index = 0;
+            foreach (Stat stat in sorted)
+            {
+                stat.Priority = index++;
+            }
+        }
+
         public int ID;
         public string Name;
         public double DefaultStat;
         public SpriteReference Sprite;
 
-        public Stat(string name, double defaultStat, SpriteReference sprite)
+        public double Priority;
+        public virtual double EffectivePriority => Priority;
+
+        public Stat(string name, double defaultStat, double priority, SpriteReference sprite)
         {
             ID = AllStats.Count;
             Name = name;
             DefaultStat = defaultStat;
             Sprite = sprite;
+            Priority = priority;
             AllStats.Add(this);
         }
 
@@ -255,20 +286,45 @@ namespace RoguelikeEngine
             return Name;
         }
 
-        public static Stat HP = new Stat("HP", 0, SpriteLoader.Instance.AddSprite("content/stat_hp"));
-        public static Stat Attack = new Stat("Attack", 0, SpriteLoader.Instance.AddSprite("content/stat_attack"));
-        public static Stat Defense = new Stat("Defense", 0, SpriteLoader.Instance.AddSprite("content/stat_defense"));
-        public static Stat AlchemyPower = new Stat("Alchemy Power", 0, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
+        public virtual void DrawIcon(Scene scene, Vector2 pos)
+        {
+            scene.DrawSprite(Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
 
-        public static Stat DamageRate = new Stat("Damage Rate", 1, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"));
+        public static Stat HP = new Stat("HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"));
+        public static Stat Attack = new Stat("Attack", 0, 1, SpriteLoader.Instance.AddSprite("content/stat_attack"));
+        public static Stat Defense = new Stat("Defense", 0, 2, SpriteLoader.Instance.AddSprite("content/stat_defense"));
+        public static Stat AlchemyPower = new Stat("Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
 
-        public static Stat MiningLevel = new Stat("Mining Level", 0, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
-        public static Stat MiningSpeed = new Stat("Mining Speed", 1, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
+        public static Stat DamageRate = new Stat("Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"));
 
-        public static Stat Cooldown = new Stat("Cooldown", 0, SpriteLoader.Instance.AddSprite("content/stat_cooldown"));
-        public static Stat Warmup = new Stat("Warmup", 0, SpriteLoader.Instance.AddSprite("content/stat_warmup"));
+        public static Stat MiningLevel = new Stat("Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
+        public static Stat MiningSpeed = new Stat("Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
+
+        public static Stat Cooldown = new Stat("Cooldown", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_cooldown"));
+        public static Stat Warmup = new Stat("Warmup", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_warmup"));
 
         public static Stat[] Stats = new Stat[] { HP, Attack, Defense, AlchemyPower, DamageRate };
+    }
+
+    class ElementStat : Stat
+    {
+        Element Element;
+
+        public double SubPriority;
+        public override double EffectivePriority => Priority + (Element.Priority + SubPriority) / Element.AllElements.Count;
+
+        public ElementStat(Element element, string name, double defaultStat, double priority, double subPriority, SpriteReference sprite) : base(name, defaultStat, priority, sprite)
+        {
+            Element = element;
+            SubPriority = subPriority;
+        }
+
+        public override void DrawIcon(Scene scene, Vector2 pos)
+        {
+            scene.DrawSprite(Element.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.DrawSprite(Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
     }
 
     class Mask : IEnumerable<Point>
@@ -876,8 +932,13 @@ namespace RoguelikeEngine
 
         public virtual void Draw(SceneGame scene, DrawPass pass)
         {
-            if(Tiles.Any(tile => !tile.Opaque))
+            if (IsVisible())
                 Render.Draw(scene, this);
+        }
+
+        public bool IsVisible()
+        {
+            return Tiles.Any(tile => !tile.Opaque);
         }
 
         public override string ToString()

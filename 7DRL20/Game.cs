@@ -86,6 +86,9 @@ namespace RoguelikeEngine
 
             LoadFont();
 
+            Element.Init();
+            Stat.Init();
+
             Scene = new SceneLoading(this);
 
             base.Initialize();

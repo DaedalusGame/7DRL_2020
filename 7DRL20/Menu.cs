@@ -36,6 +36,11 @@ namespace RoguelikeEngine
             return false;
         }
 
+        public int GetStringHeight(string str, TextParameters parameters)
+        {
+            return FontUtil.GetStringHeight(FontUtil.FitString(FontUtil.StripFormat(str), parameters));
+        }
+
         protected void DrawLabelledUI(SceneGame scene, SpriteReference sprite, Rectangle rectInterior, string label)
         {
             Rectangle rectExterior = new Rectangle(rectInterior.X, rectInterior.Y - 20, rectInterior.Width, 16);
@@ -55,6 +60,7 @@ namespace RoguelikeEngine
         public SceneGame Scene;
         Menu SubMenu;
         SkillBox SkillInfo;
+        public BossWarning BossWarning;
 
         Slider GameOver = new Slider(100);
         MenuTextSelection GameOverMenu;
@@ -94,6 +100,14 @@ namespace RoguelikeEngine
 
             if (GameOverMenu != null)
                 GameOverMenu.Update(scene);
+
+            if (BossWarning != null)
+            {
+                BossWarning.HandleInput(scene);
+                BossWarning.Update(scene);
+                if (BossWarning.ShouldClose)
+                    BossWarning = null;
+            }
 
             if (SkillInfo != null)
             {
@@ -240,18 +254,23 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene)
         {
+            DrawSlot(scene, new Vector2(48, scene.Viewport.Height - 48), "Offhand", Player.EquipOffhand);
+            DrawSlot(scene, new Vector2(96, scene.Viewport.Height - 64), "Body", Player.EquipBody);
+            DrawSlot(scene, new Vector2(144, scene.Viewport.Height - 48), "Mainhand", Player.EquipMainhand);
+
             if (SubMenu != null)
             {
                 SubMenu.Draw(scene);
             }
 
-            DrawSlot(scene, new Vector2(48, scene.Viewport.Height - 48), "Offhand", Player.EquipOffhand);
-            DrawSlot(scene, new Vector2(96, scene.Viewport.Height - 64), "Body", Player.EquipBody);
-            DrawSlot(scene, new Vector2(144, scene.Viewport.Height - 48), "Mainhand", Player.EquipMainhand);
-
             if (SkillInfo != null)
             {
                 SkillInfo.Draw(scene);
+            }
+
+            if (BossWarning != null)
+            {
+                BossWarning.Draw(scene);
             }
 
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, 0, scene.Viewport.Width, scene.Viewport.Height), new Color(0, 0, 0, GameOver.Slide * 0.5f));
@@ -750,11 +769,6 @@ namespace RoguelikeEngine
             scene.DrawText(name, linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
         }
 
-        private int GetStringHeight(string str, TextParameters parameters)
-        {
-            return FontUtil.GetStringHeight(FontUtil.FitString(FontUtil.StripFormat(str), parameters));
-        }
-
         public void SelectItem(Item item)
         {
             switch (Selection)
@@ -892,6 +906,109 @@ namespace RoguelikeEngine
         }
     }
 
+    class BossWarning : Menu
+    {
+        Slider OpenFrame;
+        Slider WarnFrame;
+        Slider NextFrame;
+
+        List<string> Messages;
+        int MessageIndex;
+
+        bool HasMessage => MessageIndex < Messages.Count;
+
+        int ScrollFrame;
+
+        public BossWarning(IEnumerable<string> messages)
+        {
+            Messages = new List<string>();
+            Messages.Add(string.Empty);
+            Messages.AddRange(messages);
+            OpenFrame = new Slider(20);
+            WarnFrame = new Slider(40);
+            NextFrame = new Slider(400);
+        }
+
+        public override void HandleInput(SceneGame scene)
+        {
+            if (scene.InputState.IsKeyPressed(Keys.Enter) && WarnFrame.Done)
+            {
+                NextWarning();
+            }
+        }
+
+        public override void Update(SceneGame scene)
+        {
+            base.Update(scene);
+
+            bool isLastFrame = GetWarnSlide() <= 0.5;
+
+            OpenFrame += 1;
+            WarnFrame += 1;
+            NextFrame += 1;
+
+            if (GetWarnSlide() > 0.5 && isLastFrame)
+            {
+                MessageIndex++;
+            }
+
+            if (NextFrame.Done)
+            {
+                NextWarning();
+            }
+
+            ScrollFrame++;
+
+            if (!HasMessage && WarnFrame.Done)
+                ShouldClose = true;
+        }
+
+        private void NextWarning()
+        {
+            NextFrame.Time = 0;
+            WarnFrame.Time = 0;
+        }
+
+        private double GetWarnSlide()
+        {
+            return LerpHelper.QuadraticIn(0, 1, WarnFrame.Slide);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            SpriteReference skull = SpriteLoader.Instance.AddSprite("content/ui_skull");
+            SpriteReference text = SpriteLoader.Instance.AddSprite("content/ui_warntext");
+
+            int middle = scene.Viewport.Height / 4;
+            int size = (int)(80 * OpenFrame.Slide);
+            double warnSlide = GetWarnSlide();
+            int distExterior = (int)(60 * Math.Min(warnSlide, 0.5) * 2);
+            int distInterior = (int)(60 * Math.Max(warnSlide - 0.5, 0) * 2);
+            int distDelta = distExterior - distInterior;
+
+            int textMiddle = (int)MathHelper.Lerp(0,size / 2 + text.Height / 2,OpenFrame.Slide);
+            if (HasMessage)
+            {
+                scene.SpriteBatch.Draw(text.Texture, new Rectangle(0, middle - textMiddle - text.Height / 2, scene.Viewport.Width, text.Height), new Rectangle(ScrollFrame, 0, scene.Viewport.Width, text.Height), Color.Red);
+                scene.SpriteBatch.Draw(text.Texture, new Rectangle(0, middle + textMiddle - text.Height / 2, scene.Viewport.Width, text.Height), new Rectangle(ScrollFrame, 0, scene.Viewport.Width, text.Height), Color.Red, 0, Vector2.Zero, Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally | Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipVertically, 0);
+                scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, middle - size / 2, scene.Viewport.Width, size), Color.Red);
+                //Text
+            
+                Vector2 center = new Vector2(scene.Viewport.Width / 2, middle);
+                TextParameters parameters = new TextParameters().SetBold(true);
+                float height = GetStringHeight(Messages[MessageIndex], parameters);
+                scene.DrawText(Messages[MessageIndex], center + new Vector2(0, -height / 2), Alignment.Center, parameters);
+                if (MessageIndex == 1)
+                {
+                    scene.DrawSprite(skull, 0, center + new Vector2(scene.Viewport.Width * 1 / 3, 0) - skull.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.Black, 0);
+                    scene.DrawSprite(skull, 0, center + new Vector2(-scene.Viewport.Width * 1 / 3, 0) - skull.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.Black, 0);
+                }
+            }
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, middle - distExterior, scene.Viewport.Width, distDelta), Color.Red);
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, middle + distInterior, scene.Viewport.Width, distDelta), Color.Red);
+        }
+    }
+
     class InfoBox : Menu
     {
         public Func<string> Name;
@@ -936,7 +1053,7 @@ namespace RoguelikeEngine
             if (openCoeff > 0)
                 DrawLabelledUI(scene, textbox, rect, openCoeff >= 1 ? Name() : string.Empty);
             if (openCoeff >= 1)
-                scene.DrawText(Text(), new Vector2(x, y), Alignment.Left, new TextParameters().SetColor(Color.White,Color.Black).SetConstraints(Width - 16, Height));
+                scene.DrawText(Text(), new Vector2(x+8, y+4), Alignment.Left, new TextParameters().SetColor(Color.White,Color.Black).SetConstraints(Width - 16 - 16, Height-8));
         }
     }
 

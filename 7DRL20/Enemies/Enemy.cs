@@ -14,6 +14,9 @@ namespace RoguelikeEngine.Enemies
         static public Random Random = new Random();
         public Creature AggroTarget;
 
+        public virtual string BossMessage => "WARNING\n\nMANIFESTATION OF EXTINCTION UNIT";
+        public virtual string[] BossDescription => new string[] { BossMessage };
+
         protected List<Skill> Skills = new List<Skill>();
 
         public Enemy(SceneGame world) : base(world)
@@ -93,7 +96,7 @@ namespace RoguelikeEngine.Enemies
             base.AddTooltip(ref tooltip);
             foreach(Skill skill in Skills)
             {
-                if(!skill.Hidden)
+                if(!skill.Hidden(this))
                     tooltip += $"{skill.GetTooltip()}\n";
             }
         }
@@ -586,6 +589,28 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillIronMaiden());
+        }
+    }
+
+    class BoneDragon : Enemy
+    {
+        public BoneDragon(SceneGame world) : base(world)
+        {
+            Name = "Bone Dragon";
+            Description = "Obliterator";
+
+            Render = new CreatureDragonRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/dragon_bone")
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 1700));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 35));
+
+            Skills.Add(new SkillForcefield());
+            Skills.Add(new SkillAgeOfDragons());
+            Skills.Add(new SkillOblivion());
         }
     }
 

@@ -133,8 +133,6 @@ namespace RoguelikeEngine
 
     class BleedLesser : StatusEffect
     { 
-         public static Element Element = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
-
         public override string Name => $"Lesser Bleed";
         public override string Description => $"Lose HP over time.";
 
@@ -162,7 +160,7 @@ namespace RoguelikeEngine
         {
             base.Update();
             if (Stacks >= 1)
-                Creature.TakeDamage(1, Element);
+                Creature.TakeDamage(1, Element.Bleed);
         }
 
         public override string ToString()
@@ -186,7 +184,7 @@ namespace RoguelikeEngine
         {
             if (delta > 0)
             {
-                Creature.TakeDamage(delta * 30, BleedLesser.Element);
+                Creature.TakeDamage(delta * 30, Element.Bleed);
                 BloodLoss += delta * 30;
             }
             if (BloodLoss >= Creature.GetStat(Stat.HP))
@@ -206,7 +204,7 @@ namespace RoguelikeEngine
             base.Update();
             if (Stacks >= 1)
             {
-                Creature.TakeDamage(5, BleedLesser.Element);
+                Creature.TakeDamage(5, Element.Bleed);
                 BloodLoss += 5;
             }
         }
@@ -298,8 +296,6 @@ namespace RoguelikeEngine
         public override string Name => $"Poison";
         public override string Description => $"Periodic damage based on buildup.";
 
-        public static Element Element = new Element("Poison", SpriteLoader.Instance.AddSprite("content/element_poison"));
-
         public Poison() : base()
         {
             
@@ -314,7 +310,7 @@ namespace RoguelikeEngine
         {
             base.Update();
             if (Stacks >= 1)
-                Creature.TakeDamage(Math.Pow(2, Stacks - 1), Element);
+                Creature.TakeDamage(Math.Pow(2, Stacks - 1), Element.Poison);
         }
 
         public override string ToString()

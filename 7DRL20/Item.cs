@@ -425,16 +425,28 @@ namespace RoguelikeEngine
         public override void AddStatBlock(ref string statBlock)
         {
             base.AddStatBlock(ref statBlock);
-            for(int i = 0; i < Materials.Length; i++)
-                statBlock += $"{Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
+            //for(int i = 0; i < Materials.Length; i++)
+            //    statBlock += $" {Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
+            statBlock += "\n";
             var effects = GetEffects<Effect>();
-            var statGroups = effects.OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat);
-            foreach(var stat in statGroups)
+            var statGroups = effects.OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).OrderBy(group => group.Key.Priority);
+            var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
+
+            //This is retarded.
+            //TODO: make the stats work with the priority stuff too
+            foreach (var group in effectGroups.Where(x => x.Key.VisualPriority < 0))
+            {
+                group.Key.AddStatBlock(ref statBlock, group);
+            }
+            statBlock += "\n";
+
+            foreach (var stat in statGroups)
             {
                 statBlock += stat.GetStatBonus(stat.Key);
             }
-            var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
-            foreach(var group in effectGroups)
+            statBlock += "\n";
+            
+            foreach(var group in effectGroups.Where(x => x.Key.VisualPriority >= 0))
             {
                 group.Key.AddStatBlock(ref statBlock, group);
             }

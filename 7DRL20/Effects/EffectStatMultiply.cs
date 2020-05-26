@@ -20,6 +20,8 @@ namespace RoguelikeEngine.Effects
             set;
         }
 
+        public override double VisualPriority => Stat.Priority + 0.2;
+
         public EffectStatMultiply(IEffectHolder holder, Stat stat, double multiplier)
         {
             Holder = holder;

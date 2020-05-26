@@ -500,7 +500,7 @@ namespace RoguelikeEngine
             AddHandleEffect(new EffectStatPercent(this, Stat.HP, -0.2));
 
             AddFullEffect(new EffectStat(this, Element.Pierce.Resistance, 5));
-            AddFullEffect(new EffectStatPercent(this, Poison.Element.DamageRate, -0.3));
+            AddFullEffect(new EffectStatPercent(this, Element.Poison.DamageRate, -0.3));
 
             AddFullEffect(new Trait(this, "Poxic", "Sometimes turns enemies into slime."));
             AddFullEffect(new OnStartAttack(this, attack =>

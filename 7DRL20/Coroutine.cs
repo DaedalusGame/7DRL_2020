@@ -25,6 +25,23 @@ namespace RoguelikeEngine
         }
     }
 
+    class WaitMenu : Wait
+    {
+        Menu Menu;
+
+        public override bool Done => Menu.ShouldClose;
+
+        public WaitMenu(Menu menu)
+        {
+            Menu = menu;
+        }
+
+        public override void Update()
+        {
+            //NOOP
+        }
+    }
+
     public class WaitAll : Wait
     {
         IEnumerable<Wait> Waits;

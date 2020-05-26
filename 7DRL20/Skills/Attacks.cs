@@ -10,7 +10,7 @@ namespace RoguelikeEngine.Skills
 {
     abstract class SkillAttackBase : Skill
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
 
         public SkillAttackBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
         {
@@ -381,7 +381,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillRam : SkillRamBase
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
 
         public SkillRam() : base("Attack", "Ram", 1, 1, float.PositiveInfinity)
         {
@@ -688,7 +688,7 @@ namespace RoguelikeEngine.Skills
 
     abstract class SkillJumpBase : Skill
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
 
         public struct TileDirection
         {
@@ -819,7 +819,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillDive : Skill
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
         public override bool WaitUse => true;
 
         public SkillDive() : base("Dive", "Move to tile nearby", 2, 3, float.PositiveInfinity)
@@ -843,7 +843,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillWarp : Skill
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
         public override bool WaitUse => true;
 
         public SkillWarp() : base("Warp", "Move to chase enemy", 0, 2, float.PositiveInfinity)
@@ -910,7 +910,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderPowerUp : Skill
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
 
         public SkillEnderPowerUp() : base("Power Up", "Enrage.", 3, 10, float.PositiveInfinity)
         {
@@ -918,7 +918,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && user.HasStatusEffect(statusEffect => statusEffect is PoweredUp))
+            if (user is Enemy enemy && user.HasStatusEffect<PoweredUp>())
                 return false;
             return base.CanUse(user);
         }
@@ -941,13 +941,15 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderFlare : Skill
     {
+        public override bool Hidden(Creature user) => !user.HasStatusEffect<PoweredUp>();
+
         public SkillEnderFlare() : base("Ender Flare", "Ranged The End Attack.", 3, 10, float.PositiveInfinity)
         {
         }
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 4) || !user.HasStatusEffect(statusEffect => statusEffect is PoweredUp)))
+            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 4) || !user.HasStatusEffect<PoweredUp>()))
                 return false;
             return base.CanUse(user);
         }
@@ -984,7 +986,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderBlast : Skill
     {
-        public override bool Hidden => true;
+        public override bool Hidden(Creature user) => true;
 
         public SkillEnderBlast() : base("Ender Blast", "Frees Ender Erebizo from rock.", 0, 0, float.PositiveInfinity)
         {
@@ -1075,13 +1077,15 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderQuake : Skill
     {
+        public override bool Hidden(Creature user) => !user.HasStatusEffect<PoweredUp>();
+
         public SkillEnderQuake() : base("Ender Quake", "Ranged The End Attack.", 3, 10, float.PositiveInfinity)
         {
         }
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 8) || !user.HasStatusEffect(statusEffect => statusEffect is PoweredUp)))
+            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 8) || !user.HasStatusEffect<PoweredUp>()))
                 return false;
             return base.CanUse(user);
         }
@@ -1177,6 +1181,42 @@ namespace RoguelikeEngine.Skills
                     return Color.Lerp(blue, glow, (slide - 0.25f * 3) / 0.25f);
                 }
             };
+        }
+    }
+
+    class SkillForcefield : Skill
+    {
+        public SkillForcefield() : base("Forcefield", "Select 1 random base Element. Become weak to this element. Become immune to all the others.", 0, 0, 1)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SkillAgeOfDragons : Skill
+    {
+        public SkillAgeOfDragons() : base("Age of Dragons", "10 Extra Turns.", 15, 15, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SkillOblivion : Skill
+    {
+        public SkillOblivion() : base("Oblivion", "Immense Dark damage.", 16, 15, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
         }
     }
 }

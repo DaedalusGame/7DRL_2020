@@ -218,13 +218,13 @@ namespace RoguelikeEngine
             var groups = effects.ToTypeLookup();
             var add = groups.Get<EffectStat>().Sum(stat => stat.Amount);
             if (add != 0)
-                statBlock += $"{statName.Name} {add.ToString("+0;-#")}\n";
+                statBlock += $"{Game.FormatStat(statName)} {statName.Name} {add.ToString("+0;-#")}\n";
             var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
             if (percentage != 0)
-                statBlock += $"{statName.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}%\n";
+                statBlock += $"{Game.FormatStat(statName)} {statName.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}%\n";
             var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
             if (multiplier != 1)
-                statBlock += $"{statName.Name} x{Math.Round(multiplier,2)}\n";
+                statBlock += $"{Game.FormatStat(statName)} {statName.Name} x{Math.Round(multiplier,2)}\n";
             var locks = groups.Get<EffectStatLock>();
             var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
             var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
@@ -317,6 +317,11 @@ namespace RoguelikeEngine
         public static bool HasStatusEffect(this IEffectHolder holder, Func<StatusEffect,bool> match)
         {
             return holder.GetStatusEffects().Any(match);
+        }
+
+        public static bool HasStatusEffect<T>(this IEffectHolder holder) where T : StatusEffect
+        {
+            return holder.GetStatusEffects().Any(statusEffect => statusEffect is T);
         }
 
         public static IEnumerable<StatusEffect> GetStatusEffects(this IEffectHolder holder)

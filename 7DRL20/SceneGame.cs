@@ -10,6 +10,49 @@ using RoguelikeEngine.Enemies;
 
 namespace RoguelikeEngine
 {
+    class CameraFocus
+    {
+        public Vector2 Last;
+        public Creature Current;
+        Slider Slider;
+        public bool Dead;
+
+        public bool Done => Slider.Done;
+
+        public Vector2 CurrentPos => Vector2.Lerp(Last, GetCameraPos(Current), Slider.Slide);
+
+        static Vector2 GetCameraPos(Creature creature)
+        {
+            return creature.VisualCamera() + new Vector2(8, 8);
+        }
+
+        public CameraFocus(Creature creature) : this(GetCameraPos(creature), creature, 1)
+        {
+        }
+
+        public CameraFocus(Vector2 last, Creature current, int time)
+        {
+            Last = last;
+            Current = current;
+            Slider = new Slider(time);
+        }
+
+        public CameraFocus MoveNext(Creature creature, int time)
+        {
+            return new CameraFocus(CurrentPos, creature, time);
+        }
+
+        public void Update()
+        {
+            Slider += 1;
+        }
+
+        public void SetDead()
+        {
+            Dead = true;
+        }
+    }
+
     abstract class Quest
     {
         protected SceneGame Game;
@@ -177,6 +220,7 @@ namespace RoguelikeEngine
         public ActionQueue ActionQueue = new ActionQueue();
         public Wait Wait = Wait.NoWait;
 
+        public Map MapHome;
         public Map Map;
         public RenderTarget2D CameraTargetA;
         public RenderTarget2D CameraTargetB;
@@ -184,8 +228,9 @@ namespace RoguelikeEngine
         public RenderTarget2D Lava;
         public RenderTarget2D Water;
 
+        public CameraFocus CameraFocus;
         public Map CameraMap;
-        public Vector2 Camera => Player.VisualCamera() + new Vector2(8,8);
+        public Vector2 Camera => CameraFocus.CurrentPos;
         public Vector2 CameraSize => new Vector2(Viewport.Width / 2, Viewport.Height / 2);
         public Vector2 CameraPosition => CameraMap != null ? FitCamera(Camera - CameraSize / 2, new Vector2(CameraMap.Width * 16, CameraMap.Height * 16)) : (Camera - CameraSize / 2);
 
@@ -199,6 +244,10 @@ namespace RoguelikeEngine
 
         public List<Quest> Quests = new List<Quest>();
         public Skill CurrentSkill;
+
+        public EnemySpawner Spawner;
+        //TODO: Move to PlayerUI
+        public HashSet<Enemy> SeenBosses = new HashSet<Enemy>();
 
         string Tooltip = "Test";
         Point? TileCursor;
@@ -216,7 +265,7 @@ namespace RoguelikeEngine
             var smelterPos = generator.StartRoom;
             Tile startTile = Map.GetTile(smelterPos.X, smelterPos.Y);
             Player = new Hero(this);
-            Player.MoveTo(startTile,0);
+            Player.MoveTo(startTile,1);
             ActionQueue.Add(Player);
             /*Enemy testEnemy = new EnderErebizo(this);
             testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
@@ -228,8 +277,9 @@ namespace RoguelikeEngine
             ActionQueue.Add(testEnemy);*/
 
             CameraMap = Map;
+            CameraFocus = new CameraFocus(Player);
 
-            /*Player.Pickup(new Ingot(this, Material.Dilithium, 8));
+            Player.Pickup(new Ingot(this, Material.Dilithium, 8));
             Player.Pickup(new Ingot(this, Material.Tiberium, 8));
             Player.Pickup(new Ingot(this, Material.Basalt, 8));
             Player.Pickup(new Ingot(this, Material.Meteorite, 8));
@@ -238,24 +288,26 @@ namespace RoguelikeEngine
             Player.Pickup(new Ingot(this, Material.Karmesine, 8));
             Player.Pickup(new Ingot(this, Material.Ovium, 8));
             Player.Pickup(new Ingot(this, Material.Terrax, 8));
-            Player.Pickup(new Ingot(this, Material.Triberium, 8));*/
+            Player.Pickup(new Ingot(this, Material.Triberium, 8));
 
             var startTiles = generator.StartRoomGroup.GetCells().Select(cell => Map.GetTile(cell.X, cell.Y));
             var startFloors = startTiles.Where(tile => !tile.Solid).Shuffle();
 
-            var anvilTile = startFloors.ElementAt(0);
-            var smelterTile = startFloors.ElementAt(1);
+            var stairTile = startFloors.ElementAt(0);
+            var anvilTile = startFloors.ElementAt(1);
+            var smelterTile = startFloors.ElementAt(2);
 
-            anvilTile.Replace(new StairUp());
+            stairTile.Replace(new StairUp());
+            anvilTile.PlaceOn(new Anvil());
             smelterTile.PlaceOn(new Smelter(this));
 
             Material[] possibleMaterials = new[] { Material.Karmesine, Material.Ovium, Material.Jauxum, Material.Basalt, Material.Coal };
             for(int i = 0; i < 25; i++)
             {
-                if (startFloors.Count() <= 2 + i)
+                if (startFloors.Count() <= 3 + i)
                     break;
                 var pick = possibleMaterials.Pick(Random);
-                var pickFloor = startFloors.ElementAt(2 + i);
+                var pickFloor = startFloors.ElementAt(3 + i);
 
                 new Ore(this, pick, 100).MoveTo(pickFloor);
             }
@@ -269,7 +321,8 @@ namespace RoguelikeEngine
             Quests.Add(smeltOre);
             Quests.Add(buildAdze);
 
-            ActionQueue.Add(new EnemySpawner(this, 60));
+            Spawner = new EnemySpawner(this, 60);
+            ActionQueue.Add(Spawner);
         }
 
         private void BuildSmelterRoom(Tile center, GeneratorGroup group)
@@ -347,8 +400,29 @@ namespace RoguelikeEngine
             CameraTargetB = helper;
         }
 
+        private bool IsBossVisible(Enemy enemy)
+        {
+            return enemy.IsVisible() && enemy.ShouldDraw(CameraMap);
+        }
+
+        private IEnumerable<Wait> RoutineBossWarning(Enemy boss)
+        {
+            CameraFocus = CameraFocus.MoveNext(boss, 30);
+            Menu.BossWarning = new BossWarning(boss.BossDescription);
+            yield return new WaitMenu(Menu.BossWarning);
+            SeenBosses.Add(boss);
+            CameraFocus.SetDead();
+        }
+
         public override void Update(GameTime gameTime)
         {
+            SeenBosses.RemoveWhere(x => x.Destroyed);
+
+            CameraFocus.Update();
+            if(CameraFocus.Dead)
+            {
+                CameraFocus = CameraFocus.MoveNext(Player, 30);
+            }
             InputTwinState state = Game.InputState;
 
             while(ToAdd.Count > 0)
@@ -364,6 +438,13 @@ namespace RoguelikeEngine
 
             while (Wait.Done && !Player.Dead)
             {
+                Enemy foundBoss = Spawner.Bosses.Find(x => !x.Dead && IsBossVisible(x) && !SeenBosses.Contains(x));
+                if (foundBoss != null)
+                {
+                    Wait = Scheduler.Instance.RunAndWait(RoutineBossWarning(foundBoss));
+                    break;
+                }
+
                 ActionQueue.Step();
 
                 ITurnTaker turnTaker = ActionQueue.CurrentTurnTaker;

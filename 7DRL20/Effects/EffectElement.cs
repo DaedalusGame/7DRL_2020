@@ -20,6 +20,8 @@ namespace RoguelikeEngine.Effects
             set;
         }
 
+        public override double VisualPriority => -10;
+
         public EffectElement(IEffectHolder holder, Element element, double percentage)
         {
             Holder = holder;
@@ -55,7 +57,7 @@ namespace RoguelikeEngine.Effects
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
             var total = equalityGroup.OfType<EffectElement>().Sum(element => element.Percentage);
-            statBlock += $"{Game.FORMAT_BOLD}{Element}{Game.FORMAT_BOLD} {((int)Math.Round(total * 100)).ToString("0;-#")}%\n";
+            statBlock += $"{Game.FormatElement(Element)} {Game.FORMAT_BOLD}{Element}{Game.FORMAT_BOLD} {((int)Math.Round(total * 100)).ToString("0;-#")}%\n";
         }
     }
 }

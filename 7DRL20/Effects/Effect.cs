@@ -24,6 +24,7 @@ namespace RoguelikeEngine.Effects
         public static IEqualityComparer<Effect> StatEquality = new StatEqualityComparer();
 
         public bool Removed = false;
+        public virtual double VisualPriority => 0;
 
         public abstract void Apply();
 

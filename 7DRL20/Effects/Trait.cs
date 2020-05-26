@@ -12,6 +12,8 @@ namespace RoguelikeEngine.Effects
         public string Name;
         public string Description;
 
+        public override double VisualPriority => 1000;
+
         public Trait(IEffectHolder holder, string name, string description)
         {
             Holder = holder;

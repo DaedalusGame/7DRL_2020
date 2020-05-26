@@ -1222,7 +1222,6 @@ namespace RoguelikeEngine
         private Vector2 Offset => Util.AngleToVector(TweenAngle) * (float)LerpHelper.QuadraticOut(0, 50, LerpHelper.ForwardReverse(0, 1, Frame.Slide));
         public override Vector2 Tween => Offset + Vector2.Lerp(PositionStart, PositionEnd, (float)LerpHelper.Quadratic(0, 1, Frame.Slide));
 
-
         public IronMaidenPart(SceneGame world, Vector2 positionStart, Vector2 positionEnd, float angle, int time) : base(world, positionStart, positionEnd, time)
         {
             TweenAngle = angle;
