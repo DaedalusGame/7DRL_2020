@@ -44,12 +44,35 @@ namespace RoguelikeEngine
                 World.ActionQueue.Add(boss);
                 return new[] { boss };
             })
-            .SetSlowChance(data => data.AliveBosses.Count < 2, 1.0)
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.0)
             .SetTile(tile => tile.Opaque, tile => {
                 var rectangle = new Rectangle(tile.X, tile.Y, 2, 2);
                 var checkTiles = tile.GetNearby(rectangle, 0);
                 return checkTiles.All(t => t.Opaque);
             }));
+
+            BossDatabase.Add(new BossData(this, (tile) =>
+            {
+                int radius = 2;
+                var tileSet = tile.GetNearby(radius).Where(x => GetSquareDistance(tile, x) <= radius * radius).Shuffle();
+                new HeavenRay(World, tile, 10);
+                new TileExplosion(World, tileSet);
+                var boss = new Wallhach(World);
+                boss.MoveTo(tile, 0);
+                boss.MakeAggressive(World.Player);
+                World.ActionQueue.Add(boss);
+                return new[] { boss };
+            })
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 1.0)
+            .SetTile(tile => !tile.Opaque && tile.Creatures.Empty()));
+        }
+
+        protected int GetSquareDistance(Tile a, Tile b)
+        {
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+
+            return dx * dx + dy * dy;
         }
 
         public IEnumerable<Tile> GetValidSpawnLocations(Tile center, Func<Tile,bool> condition, int minRadius)

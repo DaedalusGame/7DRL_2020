@@ -10,6 +10,7 @@ namespace RoguelikeEngine
     {
         Tile,
         EffectLow,
+        EffectLowAdditive,
         Item,
         Creature,
         Effect,

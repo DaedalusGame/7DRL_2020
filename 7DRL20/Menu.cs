@@ -117,7 +117,7 @@ namespace RoguelikeEngine
             }
             else if (Scene.CurrentSkill != null)
             {
-                SkillInfo = new SkillBox(Scene, new Vector2(Scene.Viewport.Width / 2, 64), 300, 32);
+                SkillInfo = new SkillBox(Scene, new Vector2(Scene.Viewport.Width / 2, 64), 332, 40);
             }
 
             if (SubMenu != null)
@@ -979,7 +979,7 @@ namespace RoguelikeEngine
             SpriteReference skull = SpriteLoader.Instance.AddSprite("content/ui_skull");
             SpriteReference text = SpriteLoader.Instance.AddSprite("content/ui_warntext");
 
-            int middle = scene.Viewport.Height / 4;
+            int middle = scene.Viewport.Height * 3 / 4;
             int size = (int)(80 * OpenFrame.Slide);
             double warnSlide = GetWarnSlide();
             int distExterior = (int)(60 * Math.Min(warnSlide, 0.5) * 2);

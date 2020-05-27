@@ -110,7 +110,10 @@ namespace RoguelikeEngine
 
         public string GetMessage()
         {
-            return $"{StatusEffect.Name} {StatusEffect.BuildupText(Buildup)}";
+            if (Buildup >= StatusEffect.MaxStacks)
+                return $"{StatusEffect.Name}";
+            else
+                return $"{StatusEffect.Name} {StatusEffect.BuildupText(Buildup)}";
         }
     }
 

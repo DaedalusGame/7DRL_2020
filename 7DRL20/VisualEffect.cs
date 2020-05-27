@@ -701,6 +701,155 @@ namespace RoguelikeEngine
         }
     }
 
+    class GeomancyPiece : Particle
+    {
+        Tile Tile;
+        SpriteEffects Mirror;
+
+        public override Vector2 Position
+        {
+            get
+            {
+                return Tile.VisualPosition;
+            }
+            set
+            {
+                //NOOP
+            }
+        }
+
+        public GeomancyPiece(SceneGame world, Tile tile, SpriteEffects mirror, int time) : base(world, Vector2.Zero)
+        {
+            Tile = tile;
+            Frame = new Slider(time);
+            Mirror = mirror;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            SpriteReference geo = SpriteLoader.Instance.AddSprite("content/geotile");
+            scene.DrawSprite(geo, 0, Position, Mirror, Color.Goldenrod * (1 - Frame.Slide), 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectLowAdditive;
+        }
+    }
+
+    class GeomancyField : VisualEffect
+    {
+        struct GeoPiece
+        {
+            public Tile Tile;
+            public float Distance;
+            public SpriteEffects Mirror;
+
+            public GeoPiece(Tile tile, float distance, SpriteEffects mirror)
+            {
+                Tile = tile;
+                Distance = distance;
+                Mirror = mirror;
+            }
+        }
+
+        List<GeoPiece> Pieces = new List<GeoPiece>();
+        float MaxDistance;
+
+        public GeomancyField(SceneGame world, Tile center, IEnumerable<Tile> tiles, int time) : base(world)
+        {
+            foreach(Tile tile in tiles)
+            {
+                int dx = tile.X - center.X;
+                int dy = tile.Y - center.Y;
+                float distance = (float)Math.Sqrt(dx * dx + dy * dy);
+
+                if (distance > MaxDistance)
+                    MaxDistance = distance;
+
+                if (tile.Opaque || tile.Solid)
+                    continue;
+
+                if(Random.NextDouble() < 0.3)
+                {
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.None));
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.FlipHorizontally));
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.FlipVertically));
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically));
+                }
+                else if(Random.NextDouble() < 0.5)
+                {
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.FlipHorizontally));
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.FlipVertically));
+                }
+                else
+                {
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.None));
+                    Pieces.Add(new GeoPiece(tile, distance + Random.NextFloat() * 3, SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically));
+                }
+            }
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if(Frame.Done)
+                this.Destroy();
+
+            double distance = LerpHelper.QuadraticIn(0, MaxDistance, Frame.Slide);
+            foreach(GeoPiece piece in Pieces.Where(x => x.Distance < distance))
+            {
+                new GeomancyPiece(World,piece.Tile,piece.Mirror,12 + Random.Next(30));
+            }
+            Pieces.RemoveAll(x => x.Distance < distance);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class TileExplosion : VisualEffect
+    {
+        public TileExplosion(SceneGame world, IEnumerable<Tile> tiles) : base(world)
+        {
+            new ScreenShakeRandom(World, 8, 60, LerpHelper.Linear);
+            foreach (Tile tile in tiles)
+            {
+                Vector2 offset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                if (Random.NextDouble() < 0.7)
+                    new FireExplosion(World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
+            }
+            this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
     abstract class Projectile : Particle
     {
         public override Vector2 Position { get => Tween; set {} }
@@ -923,6 +1072,34 @@ namespace RoguelikeEngine
             scene.PushSpriteBatch(samplerState: SamplerState.PointWrap);
             scene.SpriteBatch.Draw(beam.Texture, point1, new Rectangle((int)Frame.Time * 2, 0, length, beam.Height), Color.White, angle, new Vector2(0, beam.Height / 2), 1.0f, SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+        }
+    }
+
+    class HeavenRay : Particle
+    {
+        public HeavenRay(SceneGame world, Tile tile, int time) : base(world, tile.VisualPosition)
+        {
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            int x = (int)Position.X + 8;
+            int y = (int)Position.Y + 16;
+            int size = (int)MathHelper.Lerp(16,0,Frame.Slide);
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(x - size / 2, y - scene.Viewport.Height, size, scene.Viewport.Height), Color.White);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
         }
     }
 

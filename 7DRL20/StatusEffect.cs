@@ -390,4 +390,102 @@ namespace RoguelikeEngine
             Hidden = true;
         }
     }
+
+    class Geomancy : StatusEffect, ITurnTaker
+    {
+        public override string Name => $"Geomancy";
+        public override string Description => GetDescription();
+
+        public double TurnSpeed => 1;
+        public double TurnBuildup { get; set; }
+        public bool TurnReady => TurnBuildup >= 1;
+        public bool RemoveFromQueue { get; set; }
+
+        public override int MaxStacks => 1;
+
+        Creature Master;
+
+        public Geomancy(Creature master)
+        {
+            Master = master;
+        }
+
+        private string GetDescription()
+        {
+            string statBlock = String.Empty;
+            var effects = GetEffects<Effect>();
+            var statGroups = effects.OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).OrderBy(group => group.Key.Priority);
+            foreach (var stat in statGroups)
+            {
+                statBlock += stat.GetStatBonus(stat.Key);
+            }
+            return statBlock;
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Geomancy;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Master.Dead)
+                this.Remove();
+        }
+
+        public override void OnAdd()
+        {
+            base.OnAdd();
+            if(Creature is Creature creature)
+            {
+                creature.ActionQueue.Add(this);
+            }
+        }
+
+        public override void OnRemove()
+        {
+            base.OnRemove();
+            RemoveFromQueue = true;
+        }
+
+        public void UpdateStats()
+        {
+            this.ClearEffects();
+            if(Creature is Creature creature) {
+                foreach (Tile tile in creature.Tiles){
+                    int geoFunction = tile.X * 37 + tile.Y * 142;
+                    switch(geoFunction % 10)
+                    {
+                        case (0):
+                            Effect.Apply(new EffectStatPercent(this, Stat.Defense, 0.1));
+                            break;
+                        case (1):
+                            Effect.Apply(new EffectStatPercent(this, Stat.Attack, 0.25));
+                            break;
+                        case (2):
+                            Effect.Apply(new EffectStatPercent(this, Stat.Attack, 0.1));
+                            break;
+                        case (3):
+                            Effect.Apply(new EffectStatPercent(this, Stat.Attack, -0.5));
+                            Effect.Apply(new EffectStatPercent(this, Stat.Defense, 0.5));
+                            break;
+                        case (4):
+                            Effect.Apply(new EffectStatPercent(this, Stat.Attack, 0.25));
+                            Effect.Apply(new EffectStatPercent(this, Stat.Defense, -0.25));
+                            break;
+                    }
+                    
+                }
+            }
+        }
+
+        public Wait TakeTurn(ActionQueue queue)
+        {
+            UpdateStats();
+            this.ResetTurn();
+            return Wait.NoWait;
+        }
+    }
 }

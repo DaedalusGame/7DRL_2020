@@ -32,11 +32,17 @@ namespace RoguelikeEngine
     class ActionQueue
     {
         public List<ITurnTaker> TurnTakers = new List<ITurnTaker>();
+        public List<ITurnTaker> ImmediateTurns = new List<ITurnTaker>();
         public ITurnTaker CurrentTurnTaker;
 
         public void Add(ITurnTaker turnTaker)
         {
             TurnTakers.Add(turnTaker);
+        }
+
+        public void AddImmediate(ITurnTaker turnTaker)
+        {
+            ImmediateTurns.Add(turnTaker);
         }
 
         public void Cleanup()
@@ -49,6 +55,14 @@ namespace RoguelikeEngine
         public void Step()
         {
             Cleanup();
+
+            if (ImmediateTurns.Any())
+            {
+                CurrentTurnTaker = ImmediateTurns.First();
+                ImmediateTurns.RemoveAt(0);
+                return;
+            }
+
             if (TurnTakers.Any(x => x.TurnSpeed > 0))
             {
                 while (CurrentTurnTaker == null)

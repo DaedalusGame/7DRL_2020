@@ -51,6 +51,11 @@ namespace RoguelikeEngine
             return this;
         }
 
+        public BossData SetTile(Func<Tile, bool> simple)
+        {
+            return SetTile(simple, simple);
+        }
+
         public BossData SetTile(Func<Tile, bool> simple, Func<Tile, bool> complex)
         {
             TileConditionSimple = simple;

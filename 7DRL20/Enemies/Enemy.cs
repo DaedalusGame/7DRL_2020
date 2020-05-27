@@ -91,6 +91,11 @@ namespace RoguelikeEngine.Enemies
             skill.HideSkill(user);
         }
 
+        public virtual void OnManifest()
+        {
+            //NOOP
+        }
+
         public override void AddTooltip(ref string tooltip)
         {
             base.AddTooltip(ref tooltip);
@@ -333,6 +338,97 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillLightning());
             //Skills.Add(new SkillDrainTouch());
             //Skills.Add(new SkillAttack());
+        }
+    }
+
+    class Wallhach : Enemy
+    {
+        Slider WingOpen = new Slider(60);
+
+        private bool Witnessed => World.SeenBosses.Contains(this);
+
+        public Wallhach(SceneGame world) : base(world)
+        {
+            Name = "Wallhach";
+            Description = "Ancient minister of the end times";
+
+            Render = new CreaturePaperdollRender()
+            {
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_hood"),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_armor"),
+                HeadColor = ColorMatrix.TwoColor(new Color(233, 197, 50), new Color(255, 254, 213)),
+                BodyColor = ColorMatrix.TwoColor(new Color(233, 197, 50), new Color(255, 254, 213)),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 1200));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 40));
+
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillGeomancy());
+        }
+
+        public override void OnManifest()
+        {
+            ActionQueue.AddImmediate(this);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Creature;
+            yield return DrawPass.EffectAdditive;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Witnessed)
+                WingOpen += 1;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            if (pass == DrawPass.EffectAdditive)
+            {
+                if (Witnessed)
+                {
+                    DrawWing(scene, 9, (float)LerpHelper.QuadraticIn(0, 1, WingOpen.Slide), WingOpen.Slide, Microsoft.Xna.Framework.Graphics.SpriteEffects.None);
+                    DrawWing(scene, 9, (float)LerpHelper.QuadraticIn(0, -1, WingOpen.Slide), WingOpen.Slide, Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally);
+                }
+            }
+            else
+            {
+                base.Draw(scene, pass);
+            }
+        }
+
+        private void DrawWing(SceneGame scene, int segments, float directionMod, float distanceMod, Microsoft.Xna.Framework.Graphics.SpriteEffects mirror)
+        {
+            SpriteReference hand = SpriteLoader.Instance.AddSprite("content/hand");
+            int index = 0;
+            for (int i = 1; i <= segments; i++)
+            {
+                int subSegments = 9;
+                float angle = directionMod * MathHelper.ToRadians(90 - i * 5);
+                float distance = (float)LerpHelper.Quadratic(10, distanceMod * 50, (float)i / segments);
+                Vector2 pivot = VisualPosition() + Util.AngleToVector(angle) * distance;
+                scene.DrawSpriteExt(hand, 0, pivot + GetHandOffset(index), hand.Middle, angle + directionMod * MathHelper.PiOver4, Vector2.One, mirror, new Color(244, 211, 23), 0);
+                index++;
+                for (int e = 0; e <= subSegments; e++)
+                {
+                    float subSegmentSlide = (float)e / (subSegments + 1);
+                    float subAngle = angle - directionMod * MathHelper.ToRadians(i * 2);
+                    float subDistance = distanceMod * e * 5;
+                    float visAngle = subAngle + directionMod * MathHelper.PiOver2 + directionMod * MathHelper.ToRadians(i * -10);
+                    scene.DrawSpriteExt(hand, 0, pivot + GetHandOffset(index) + Util.AngleToVector(subAngle) * subDistance, hand.Middle, visAngle, Vector2.One, mirror, new Color(244, 211, 23) * MathHelper.Lerp(0.3f, 1, subSegmentSlide), 0);
+                    index++;
+                }
+            }
+        }
+
+        private Vector2 GetHandOffset(int index)
+        {
+            return Util.AngleToVector(index * 90 + MathHelper.ToRadians(Frame * 3)) * 2;
         }
     }
 

@@ -529,6 +529,8 @@ namespace RoguelikeEngine
         public double DrawOrder => VisualPosition().Y;
         public bool Destroyed { get; set; }
 
+        public ActionQueue ActionQueue => World.ActionQueue;
+
         public ReusableID ObjectID {
             get;
             private set;
@@ -554,7 +556,7 @@ namespace RoguelikeEngine
 
         public string Name;
         public string Description;
-        public Facing Facing;
+        public Facing Facing = Facing.South;
 
         public double Experience;
 
@@ -925,7 +927,7 @@ namespace RoguelikeEngine
             return Map == map;
         }
 
-        public IEnumerable<DrawPass> GetDrawPasses() 
+        public virtual IEnumerable<DrawPass> GetDrawPasses() 
         {
             yield return DrawPass.Creature;
         }

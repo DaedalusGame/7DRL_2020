@@ -267,11 +267,11 @@ namespace RoguelikeEngine
             Player = new Hero(this);
             Player.MoveTo(startTile,1);
             ActionQueue.Add(Player);
-            /*Enemy testEnemy = new EnderErebizo(this);
+            /*Enemy testEnemy = new Wallhach(this);
             testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
             testEnemy.MakeAggressive(Player);
-            ActionQueue.Add(testEnemy);
-            testEnemy = new EnderErebizo(this);
+            ActionQueue.Add(testEnemy);*/
+            /*testEnemy = new EnderErebizo(this);
             testEnemy.MoveTo(startTile.GetNeighbor(2,0),0);
             testEnemy.MakeAggressive(Player);
             ActionQueue.Add(testEnemy);*/
@@ -407,10 +407,12 @@ namespace RoguelikeEngine
 
         private IEnumerable<Wait> RoutineBossWarning(Enemy boss)
         {
+            yield return new WaitTime(40);
+            SeenBosses.Add(boss);
+            boss.OnManifest();
             CameraFocus = CameraFocus.MoveNext(boss, 30);
             Menu.BossWarning = new BossWarning(boss.BossDescription);
             yield return new WaitMenu(Menu.BossWarning);
-            SeenBosses.Add(boss);
             CameraFocus.SetDead();
         }
 
@@ -436,7 +438,7 @@ namespace RoguelikeEngine
 
             PopupManager.Update(this);
 
-            while (Wait.Done && !Player.Dead)
+            while (Wait.Done && !Player.Dead && CameraFocus.Done)
             {
                 Enemy foundBoss = Spawner.Bosses.Find(x => !x.Dead && IsBossVisible(x) && !SeenBosses.Contains(x));
                 if (foundBoss != null)
@@ -561,6 +563,9 @@ namespace RoguelikeEngine
             drawPasses.DrawPass(this, DrawPass.Tile);
             drawPasses.DrawPass(this, DrawPass.Item);
             drawPasses.DrawPass(this, DrawPass.EffectLow);
+            PushSpriteBatch(blendState: BlendState.Additive);
+            drawPasses.DrawPass(this, DrawPass.EffectLowAdditive);
+            PopSpriteBatch();
             drawPasses.DrawPass(this, DrawPass.Creature);
             drawPasses.DrawPass(this, DrawPass.Effect);
             PushSpriteBatch(blendState: BlendState.Additive);

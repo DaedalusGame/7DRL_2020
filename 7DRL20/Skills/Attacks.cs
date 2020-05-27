@@ -1219,4 +1219,81 @@ namespace RoguelikeEngine.Skills
             throw new NotImplementedException();
         }
     }
+
+    class SkillPhalange : Skill
+    {
+        public SkillPhalange() : base("Phalange", "Ranged Physical damage.", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SkillHeptablast : Skill
+    {
+        public SkillHeptablast() : base("Heptablast", "Physical damage to 10 random targets.", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SkillDeltaAttack : Skill
+    {
+        public SkillDeltaAttack() : base("Delta Attack", "Ranged Earth damage.", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SkillWedlock : Skill
+    {
+        public SkillWedlock() : base("Wedlock", "Prevents Quick-swapping and Unequipping.", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SkillGeomancy : Skill
+    {
+        public SkillGeomancy() : base("Geomancy", "Everybody gains stat bonuses based on occupied tiles.", 0, 0, 1)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            int radius = 20;
+            var tileSet = user.Tile.GetNearby(radius).Where(tile => GetSquareDistance(user.Tile, tile) <= radius * radius);
+            new GeomancyField(user.World, user.Tile, tileSet, 50);
+            yield return user.WaitSome(50);
+            foreach (Creature creature in user.World.Entities.ToList())
+            {
+                creature.AddStatusEffect(new Geomancy(user)
+                {
+                    Buildup = 1.0,
+                    Duration = new Slider(float.PositiveInfinity),
+                });
+                yield return user.WaitSome(5);
+            }
+
+            yield return user.WaitSome(20);
+        }
+    }
 }
