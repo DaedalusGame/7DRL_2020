@@ -1240,7 +1240,50 @@ namespace RoguelikeEngine.Skills
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
-            throw new NotImplementedException();
+            if (user is Enemy enemy)
+            {
+                Consume();
+                ShowSkill(user);
+                Creature target = enemy.AggroTarget;
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(50);
+                var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), user.VisualTarget - new Vector2(8, 8), ColorMatrix.Tint(Color.Black), 15);
+                bullet.Move(target.VisualTarget - new Vector2(8, 8), 15);
+                yield return new WaitBullet(bullet);
+                SpriteReference triangle = SpriteLoader.Instance.AddSprite("content/triangle");
+                for (int i = 0; i < 50; i++)
+                {
+                    Vector2 emitPos = new Vector2(target.X * 16, target.Y * 16) + target.Mask.GetRandomPixel(Random);
+                    Vector2 centerPos = target.VisualTarget;
+                    Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 40f;
+                    new Triangle(user.World, triangle, emitPos, velocity, MathHelper.ToRadians(40 * (Random.NextFloat() - 0.5f)), Color.Black, Random.Next(80) + 5);
+                }
+                yield return user.WaitSome(20);
+                List<Wait> waits = new List<Wait>();
+                for(int i = 0; i < 10; i++)
+                {
+                    waits.Add(Scheduler.Instance.RunAndWait(RoutineSlap(user, target)));
+                    yield return user.WaitSome(4);
+                }
+                yield return new WaitAll(waits);
+                yield return user.WaitSome(50);
+            }
+        }
+
+        private IEnumerable<Wait> RoutineSlap(Creature user, Creature target)
+        {
+            var offset = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * (40 + Random.Next(30));
+            var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), target.VisualTarget + offset - new Vector2(8, 8), ColorMatrix.Tint(Color.Black), 6);
+            bullet.Move(target.VisualTarget - new Vector2(8, 8), 6);
+            yield return new WaitBullet(bullet);
+            user.Attack(target, 0, 0, AttackSlap);
+        }
+
+        private Attack AttackSlap(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 0.5);
+            return attack;
         }
     }
 

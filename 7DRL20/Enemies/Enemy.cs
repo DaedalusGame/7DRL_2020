@@ -366,6 +366,7 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillGeomancy());
+            Skills.Add(new SkillHeptablast());
         }
 
         public override void OnManifest()

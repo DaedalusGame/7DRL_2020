@@ -886,6 +886,7 @@ namespace RoguelikeEngine
         public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MoveFrame.Slide);
 
         public Slider MoveFrame;
+        public bool Hit;
 
         public Bullet(SceneGame world, Vector2 positionStart, int time) : base(world, positionStart, positionStart, time)
         {
@@ -995,6 +996,32 @@ namespace RoguelikeEngine
             base.Update();
             float angle = Util.VectorToAngle(PositionEnd - PositionStart);
             new Trail(World, Sprite, Position, Vector2.Zero, angle, TrailColor, 10);
+        }
+    }
+
+    class BulletSpeed : BulletAngular
+    {
+        LerpHelper.Delegate Lerp = LerpHelper.CubicOut;
+        float Overshoot = 1.5f;
+        public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionStart + (PositionEnd - PositionStart) * Overshoot, (float)Lerp(0,1,MoveFrame.Slide));
+
+        public BulletSpeed(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix color, int time) : base(world, sprite, positionStart, color, time)
+        {
+        }
+
+        public override void Impact(Vector2 position)
+        {
+            Hit = true;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if(Lerp(0, Overshoot, MoveFrame.Slide) > 1 && !Hit)
+            {
+                Impact(Tween);
+            }
         }
     }
 
@@ -1188,6 +1215,49 @@ namespace RoguelikeEngine
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
             return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class Triangle : Particle
+    {
+        SpriteReference Sprite;
+        Color Color;
+        float Angle;
+        float AngleVelocity;
+        protected Vector2 Velocity;
+        protected float InitialScale = 1;
+        protected float Scale => (float)LerpHelper.QuadraticIn(InitialScale, 0, MathHelper.Clamp((Frame.Slide - 0.9f) / 0.1f, 0, 1));
+
+        public Vector2 Tween => Vector2.Lerp(Position, Position + Velocity, (float)LerpHelper.QuadraticOut(0,1,Frame.Slide));
+
+        public Triangle(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float angleVelocity, Color color, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Velocity = velocity;
+            Frame = new Slider(time);
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+            AngleVelocity = angleVelocity;
+            Color = color;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Frame.Done)
+                this.Destroy();
+
+            Angle += AngleVelocity;
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Tween - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color, 0);
         }
     }
 

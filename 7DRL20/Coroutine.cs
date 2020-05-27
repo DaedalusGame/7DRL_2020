@@ -124,6 +124,23 @@ namespace RoguelikeEngine
         }
     }
 
+    class WaitBullet : Wait
+    {
+        Bullet Bullet;
+
+        public override bool Done => Bullet.Hit;
+
+        public WaitBullet(Bullet bullet)
+        {
+            Bullet = bullet;
+        }
+
+        public override void Update()
+        {
+            //NOOP
+        }
+    }
+
     public class Coroutine
     {
         IEnumerator<Wait> Enumerator;
