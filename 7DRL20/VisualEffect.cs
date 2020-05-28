@@ -860,6 +860,7 @@ namespace RoguelikeEngine
 
         public Vector2 PositionStart;
         public Vector2 PositionEnd;
+        public bool Hit;
 
         public Projectile(SceneGame world, Vector2 positionStart, Vector2 positionEnd, int time) : base(world, Vector2.Zero)
         {
@@ -878,7 +879,58 @@ namespace RoguelikeEngine
             }
         }
 
-        public abstract void Impact(Vector2 position);
+        public virtual void Impact(Vector2 position)
+        {
+            Hit = true;
+        }
+    }
+
+    class MissileHand : Projectile
+    {
+        public Vector2 Velocity;
+
+        public override Vector2 Tween => Vector2.Lerp(TweenStraight, PositionEnd, (float)LerpHelper.QuadraticIn(0, 1, Frame.Slide));
+        Vector2 TweenStraight => Vector2.Lerp(PositionStart, PositionStart + Velocity, Frame.Slide);
+
+        
+        float Angle => Util.VectorToAngle(PositionEnd - Tween);
+        SpriteEffects Mirror;
+        ColorMatrix ColorMatrix;
+        float Alpha => (float)LerpHelper.QuadraticIn(1, 0, MathHelper.Clamp((Frame.Slide - 0.7f) / 0.3f, 0, 1));
+
+        public MissileHand(SceneGame world, Vector2 positionStart, Vector2 positionEnd, Vector2 velocity, ColorMatrix colorMatrix, int time) : base(world, positionStart, positionEnd, time)
+        {
+            Velocity = velocity;
+            if (Random.NextDouble() < 0.5)
+                Mirror = SpriteEffects.FlipHorizontally;
+            else
+                Mirror = SpriteEffects.None;
+            ColorMatrix = colorMatrix;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            new TrailAlpha(World, SpriteLoader.Instance.AddSprite("content/hand"), Tween, Vector2.Zero, Angle, Color.DarkGoldenrod, Mirror, 10);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            SpriteReference hand = SpriteLoader.Instance.AddSprite("content/hand");
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(ColorMatrix, matrix);
+            });
+            scene.DrawSpriteExt(hand, 0, Position - hand.Middle, hand.Middle, Angle, new Vector2(1), Mirror, Color.White * Alpha, 0);
+            scene.PopSpriteBatch();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+
     }
 
     abstract class Bullet : Projectile
@@ -886,7 +938,6 @@ namespace RoguelikeEngine
         public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MoveFrame.Slide);
 
         public Slider MoveFrame;
-        public bool Hit;
 
         public Bullet(SceneGame world, Vector2 positionStart, int time) : base(world, positionStart, positionStart, time)
         {
@@ -919,14 +970,16 @@ namespace RoguelikeEngine
         public Vector2 Velocity;
         public float Angle;
         public Color Color;
+        public SpriteEffects Mirror;
 
-        public Trail(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float angle, Color color, int time) : base(world, position)
+        public Trail(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float angle, Color color, SpriteEffects mirror, int time) : base(world, position)
         {
             Sprite = sprite;
             Frame = new Slider(time);
             Velocity = velocity;
             Angle = angle;
             Color = color;
+            Mirror = mirror;
         }
 
         public override void Update()
@@ -945,7 +998,19 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             Color color = new Color(Color.R, Color.G, Color.B, (int)MathHelper.Lerp(Color.A, 0, Frame.Slide));
-            scene.DrawSpriteExt(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), Position, Sprite.Middle, Angle, Vector2.One, SpriteEffects.None, color, 0);
+            scene.DrawSpriteExt(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), Position - Sprite.Middle, Sprite.Middle, Angle, Vector2.One, Mirror, color, 0);
+        }
+    }
+
+    class TrailAlpha : Trail
+    {
+        public TrailAlpha(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float angle, Color color, SpriteEffects mirror, int time) : base(world, sprite, position, velocity, angle, color, mirror, time)
+        {
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectLowAdditive;
         }
     }
 
@@ -960,11 +1025,6 @@ namespace RoguelikeEngine
             Color = color;
         }
 
-        public override void Impact(Vector2 position)
-        {
-            //NOOP
-        }
-
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             float angle = Util.VectorToAngle(PositionEnd - PositionStart);
@@ -972,7 +1032,7 @@ namespace RoguelikeEngine
             {
                 scene.SetupColorMatrix(Color, matrix);
             });
-            scene.DrawSpriteExt(Sprite, 0, Position, Sprite.Middle, angle, SpriteEffects.None, 0);
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, angle, SpriteEffects.None, 0);
             scene.PopSpriteBatch();
         }
 
@@ -995,7 +1055,7 @@ namespace RoguelikeEngine
         {
             base.Update();
             float angle = Util.VectorToAngle(PositionEnd - PositionStart);
-            new Trail(World, Sprite, Position, Vector2.Zero, angle, TrailColor, 10);
+            new Trail(World, Sprite, Position, Vector2.Zero, angle, TrailColor, SpriteEffects.None, 10);
         }
     }
 
@@ -1009,11 +1069,6 @@ namespace RoguelikeEngine
         {
         }
 
-        public override void Impact(Vector2 position)
-        {
-            Hit = true;
-        }
-
         public override void Update()
         {
             base.Update();
@@ -1022,6 +1077,53 @@ namespace RoguelikeEngine
             {
                 Impact(Tween);
             }
+        }
+    }
+
+    class BulletDelta : Bullet
+    {
+        protected SpriteReference Sprite;
+        protected ColorMatrix ColorMatrix;
+
+        float Angle;
+        float AngleVelocity;
+
+        float InitialScale = 1;
+        float Scale => (float)LerpHelper.QuadraticIn(InitialScale, 0, MathHelper.Clamp((Frame.Slide - 0.7f) / 0.3f, 0, 1));
+
+        public BulletDelta(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix colorMatrix, float angleVelocity, int time) : base(world, positionStart, time)
+        {
+            Sprite = sprite;
+            ColorMatrix = colorMatrix;
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+            AngleVelocity = angleVelocity;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            Angle += AngleVelocity;
+
+            if (Frame.Done)
+                this.Destroy();
+
+            new Trail(World, Sprite, Position, Vector2.Zero, Angle, Color.Orange, SpriteEffects.None, 10);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(ColorMatrix, matrix);
+            });
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+            scene.PopSpriteBatch();
         }
     }
 
@@ -1079,6 +1181,7 @@ namespace RoguelikeEngine
 
         public override void Impact(Vector2 position)
         {
+            Hit = true;
             new LightningFlash(World, position, Vector2.Zero, 0, 6);
         }
 
@@ -1258,6 +1361,91 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             scene.DrawSpriteExt(Sprite, 0, Tween - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color, 0);
+        }
+    }
+
+    class RockTremor : VisualEffect
+    {
+        Creature Anchor;
+
+        public RockTremor(SceneGame world, Creature anchor, int time) : base(world)
+        {
+            Anchor = anchor;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Frame.Done)
+                this.Destroy();
+
+            int n;
+            if (Frame.Time <= 3)
+                n = 20;
+            else
+                n = 2;
+
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 emitPos = new Vector2(Anchor.X * 16, Anchor.Y * 16) + Anchor.Mask.GetRandomPixel(Random);
+                Vector2 centerPos = Anchor.VisualTarget;
+                Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 6;
+                new Rock(World, SpriteLoader.Instance.AddSprite("content/rock"), emitPos, velocity, (Random.NextFloat() + 0.5f) * 6, new Color(162, 137, 119), 20);
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class Rock : Particle
+    {
+        SpriteReference Sprite;
+        int SubImage;
+        Color Color;
+        protected Vector2 Velocity;
+        float Height;
+        protected float InitialScale = 1;
+        protected float Scale => (float)LerpHelper.QuadraticIn(InitialScale, 0, MathHelper.Clamp((Frame.Slide - 0.9f) / 0.1f, 0, 1));
+
+        public Vector2 Tween => Vector2.Lerp(Position, Position + Velocity, (float)LerpHelper.QuadraticOut(0, 1, Frame.Slide)) + Jump;
+        public Vector2 Jump => new Vector2(0, (float)LerpHelper.QuadraticOut(0,-Height,LerpHelper.ForwardReverse(0,1,Frame.Slide)));
+
+        public Rock(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float height, Color color, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            SubImage = Random.Next(Sprite.SubImageCount);
+            Velocity = velocity;
+            Height = height;
+            Frame = new Slider(time);
+            Color = color;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, SubImage, Tween - Sprite.Middle, Sprite.Middle, 0, new Vector2(Scale), SpriteEffects.None, Color, 0);
         }
     }
 
@@ -1491,11 +1679,6 @@ namespace RoguelikeEngine
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
             yield return DrawPass.Effect;
-        }
-
-        public override void Impact(Vector2 position)
-        {
-            
         }
     }
 

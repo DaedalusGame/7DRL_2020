@@ -16,9 +16,11 @@ namespace RoguelikeEngine
         public string Name;
         public string Description;
 
-        Slider Warmup;
-        Slider Cooldown;
-        Slider Uses;
+        public int Priority;
+        protected Slider Warmup;
+        protected Slider Cooldown;
+        protected Slider Uses;
+        protected Slider InstantUses;
         public bool IsReady => Warmup.Done && Cooldown.Done && !Uses.Done;
 
         public virtual bool Hidden(Creature user) => false;
@@ -31,6 +33,7 @@ namespace RoguelikeEngine
             Warmup = new Slider(warmup);
             Cooldown = new Slider(cooldown,cooldown);
             Uses = new Slider(uses);
+            InstantUses = new Slider(1);
         }
 
         public virtual bool CanUse(Creature user)
@@ -40,8 +43,13 @@ namespace RoguelikeEngine
 
         protected void Consume()
         {
-            Cooldown.Time = 0;
-            Uses += 1;
+            InstantUses += 1;
+            if (InstantUses.Done)
+            {
+                Cooldown.Time = 0;
+                InstantUses.Time = 0;
+                Uses += 1;
+            }
         }
 
         public string GetTooltip()

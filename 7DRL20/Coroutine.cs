@@ -126,11 +126,11 @@ namespace RoguelikeEngine
 
     class WaitBullet : Wait
     {
-        Bullet Bullet;
+        Projectile Bullet;
 
         public override bool Done => Bullet.Hit;
 
-        public WaitBullet(Bullet bullet)
+        public WaitBullet(Projectile bullet)
         {
             Bullet = bullet;
         }

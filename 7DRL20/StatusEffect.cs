@@ -100,7 +100,7 @@ namespace RoguelikeEngine
                 Duration = duration;
         }
 
-        protected void AddBuildup(double buildup)
+        public void AddBuildup(double buildup)
         {
             int lastStacks = Stacks;
             Buildup += buildup;
@@ -391,6 +391,35 @@ namespace RoguelikeEngine
         }
     }
 
+    class Chirality : StatusEffect
+    {
+        public override string Name => $"Chirality";
+        public override string Description => $"Increases chiral attack's damage.";
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Chirality;
+        }
+    }
+
+    class DeltaMark : StatusEffect
+    {
+        public override string Name => $"Delta Mark";
+        public override string Description => $"Increases earth damage by 20% and triples Chirality buildup.";
+
+        public override int MaxStacks => 1;
+
+        public DeltaMark()
+        {
+            Effect.Apply(new EffectStatPercent(this, Element.Earth.DamageRate, 0.2));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is DeltaMark;
+        }
+    }
+
     class Geomancy : StatusEffect, ITurnTaker
     {
         public override string Name => $"Geomancy";
@@ -419,7 +448,7 @@ namespace RoguelikeEngine
             {
                 statBlock += stat.GetStatBonus(stat.Key);
             }
-            return statBlock;
+            return statBlock.TrimEnd('\n');
         }
 
         public override bool CanCombine(StatusEffect other)

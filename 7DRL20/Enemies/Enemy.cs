@@ -30,7 +30,8 @@ namespace RoguelikeEngine.Enemies
 
         private Skill GetUsableSkill()
         {
-            foreach (Skill skill in Skills.Shuffle())
+            IEnumerable<Skill> skills = Skills.Shuffle().OrderByDescending(skill => skill.Priority);
+            foreach (Skill skill in skills)
             {
                 if (skill.CanUse(this))
                 {
@@ -362,10 +363,12 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(Point.Zero);
 
             Effect.Apply(new EffectStat(this, Stat.HP, 1200));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 40));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
-            Skills.Add(new SkillAttack());
+            //Skills.Add(new SkillAttack());
+            Skills.Add(new SkillPhalange());
             Skills.Add(new SkillGeomancy());
+            Skills.Add(new SkillDeltaAttack());
             Skills.Add(new SkillHeptablast());
         }
 
@@ -374,17 +377,17 @@ namespace RoguelikeEngine.Enemies
             ActionQueue.AddImmediate(this);
         }
 
-        public override IEnumerable<DrawPass> GetDrawPasses()
-        {
-            yield return DrawPass.Creature;
-            yield return DrawPass.EffectAdditive;
-        }
-
         public override void Update()
         {
             base.Update();
             if (Witnessed)
                 WingOpen += 1;
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Creature;
+            yield return DrawPass.EffectAdditive;
         }
 
         public override void Draw(SceneGame scene, DrawPass pass)
@@ -422,6 +425,35 @@ namespace RoguelikeEngine.Enemies
                     float subDistance = distanceMod * e * 5;
                     float visAngle = subAngle + directionMod * MathHelper.PiOver2 + directionMod * MathHelper.ToRadians(i * -10);
                     scene.DrawSpriteExt(hand, 0, pivot + GetHandOffset(index) + Util.AngleToVector(subAngle) * subDistance, hand.Middle, visAngle, Vector2.One, mirror, new Color(244, 211, 23) * MathHelper.Lerp(0.3f, 1, subSegmentSlide), 0);
+                    index++;
+                }
+            }
+        }
+
+        public static List<Vector2> GetWingPositions(Vector2 position, float slide)
+        {
+            List<Vector2> positions = new List<Vector2>();
+            positions.AddRange(GetWingPositions(position, 9, (float)LerpHelper.QuadraticIn(0, 1, slide), slide));
+            positions.AddRange(GetWingPositions(position, 9, (float)LerpHelper.QuadraticIn(0, -1, slide), slide));
+            return positions;
+        }
+
+        private static IEnumerable<Vector2> GetWingPositions(Vector2 position, int segments, float directionMod, float distanceMod)
+        {
+            int index = 0;
+            for (int i = 1; i <= segments; i++)
+            {
+                int subSegments = 9;
+                float angle = directionMod * MathHelper.ToRadians(90 - i * 5);
+                float distance = (float)LerpHelper.Quadratic(10, distanceMod * 50, (float)i / segments);
+                Vector2 pivot = position + Util.AngleToVector(angle) * distance;
+                yield return pivot;
+                index++;
+                for (int e = 0; e <= subSegments; e++)
+                {
+                    float subAngle = angle - directionMod * MathHelper.ToRadians(i * 2);
+                    float subDistance = distanceMod * e * 5;
+                    yield return pivot + Util.AngleToVector(subAngle) * subDistance;
                     index++;
                 }
             }

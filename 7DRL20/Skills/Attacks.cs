@@ -123,14 +123,14 @@ namespace RoguelikeEngine.Skills
         //TODO: Probably add projectile class so we can have stuff like mirror spells
         protected IEnumerable<Wait> ShootStraight(Creature user, Tile tile, Point velocity, int time, int maxDistance, Bullet bullet, TrailDelegate trail, CanCollideDelegate canCollide, ImpactDelegate impact)
         {
-            bullet?.Setup(tile.VisualPosition, time * maxDistance);
+            bullet?.Setup(tile.VisualTarget, time * maxDistance);
             bool impacted = false;
             List<Wait> waits = new List<Wait>();
             for(int i = 0; i < maxDistance && !impacted; i++)
             {
                 Tile nextTile = tile.GetNeighbor(velocity.X, velocity.Y);
                 impacted = canCollide(user, nextTile);
-                bullet?.Move(nextTile.VisualPosition, time);
+                bullet?.Move(nextTile.VisualTarget, time);
                 if (impacted)
                 {
                     if(time > 0)
@@ -1188,6 +1188,7 @@ namespace RoguelikeEngine.Skills
     {
         public SkillForcefield() : base("Forcefield", "Select 1 random base Element. Become weak to this element. Become immune to all the others.", 0, 0, 1)
         {
+            Priority = 10;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1200,6 +1201,7 @@ namespace RoguelikeEngine.Skills
     {
         public SkillAgeOfDragons() : base("Age of Dragons", "10 Extra Turns.", 15, 15, float.PositiveInfinity)
         {
+            Priority = 10;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1212,6 +1214,7 @@ namespace RoguelikeEngine.Skills
     {
         public SkillOblivion() : base("Oblivion", "Immense Dark damage.", 16, 15, float.PositiveInfinity)
         {
+            Priority = 10;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1222,20 +1225,69 @@ namespace RoguelikeEngine.Skills
 
     class SkillPhalange : Skill
     {
-        public SkillPhalange() : base("Phalange", "Ranged Physical damage.", 3, 3, float.PositiveInfinity)
+        public SkillPhalange() : base("Phalange", "Ranged Physical damage.", 0, 3, float.PositiveInfinity)
         {
+            InstantUses = new Slider(2);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
-            throw new NotImplementedException();
+            if (user is Enemy enemy)
+            {
+                Consume();
+                Creature target = enemy.AggroTarget;
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(10);
+                int chiralStacks = user.GetStatusStacks<Chirality>();
+                int hits = 0;
+                List<Wait> waits = new List<Wait>();
+                for(int i = 0; i < chiralStacks + 1; i++)
+                {
+                    waits.Add(Scheduler.Instance.RunAndWait(RoutineHand(user, target, hits)));
+                    hits++;
+                    yield return user.WaitSome(7);
+                }
+                yield return new WaitAll(waits);
+                double chiralBuildup = 0.2 * hits;
+                if (target.HasStatusEffect<DeltaMark>())
+                    chiralBuildup *= 3;
+                user.AddStatusEffect(new Chirality()
+                {
+                    Buildup = chiralBuildup,
+                    Duration = new Slider(float.PositiveInfinity),
+                });
+                yield return user.WaitSome(50);
+            }
+        }
+
+        private IEnumerable<Wait> RoutineHand(Creature user, Creature target, int hits)
+        {
+            List<Vector2> wingPositions = Wallhach.GetWingPositions(user.VisualTarget, 1.0f);
+            Vector2 velocity = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * 160;
+            Vector2 emitPos = wingPositions.Pick(Random);
+            var bullet = new MissileHand(user.World, emitPos, target.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), 30 + Random.Next(30));
+            yield return new WaitBullet(bullet);
+            if(hits % 3 >= 2)
+                user.Attack(target, 0, 0, AttackSlap);
+        }
+
+        private Attack AttackSlap(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 0.3);
+            return attack;
         }
     }
 
     class SkillHeptablast : Skill
     {
-        public SkillHeptablast() : base("Heptablast", "Physical damage to 10 random targets.", 3, 3, float.PositiveInfinity)
+        public SkillHeptablast() : base("Heptablast", "Physical damage to 10 random targets.", 9, 9, float.PositiveInfinity)
         {
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 10;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1244,11 +1296,13 @@ namespace RoguelikeEngine.Skills
             {
                 Consume();
                 ShowSkill(user);
+                var chirality = user.GetStatusEffect<Chirality>();
+                chirality?.AddBuildup(-5);
                 Creature target = enemy.AggroTarget;
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
-                var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), user.VisualTarget - new Vector2(8, 8), ColorMatrix.Tint(Color.Black), 15);
-                bullet.Move(target.VisualTarget - new Vector2(8, 8), 15);
+                var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), user.VisualTarget, ColorMatrix.Tint(Color.Black), 15);
+                bullet.Move(target.VisualTarget, 15);
                 yield return new WaitBullet(bullet);
                 SpriteReference triangle = SpriteLoader.Instance.AddSprite("content/triangle");
                 for (int i = 0; i < 50; i++)
@@ -1273,8 +1327,8 @@ namespace RoguelikeEngine.Skills
         private IEnumerable<Wait> RoutineSlap(Creature user, Creature target)
         {
             var offset = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * (40 + Random.Next(30));
-            var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), target.VisualTarget + offset - new Vector2(8, 8), ColorMatrix.Tint(Color.Black), 6);
-            bullet.Move(target.VisualTarget - new Vector2(8, 8), 6);
+            var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), target.VisualTarget + offset, ColorMatrix.Tint(Color.Black), 6);
+            bullet.Move(target.VisualTarget, 6);
             yield return new WaitBullet(bullet);
             user.Attack(target, 0, 0, AttackSlap);
         }
@@ -1295,7 +1349,33 @@ namespace RoguelikeEngine.Skills
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
-            throw new NotImplementedException();
+            if (user is Enemy enemy)
+            {
+                Consume();
+                ShowSkill(user);
+                Creature target = enemy.AggroTarget;
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(50);
+                var bullet = new BulletDelta(user.World, SpriteLoader.Instance.AddSprite("content/delta"), user.VisualTarget, ColorMatrix.Tint(Color.Goldenrod), MathHelper.ToRadians(20), 50);
+                bullet.Move(target.VisualTarget, 30);
+                yield return user.WaitSome(30);
+                new RockTremor(user.World, target, 30);
+                yield return new WaitBullet(bullet);
+                user.Attack(target, 0, 0, AttackDelta);
+                yield return user.WaitSome(50);
+            }
+        }
+
+        private Attack AttackDelta(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Earth, 1.5);
+            attack.StatusEffects.Add(new DeltaMark()
+            {
+                Duration = new Slider(3),
+                Buildup = 1.0,
+            });
+            return attack;
         }
     }
 
@@ -1303,6 +1383,12 @@ namespace RoguelikeEngine.Skills
     {
         public SkillWedlock() : base("Wedlock", "Prevents Quick-swapping and Unequipping.", 3, 3, float.PositiveInfinity)
         {
+            Priority = 10;
+        }
+
+        public override bool CanUse(Creature user)
+        {
+            return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 10;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1315,12 +1401,14 @@ namespace RoguelikeEngine.Skills
     {
         public SkillGeomancy() : base("Geomancy", "Everybody gains stat bonuses based on occupied tiles.", 0, 0, 1)
         {
+            Priority = 10;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             Consume();
             ShowSkill(user);
+            yield return user.WaitSome(20);
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
             int radius = 20;
             var tileSet = user.Tile.GetNearby(radius).Where(tile => GetSquareDistance(user.Tile, tile) <= radius * radius);

@@ -304,12 +304,12 @@ namespace RoguelikeEngine
             return null;
         }
 
-        public static StatusEffect GetStatusEffect<T>(this IEffectHolder holder) where T : StatusEffect
+        public static T GetStatusEffect<T>(this IEffectHolder holder) where T : StatusEffect
         {
             foreach(var checkEffect in holder.GetEffects<EffectStatusEffect>())
             {
                 if (checkEffect.StatusEffect is T)
-                    return checkEffect.StatusEffect;
+                    return (T)checkEffect.StatusEffect;
             }
             return null;
         }
@@ -354,6 +354,12 @@ namespace RoguelikeEngine
             {
                 statusEffect.Apply();
             }
+        }
+
+        public static int GetStatusStacks<T>(this IEffectHolder holder) where T : StatusEffect
+        {
+            T statusEffect = holder.GetStatusEffect<T>();
+            return statusEffect?.Stacks ?? 0;
         }
 
         public static void ClearPosition(this IEffectHolder subject)
