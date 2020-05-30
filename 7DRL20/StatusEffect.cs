@@ -142,17 +142,12 @@ namespace RoguelikeEngine
         {
         }
 
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is DefenseDown;
-        }
-
         public override void OnStackChange(int delta)
         {
             base.OnStackChange(delta);
             if(Stacks >= MaxStacks)
             {
-                Remove();
+                //Remove();
             }
         }
 
@@ -160,7 +155,7 @@ namespace RoguelikeEngine
         {
             base.Update();
             if (Stacks >= 1)
-                Creature.TakeDamage(1, Element.Bleed);
+                Creature.TakeDamage(2.5*Math.Pow(2,Stacks-1), Element.Bleed);
         }
 
         public override string ToString()
@@ -192,11 +187,6 @@ namespace RoguelikeEngine
                 //Proc Anemia
             }
             base.OnStackChange(delta);
-        }
-
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is BleedGreater;
         }
 
         public override void Update()
@@ -236,11 +226,6 @@ namespace RoguelikeEngine
                     Duration = new Slider(20),
                 });
         }
-
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is DefenseDownPoison;
-        }
     }
 
     class DefenseDown : StatusEffect
@@ -254,11 +239,6 @@ namespace RoguelikeEngine
         {
             Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, -0.1));
             Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3));
-        }
-
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is DefenseDown;
         }
 
         public override string ToString()
@@ -413,11 +393,6 @@ namespace RoguelikeEngine
         {
             Effect.Apply(new EffectStatPercent(this, Element.Earth.DamageRate, 0.2));
         }
-
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is DeltaMark;
-        }
     }
 
     class Geomancy : StatusEffect, ITurnTaker
@@ -449,11 +424,6 @@ namespace RoguelikeEngine
                 statBlock += stat.GetStatBonus(stat.Key);
             }
             return statBlock.TrimEnd('\n');
-        }
-
-        public override bool CanCombine(StatusEffect other)
-        {
-            return other is Geomancy;
         }
 
         public override void Update()
@@ -515,6 +485,32 @@ namespace RoguelikeEngine
             UpdateStats();
             this.ResetTurn();
             return Wait.NoWait;
+        }
+    }
+
+    class Wedlock : StatusEffect
+    {
+        public override string Name => $"Wedlock";
+        public override string Description => $"Blocks Unequipping and Offhand Swapping.";
+
+        public override int MaxStacks => 1;
+
+        Creature Master;
+
+        public Wedlock(Creature master)
+        {
+            Master = master;
+
+            Effect.Apply(new EffectFlag(this, Stat.SwapItem, false, 10));
+            Effect.Apply(new EffectFlag(this, Stat.UnequipItem, false, 10));
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Master.Dead)
+                this.Remove();
         }
     }
 }

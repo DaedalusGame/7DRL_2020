@@ -115,6 +115,22 @@ namespace RoguelikeEngine
             else
                 return $"{StatusEffect.Name} {StatusEffect.BuildupText(Buildup)}";
         }
+
+        public override bool CanCombine(Message other)
+        {
+            if (other.Holder == Holder && other is MessageStatusBuildup buildup && buildup.StatusEffect == StatusEffect)
+                return true;
+            return false;
+        }
+
+        public override Message[] Combine(Message other)
+        {
+            if (other is MessageStatusBuildup buildup)
+            {
+                return new[] { new MessageStatusBuildup(Holder, StatusEffect, Buildup + buildup.Buildup) };
+            }
+            return base.Combine(other);
+        }
     }
 
     class MessageStatusEffect : Message

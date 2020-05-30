@@ -197,9 +197,13 @@ namespace RoguelikeEngine.Skills
         public IEnumerable<Wait> Impact(Creature user, Tile tile)
         {
             Point velocity = user.Facing.ToOffset();
+            List<Wait> waits = new List<Wait>();
             foreach (Creature creature in tile.Creatures)
+            {
                 user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-            yield return user.WaitSome(0);
+                waits.Add(user.CurrentAction);
+            }
+            yield return new WaitAll(waits);
         }
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
@@ -247,9 +251,13 @@ namespace RoguelikeEngine.Skills
         {
             Point velocity = user.Facing.ToOffset();
             new FireExplosion(user.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 0, 15);
+            List<Wait> waits = new List<Wait>();
             foreach (Creature creature in tile.Creatures)
+            {
                 user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-            yield return user.WaitSome(0);
+                waits.Add(user.CurrentAction);
+            }
+            yield return new WaitAll(waits);
         }
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
@@ -293,8 +301,12 @@ namespace RoguelikeEngine.Skills
         public IEnumerable<Wait> Impact(Creature user, Tile tile)
         {
             Point velocity = user.Facing.ToOffset();
+            List<Wait> waits = new List<Wait>();
             foreach (Creature creature in tile.Creatures)
+            {
                 user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
+                waits.Add(user.CurrentAction);
+            }
             yield return user.WaitSome(0);
         }
 
@@ -338,17 +350,18 @@ namespace RoguelikeEngine.Skills
                 var frontier = user.Mask.GetFrontier(offset.X, offset.Y);
                 int creatureHits = 0;
                 int wallHits = 0;
+                List<Wait> waitForDamage = new List<Wait>();
                 PopupManager.StartCollect();
                 for (int i = 0; i < MaxDistance; i++)
                 {
                     if (!IsUnsafe(user))
                         lastSafeTile = user.Tile;
-                    List<Wait> waitForDamage = new List<Wait>();
                     foreach (var tile in frontier.Select(o => user.Tile.GetNeighbor(o.X, o.Y)))
                     {
                         foreach (var creature in tile.Creatures)
                         {
-                            waitForDamage.Add(user.Attack(creature, offset.X, offset.Y, RamAttack));
+                            user.Attack(creature, offset.X, offset.Y, RamAttack);
+                            waitForDamage.Add(creature.CurrentAction);
                             creatureHits++;
                         }
                         if (tile.Solid)
@@ -367,7 +380,7 @@ namespace RoguelikeEngine.Skills
                 if (IsUnsafe(user))
                     user.MoveTo(lastSafeTile,10);
                 PopupManager.FinishCollect();
-                yield return user.WaitSome(20);
+                yield return new WaitAll(waitForDamage);
             }
         }
 
@@ -525,15 +538,18 @@ namespace RoguelikeEngine.Skills
 
             foreach (var target in shootTile.Creatures)
             {
-                yield return user.Attack(target, 0, 0, (attacker, defender) =>
-                {
-                    Attack attack = new Attack(user, target);
-                    attack.Elements.Add(Element.Thunder, 1.0);
-                    return attack;
-                });
+                user.Attack(target, 0, 0, ThunderAttack);
+                yield return target.CurrentAction;
                 break;
             }
             yield return user.WaitSome(20);
+        }
+
+        private static Attack ThunderAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.Thunder, 1.0);
+            return attack;
         }
     }
 
@@ -973,14 +989,17 @@ namespace RoguelikeEngine.Skills
                 new ScreenShakeRandom(user.World, 8, 80, LerpHelper.QuarticIn);
                 //new BigExplosion(user.World, () => target.VisualTarget, (pos, time) => new EnderExplosion(user.World, pos, Vector2.Zero, time));
                 yield return user.WaitSome(10);
-                yield return user.Attack(target, 0, 0, (attacker, defender) =>
-                {
-                    Attack attack = new Attack(user, target);
-                    attack.Elements.Add(Element.TheEnd, 1.0);
-                    return attack;
-                });
+                user.Attack(target, 0, 0, FlareAttack);
+                yield return target.CurrentAction;
                 yield return user.WaitSome(20);
             }
+        }
+
+        private static Attack FlareAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.TheEnd, 1.0);
+            return attack;
         }
     }
 
@@ -1234,6 +1253,7 @@ namespace RoguelikeEngine.Skills
         {
             if (user is Enemy enemy)
             {
+                List<Creature> targets = new List<Creature>();
                 Consume();
                 Creature target = enemy.AggroTarget;
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
@@ -1243,6 +1263,7 @@ namespace RoguelikeEngine.Skills
                 List<Wait> waits = new List<Wait>();
                 for(int i = 0; i < chiralStacks + 1; i++)
                 {
+                    targets.Add(target);
                     waits.Add(Scheduler.Instance.RunAndWait(RoutineHand(user, target, hits)));
                     hits++;
                     yield return user.WaitSome(7);
@@ -1251,12 +1272,13 @@ namespace RoguelikeEngine.Skills
                 double chiralBuildup = 0.2 * hits;
                 if (target.HasStatusEffect<DeltaMark>())
                     chiralBuildup *= 3;
+                //chiralBuildup = Math.Min(chiralBuildup, 5);
                 user.AddStatusEffect(new Chirality()
                 {
                     Buildup = chiralBuildup,
                     Duration = new Slider(float.PositiveInfinity),
                 });
-                yield return user.WaitSome(50);
+                yield return new WaitAll(targets.Select(GetCurrentAction));
             }
         }
 
@@ -1265,7 +1287,8 @@ namespace RoguelikeEngine.Skills
             List<Vector2> wingPositions = Wallhach.GetWingPositions(user.VisualTarget, 1.0f);
             Vector2 velocity = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * 160;
             Vector2 emitPos = wingPositions.Pick(Random);
-            var bullet = new MissileHand(user.World, emitPos, target.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), 30 + Random.Next(30));
+            int moveTime = 30 + Random.Next(30);
+            var bullet = new MissileHand(user.World, emitPos, target.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), moveTime, moveTime);
             yield return new WaitBullet(bullet);
             if(hits % 3 >= 2)
                 user.Attack(target, 0, 0, AttackSlap);
@@ -1281,8 +1304,9 @@ namespace RoguelikeEngine.Skills
 
     class SkillHeptablast : Skill
     {
-        public SkillHeptablast() : base("Heptablast", "Physical damage to 10 random targets.", 9, 9, float.PositiveInfinity)
+        public SkillHeptablast() : base("Heptablast", "Physical damage to 10 random targets. -5 Chirality stacks.", 9, 0, float.PositiveInfinity)
         {
+            Priority = 5;
         }
 
         public override bool CanUse(Creature user)
@@ -1290,10 +1314,18 @@ namespace RoguelikeEngine.Skills
             return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 10;
         }
 
+        public override void Update(Creature user)
+        {
+            base.Update(user);
+            if (user.GetStatusStacks<Chirality>() < 10)
+                Warmup.Time = 0;
+        }
+
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             if (user is Enemy enemy)
             {
+                List<Creature> targets = new List<Creature>();
                 Consume();
                 ShowSkill(user);
                 var chirality = user.GetStatusEffect<Chirality>();
@@ -1314,13 +1346,16 @@ namespace RoguelikeEngine.Skills
                 }
                 yield return user.WaitSome(20);
                 List<Wait> waits = new List<Wait>();
+                PopupManager.StartCollect();
                 for(int i = 0; i < 10; i++)
                 {
+                    targets.Add(target);
                     waits.Add(Scheduler.Instance.RunAndWait(RoutineSlap(user, target)));
                     yield return user.WaitSome(4);
                 }
                 yield return new WaitAll(waits);
-                yield return user.WaitSome(50);
+                PopupManager.FinishCollect();
+                yield return new WaitAll(targets.Select(GetCurrentAction));
             }
         }
 
@@ -1362,7 +1397,7 @@ namespace RoguelikeEngine.Skills
                 new RockTremor(user.World, target, 30);
                 yield return new WaitBullet(bullet);
                 user.Attack(target, 0, 0, AttackDelta);
-                yield return user.WaitSome(50);
+                yield return target.CurrentAction;
             }
         }
 
@@ -1381,19 +1416,64 @@ namespace RoguelikeEngine.Skills
 
     class SkillWedlock : Skill
     {
-        public SkillWedlock() : base("Wedlock", "Prevents Quick-swapping and Unequipping.", 3, 3, float.PositiveInfinity)
+        public SkillWedlock() : base("Wedlock", "Prevents Quick-swapping and Unequipping. -8 Chirality stacks.", 3, 3, float.PositiveInfinity)
         {
             Priority = 10;
         }
 
         public override bool CanUse(Creature user)
         {
-            return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 10;
+            if (user is Enemy enemy && enemy.AggroTarget.HasStatusEffect<Wedlock>())
+                return false;
+            return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 16;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
-            throw new NotImplementedException();
+            Wallhach wallhach = user as Wallhach;
+            if (user is Enemy enemy)
+            {
+                Consume();
+                ShowSkill(user);
+                var chirality = user.GetStatusEffect<Chirality>();
+                chirality?.AddBuildup(-8);
+                Creature target = enemy.AggroTarget;
+                if(wallhach != null)
+                {
+                    yield return Scheduler.Instance.RunAndWait(wallhach.RoutineOpenWing(0.6f, 50, LerpHelper.Quadratic));
+                }
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                if (wallhach != null)
+                {
+                    Scheduler.Instance.Run(wallhach.RoutineFlashWing(15));
+                }
+                yield return user.WaitSome(10);
+                int chiralStacks = user.GetStatusStacks<Chirality>();
+                List<Wait> waits = new List<Wait>();
+                int hands = chiralStacks + 1;
+                hands = 16;
+                int timeLeft = hands + 90;
+                for (int i = 0; i < hands; i++)
+                {
+                    List<Vector2> wingPositions = Wallhach.GetWingPositions(user.VisualTarget, 1.0f);
+                    Vector2 velocity = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * 160;
+                    Vector2 emitPos = wingPositions.Pick(Random);
+                    var bullet = new MissileHand(user.World, emitPos, target.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), 60, timeLeft - i);
+                    waits.Add(new WaitBullet(bullet));
+                    yield return user.WaitSome(1);
+                }
+                yield return new WaitAll(waits);
+                target.AddStatusEffect(new Wedlock(user)
+                {
+                    Duration = new Slider(float.PositiveInfinity),
+                    Buildup = 1.0,
+                });
+                if (wallhach != null)
+                {
+                    Scheduler.Instance.Run(wallhach.RoutineOpenWing(1f, 50, LerpHelper.Linear));
+                }
+                yield return user.WaitSome(50);
+            }
         }
     }
 

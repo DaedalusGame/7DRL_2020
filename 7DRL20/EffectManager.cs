@@ -256,36 +256,31 @@ namespace RoguelikeEngine
             PopupManager.Add(new MessageHeal(holder, heal));
         }
 
-
-        public static void OnDefend(this IEffectHolder holder, Attack attack)
+        public static Wait OnStartDefend(this IEffectHolder holder, Attack attack)
         {
-            foreach (var onDefend in holder.GetEffects<OnDefend>())
-            {
-                onDefend.Trigger(attack);
-            }
+            return Scheduler.Instance.RunAndWait(holder.PushEvent<Attack, OnStartDefend>(attack));
         }
 
-        public static void OnStartDefend(this IEffectHolder holder, Attack attack)
+        public static Wait OnDefend(this IEffectHolder holder, Attack attack)
         {
-            foreach (var onStartDefend in holder.GetEffects<OnStartDefend>())
-            {
-                onStartDefend.Trigger(attack);
-            }
+            return Scheduler.Instance.RunAndWait(holder.PushEvent<Attack, OnDefend>(attack));
         }
 
-        public static void OnMine(this IEffectHolder holder, MineEvent mine)
+        public static Wait OnStartMine(this IEffectHolder holder, MineEvent mine)
         {
-            foreach (var onMine in holder.GetEffects<OnMine>())
-            {
-                onMine.Trigger(mine);
-            }
+            return Scheduler.Instance.RunAndWait(holder.PushEvent<MineEvent, OnStartMine>(mine));
         }
 
-        public static void OnStartMine(this IEffectHolder holder, MineEvent mine)
+        public static Wait OnMine(this IEffectHolder holder, MineEvent mine)
         {
-            foreach (var onStartMine in holder.GetEffects<OnStartMine>())
+            return Scheduler.Instance.RunAndWait(holder.PushEvent<MineEvent,OnMine>(mine));
+        }
+
+        public static IEnumerable<Wait> PushEvent<T,V>(this IEffectHolder holder, T eventParam) where V : EffectEvent<T>
+        {
+            foreach (var effect in holder.GetEffects<V>())
             {
-                onStartMine.Trigger(mine);
+                yield return effect.Trigger(eventParam);
             }
         }
 
@@ -360,6 +355,14 @@ namespace RoguelikeEngine
         {
             T statusEffect = holder.GetStatusEffect<T>();
             return statusEffect?.Stacks ?? 0;
+        }
+
+        public static bool HasFlag(this IEffectHolder holder, Flag flag)
+        {
+            var effects = holder.GetEffects<EffectFlag>().Where(effect => effect.Flag == flag);
+            if (effects.Any())
+                return effects.WithMax(effect => effect.Priority).Value;
+            return flag.DefaultValue;
         }
 
         public static void ClearPosition(this IEffectHolder subject)

@@ -10,7 +10,7 @@ namespace RoguelikeEngine
 {
     interface IMineable
     {
-        void Mine(MineEvent mine);
+        Wait Mine(MineEvent mine);
 
         void Destroy();
     }
@@ -399,10 +399,10 @@ namespace RoguelikeEngine
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
-        public void Mine(MineEvent mine)
+        public Wait Mine(MineEvent mine)
         {
             mine.Setup(this, 1, 0.25, LootGenerator);
-            mine.Start();
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
         }
 
         private void LootGenerator(Creature creature)
@@ -454,10 +454,10 @@ namespace RoguelikeEngine
             scene.PopSpriteBatch();
         }
 
-        public void Mine(MineEvent mine)
+        public Wait Mine(MineEvent mine)
         {
             mine.Setup(this, 1, 0.1, LootGenerator);
-            mine.Start();
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
         }
 
         private void LootGenerator(Creature creature)
@@ -505,10 +505,10 @@ namespace RoguelikeEngine
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
-        public void Mine(MineEvent mine)
+        public Wait Mine(MineEvent mine)
         {
             mine.Setup(this, 2, 0.02, LootGenerator);
-            mine.Start();
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
         }
 
         private void LootGenerator(Creature creature)
@@ -556,10 +556,10 @@ namespace RoguelikeEngine
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
-        public void Mine(MineEvent mine)
+        public Wait Mine(MineEvent mine)
         {
             mine.Setup(this, 2, 0.01, LootGenerator);
-            mine.Start();
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
         }
 
         private void LootGenerator(Creature creature)
@@ -607,10 +607,10 @@ namespace RoguelikeEngine
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
-        public void Mine(MineEvent mine)
+        public Wait Mine(MineEvent mine)
         {
             mine.Setup(this, 1, 0.1, LootGenerator);
-            mine.Start();
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
         }
 
         private void LootGenerator(Creature creature)
@@ -647,10 +647,10 @@ namespace RoguelikeEngine
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
-        public void Mine(MineEvent mine)
+        public Wait Mine(MineEvent mine)
         {
             mine.Setup(this, 1, 0.1, LootGenerator);
-            mine.Start();
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
         }
 
         private void LootGenerator(Creature creature)

@@ -889,16 +889,17 @@ namespace RoguelikeEngine
     {
         public Vector2 Velocity;
 
-        public override Vector2 Tween => Vector2.Lerp(TweenStraight, PositionEnd, (float)LerpHelper.QuadraticIn(0, 1, Frame.Slide));
-        Vector2 TweenStraight => Vector2.Lerp(PositionStart, PositionStart + Velocity, Frame.Slide);
+        public override Vector2 Tween => Vector2.Lerp(TweenStraight, PositionEnd, (float)LerpHelper.QuadraticIn(0, 1, MoveFrame.Slide));
+        Vector2 TweenStraight => Vector2.Lerp(PositionStart, PositionStart + Velocity, MoveFrame.Slide);
 
-        
+        Slider MoveFrame;
+
         float Angle => Util.VectorToAngle(PositionEnd - Tween);
         SpriteEffects Mirror;
         ColorMatrix ColorMatrix;
         float Alpha => (float)LerpHelper.QuadraticIn(1, 0, MathHelper.Clamp((Frame.Slide - 0.7f) / 0.3f, 0, 1));
 
-        public MissileHand(SceneGame world, Vector2 positionStart, Vector2 positionEnd, Vector2 velocity, ColorMatrix colorMatrix, int time) : base(world, positionStart, positionEnd, time)
+        public MissileHand(SceneGame world, Vector2 positionStart, Vector2 positionEnd, Vector2 velocity, ColorMatrix colorMatrix, int moveTime, int time) : base(world, positionStart, positionEnd, time)
         {
             Velocity = velocity;
             if (Random.NextDouble() < 0.5)
@@ -906,11 +907,14 @@ namespace RoguelikeEngine
             else
                 Mirror = SpriteEffects.None;
             ColorMatrix = colorMatrix;
+            MoveFrame = new Slider(moveTime);
         }
 
         public override void Update()
         {
             base.Update();
+
+            MoveFrame += 1;
 
             new TrailAlpha(World, SpriteLoader.Instance.AddSprite("content/hand"), Tween, Vector2.Zero, Angle, Color.DarkGoldenrod, Mirror, 10);
         }

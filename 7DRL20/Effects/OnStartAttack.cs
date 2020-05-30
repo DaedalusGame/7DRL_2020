@@ -6,20 +6,10 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    class OnStartAttack : Effect
+    class OnStartAttack : EffectEvent<Attack>
     {
-        public IEffectHolder Holder;
-        public Action<Attack> Trigger;
-
-        public OnStartAttack(IEffectHolder holder, Action<Attack> trigger)
+        public OnStartAttack(IEffectHolder holder, Func<Attack, IEnumerable<Wait>> eventFunction) : base(holder, eventFunction)
         {
-            Holder = holder;
-            Trigger = trigger;
-        }
-
-        public override void Apply()
-        {
-            EffectManager.AddEffect(Holder, this);
         }
     }
 }

@@ -68,7 +68,7 @@ namespace RoguelikeEngine.Enemies
             FaceTowards(AggroTarget);
             Skill usableSkill = GetUsableSkill();
             foreach (Skill skill in Skills)
-                skill.Update();
+                skill.Update(this);
             if (usableSkill != null)
             {
                 CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(this, usableSkill));
@@ -344,8 +344,11 @@ namespace RoguelikeEngine.Enemies
 
     class Wallhach : Enemy
     {
-        Slider WingOpen = new Slider(60);
+        public Func<float> WingOpen = () => 0;
+        public Func<Color> WingColor = () => Color.Goldenrod;
+        public Func<SpriteReference> WingSprite = () => SpriteLoader.Instance.AddSprite("content/hand");
 
+        private bool LastWitnessed = false;
         private bool Witnessed => World.SeenBosses.Contains(this);
 
         public Wallhach(SceneGame world) : base(world)
@@ -363,13 +366,14 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(Point.Zero);
 
             Effect.Apply(new EffectStat(this, Stat.HP, 1200));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 40));
 
             //Skills.Add(new SkillAttack());
             Skills.Add(new SkillPhalange());
             Skills.Add(new SkillGeomancy());
             Skills.Add(new SkillDeltaAttack());
             Skills.Add(new SkillHeptablast());
+            Skills.Add(new SkillWedlock());
         }
 
         public override void OnManifest()
@@ -380,8 +384,9 @@ namespace RoguelikeEngine.Enemies
         public override void Update()
         {
             base.Update();
-            if (Witnessed)
-                WingOpen += 1;
+            if (Witnessed && !LastWitnessed)
+                WingOpen = Slide(0, 1, LerpHelper.Linear, 60);
+            LastWitnessed = Witnessed;
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
@@ -396,8 +401,11 @@ namespace RoguelikeEngine.Enemies
             {
                 if (Witnessed)
                 {
-                    DrawWing(scene, 9, (float)LerpHelper.QuadraticIn(0, 1, WingOpen.Slide), WingOpen.Slide, Microsoft.Xna.Framework.Graphics.SpriteEffects.None);
-                    DrawWing(scene, 9, (float)LerpHelper.QuadraticIn(0, -1, WingOpen.Slide), WingOpen.Slide, Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally);
+                    float wingOpen = WingOpen();
+                    Color windColor = WingColor();
+                    SpriteReference wingSprite = WingSprite();
+                    DrawWing(scene, wingSprite, windColor, 9, (float)LerpHelper.QuadraticIn(0, 1, wingOpen), wingOpen, Microsoft.Xna.Framework.Graphics.SpriteEffects.None);
+                    DrawWing(scene, wingSprite, windColor, 9, (float)LerpHelper.QuadraticIn(0, -1, wingOpen), wingOpen, Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally);
                 }
             }
             else
@@ -406,9 +414,10 @@ namespace RoguelikeEngine.Enemies
             }
         }
 
-        private void DrawWing(SceneGame scene, int segments, float directionMod, float distanceMod, Microsoft.Xna.Framework.Graphics.SpriteEffects mirror)
+        private void DrawWing(SceneGame scene, SpriteReference sprite, Color color, int segments, float directionMod, float distanceMod, Microsoft.Xna.Framework.Graphics.SpriteEffects mirror)
         {
-            SpriteReference hand = SpriteLoader.Instance.AddSprite("content/hand");
+            //new Color(244, 211, 23)
+            //SpriteReference hand = SpriteLoader.Instance.AddSprite("content/hand");
             int index = 0;
             for (int i = 1; i <= segments; i++)
             {
@@ -416,7 +425,7 @@ namespace RoguelikeEngine.Enemies
                 float angle = directionMod * MathHelper.ToRadians(90 - i * 5);
                 float distance = (float)LerpHelper.Quadratic(10, distanceMod * 50, (float)i / segments);
                 Vector2 pivot = VisualPosition() + Util.AngleToVector(angle) * distance;
-                scene.DrawSpriteExt(hand, 0, pivot + GetHandOffset(index), hand.Middle, angle + directionMod * MathHelper.PiOver4, Vector2.One, mirror, new Color(244, 211, 23), 0);
+                scene.DrawSpriteExt(sprite, 0, pivot + GetHandOffset(index), sprite.Middle, angle + directionMod * MathHelper.PiOver4, Vector2.One, mirror, color, 0);
                 index++;
                 for (int e = 0; e <= subSegments; e++)
                 {
@@ -424,7 +433,7 @@ namespace RoguelikeEngine.Enemies
                     float subAngle = angle - directionMod * MathHelper.ToRadians(i * 2);
                     float subDistance = distanceMod * e * 5;
                     float visAngle = subAngle + directionMod * MathHelper.PiOver2 + directionMod * MathHelper.ToRadians(i * -10);
-                    scene.DrawSpriteExt(hand, 0, pivot + GetHandOffset(index) + Util.AngleToVector(subAngle) * subDistance, hand.Middle, visAngle, Vector2.One, mirror, new Color(244, 211, 23) * MathHelper.Lerp(0.3f, 1, subSegmentSlide), 0);
+                    scene.DrawSpriteExt(sprite, 0, pivot + GetHandOffset(index) + Util.AngleToVector(subAngle) * subDistance, sprite.Middle, visAngle, Vector2.One, mirror, color * MathHelper.Lerp(0.3f, 1, subSegmentSlide), 0);
                     index++;
                 }
             }
@@ -462,6 +471,23 @@ namespace RoguelikeEngine.Enemies
         private Vector2 GetHandOffset(int index)
         {
             return Util.AngleToVector(index * 90 + MathHelper.ToRadians(Frame * 3)) * 2;
+        }
+
+        public IEnumerable<Wait> RoutineOpenWing(float slide, int time, LerpHelper.Delegate lerp)
+        {
+            WingOpen = Slide(WingOpen(), slide, lerp, time);
+            WingColor = Static<Color>(Color.Goldenrod);
+            yield return WaitSome(time);
+        }
+
+        public IEnumerable<Wait> RoutineFlashWing(int time)
+        {
+            WingOpen = Slide(WingOpen(), 1.0f, LerpHelper.QuadraticIn, time);
+            WingColor = Slide(WingColor(), Color.White, LerpHelper.QuadraticIn, time);
+            yield return WaitSome(time);
+            WingColor = Slide(Color.White, Color.TransparentBlack, LerpHelper.QuadraticIn, 10);
+            yield return WaitSome(10);
+            WingOpen = Static(0f);
         }
     }
 

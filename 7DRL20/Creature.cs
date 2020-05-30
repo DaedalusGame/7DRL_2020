@@ -304,6 +304,10 @@ namespace RoguelikeEngine
         public static Stat Cooldown = new Stat("Cooldown", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_cooldown"));
         public static Stat Warmup = new Stat("Warmup", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_warmup"));
 
+        public static Flag SwapItem = new Flag("Swap Item", true, SpriteLoader.Instance.AddSprite("content/stat_swap_enabled"));
+        public static Flag EquipItem = new Flag("Equip Item", true, SpriteLoader.Instance.AddSprite("content/stat_equip_enabled"));
+        public static Flag UnequipItem = new Flag("Unequip Item", true, SpriteLoader.Instance.AddSprite("content/stat_unequip_enabled"));
+
         public static Stat[] Stats = new Stat[] { HP, Attack, Defense, AlchemyPower, DamageRate };
     }
 
@@ -324,6 +328,16 @@ namespace RoguelikeEngine
         {
             scene.DrawSprite(Element.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.DrawSprite(Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+    }
+
+    class Flag : Stat
+    {
+        public bool DefaultValue;
+        
+        public Flag(string name, bool defaultValue, SpriteReference sprite) : base(name, 0, -1, sprite)
+        {
+            DefaultValue = defaultValue;
         }
     }
 
@@ -626,6 +640,26 @@ namespace RoguelikeEngine
             };
         }
 
+        public Func<float> Slide(float start, float end, LerpHelper.Delegate lerp, int time)
+        {
+            int startTime = Frame;
+            return () =>
+            {
+                float slide = Math.Min(1, (Frame - startTime) / (float)time);
+                return (float)lerp(start, end, slide);
+            };
+        }
+
+        public Func<Color> Slide(Color start, Color end, LerpHelper.Delegate lerp, int time)
+        {
+            int startTime = Frame;
+            return () =>
+            {
+                float slide = Math.Min(1, (Frame - startTime) / (float)time);
+                return Color.Lerp(start,end,(float)lerp(0, 1, slide));
+            };
+        }
+
         public Func<Vector2> Slide(Vector2 start, Vector2 end, LerpHelper.Delegate lerp, int time)
         {
             int startTime = Frame;
@@ -679,6 +713,8 @@ namespace RoguelikeEngine
             this.ResetTurn();
             foreach (var statusEffect in this.GetStatusEffects())
                 statusEffect.Update();
+            if(Dead)
+                return Scheduler.Instance.RunAndWait(RoutineDie(0, 0));
             return Wait.NoWait;
         }
 
@@ -754,13 +790,13 @@ namespace RoguelikeEngine
             {
                 if (tile is IMineable mineable)
                 {
-                    mineable.Mine(new MineEvent(this,EquipMainhand));
+                    waitForDamage.Add(mineable.Mine(new MineEvent(this,EquipMainhand)));
                 }
                 else
                 {
-                    foreach (var creature in tile.Creatures)
-                    {
-                        waitForDamage.Add(Attack(creature, dx, dy, attackGenerator));
+                    foreach (var creature in tile.Creatures) { 
+                        Attack(creature, dx, dy, attackGenerator);
+                        waitForDamage.Add(creature.CurrentAction);
                     }
                 }
             }
@@ -775,18 +811,11 @@ namespace RoguelikeEngine
 
         public IEnumerable<Wait> RoutineHit(int dx, int dy, Attack attack)
         {
-            if (Dead)
-            {
-                yield return Scheduler.Instance.RunAndWait(RoutineDie(dx, dy));
-            }
-            else
-            {
-                var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-                VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
-                VisualPose = Static(CreaturePose.Stand);
-                yield return new WaitFrames(this, 10);
-                yield return CurrentPopups;
-            }
+            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
+            VisualPose = Static(CreaturePose.Stand);
+            yield return new WaitFrames(this, 10);
+            yield return CurrentPopups;
         }
 
         public IEnumerable<Wait> RoutineDie(int dx, int dy)
@@ -833,11 +862,13 @@ namespace RoguelikeEngine
             return attack;
         }
 
-        public Wait Attack(Creature target, int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
+        public Attack Attack(Creature target, int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
         {
             Attack attack = attackGenerator(this, target);
-            attack.Start();
-            return target.CurrentAction = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
+            var waitAttack = Scheduler.Instance.RunAndWait(attack.RoutineStart());
+            var waitHit = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
+            target.CurrentAction = new WaitAll(new[] { waitAttack, waitHit });
+            return attack;
         }
 
         public Wait WaitSome(int frames)
@@ -894,20 +925,14 @@ namespace RoguelikeEngine
             return list;
         }
 
-        public void OnAttack(Attack attack)
+        public Wait OnAttack(Attack attack)
         {
-            foreach(var onAttack in GetEffects<OnAttack>())
-            {
-                onAttack.Trigger(attack);
-            }
+            return Scheduler.Instance.RunAndWait(this.PushEvent<Attack, OnAttack>(attack));
         }
 
-        public void OnStartAttack(Attack attack)
+        public Wait OnStartAttack(Attack attack)
         {
-            foreach (var onStartAttack in GetEffects<OnStartAttack>())
-            {
-                onStartAttack.Trigger(attack);
-            }
+            return Scheduler.Instance.RunAndWait(this.PushEvent<Attack, OnStartAttack>(attack));
         }
 
         public virtual void AddTooltip(ref string tooltip)

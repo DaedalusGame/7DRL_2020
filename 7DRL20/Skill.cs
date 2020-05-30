@@ -71,7 +71,7 @@ namespace RoguelikeEngine
                 return $"- {name}";
         }
 
-        public virtual void Update()
+        public virtual void Update(Creature user)
         {
             Warmup += 1;
             Cooldown += 1;
@@ -151,6 +151,11 @@ namespace RoguelikeEngine
             int dy = a.Y - b.Y;
 
             return dx * dx + dy * dy;
+        }
+
+        protected Wait GetCurrentAction(Creature creature)
+        {
+            return creature.CurrentAction;
         }
 
         public abstract IEnumerable<Wait> RoutineUse(Creature user);

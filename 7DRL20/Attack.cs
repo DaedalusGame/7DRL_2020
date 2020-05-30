@@ -25,12 +25,12 @@ namespace RoguelikeEngine
             Defender = defender;
         }
 
-        public virtual void Start()
+        public virtual IEnumerable<Wait> RoutineStart()
         {
             CalculateDamage();
 
-            Attacker.OnStartAttack(this);
-            Defender.OnStartDefend(this);
+            yield return Attacker.OnStartAttack(this);
+            yield return Defender.OnStartDefend(this);
 
             FinalDamage = Elements.ToDictionary(pair => pair.Key, pair => CalculateSplitElement(pair.Key, pair.Value * Damage));
 
@@ -44,8 +44,8 @@ namespace RoguelikeEngine
             foreach (var statusEffect in StatusEffects)
                 Defender.AddStatusEffect(statusEffect);
 
-            Attacker.OnAttack(this);
-            Defender.OnDefend(this);
+            yield return Attacker.OnAttack(this);
+            yield return Defender.OnDefend(this);
         }
 
         protected virtual void CalculateDamage()
@@ -112,9 +112,10 @@ namespace RoguelikeEngine
             Rate = rate;
         }
 
-        public override void Start()
+        public override IEnumerable<Wait> RoutineStart()
         {
-            base.Start();
+            foreach (var wait in base.RoutineStart())
+                yield return wait;
 
             foreach (var damage in FinalDamage)
             {
@@ -123,21 +124,6 @@ namespace RoguelikeEngine
                 else if(damage.Value < 0)
                     Attacker.TakeDamage(-damage.Value * Rate, damage.Key);
             }
-        }
-    }
-
-    class AttackItem : Attack
-    {
-        public Item Weapon;
-
-        public AttackItem(Creature attacker, Item weapon, IEffectHolder defender) : base(attacker, defender)
-        {
-            Weapon = weapon;
-        }
-
-        public override void Start()
-        {
-            
         }
     }
 }

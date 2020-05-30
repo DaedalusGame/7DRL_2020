@@ -36,7 +36,7 @@ namespace RoguelikeEngine.Effects
             LootFunction = lootFunction;
         }
 
-        public void Start()
+        public IEnumerable<Wait> RoutineStart()
         {
             double miningLevel = Miner.GetStat(Stat.MiningLevel);
 
@@ -45,12 +45,12 @@ namespace RoguelikeEngine.Effects
 
             Speed *= Miner.GetStat(Stat.MiningSpeed);
 
-            Miner.OnStartMine(this);
+            yield return Miner.OnStartMine(this);
 
             if (Random.NextDouble() > Speed)
                 Success = false;
 
-            Miner.OnMine(this);
+            yield return Miner.OnMine(this);
 
             if (Success)
             {
@@ -60,20 +60,10 @@ namespace RoguelikeEngine.Effects
         }
     }
 
-    class OnMine : Effect
+    class OnMine : EffectEvent<MineEvent>
     {
-        public IEffectHolder Holder;
-        public Action<MineEvent> Trigger;
-
-        public OnMine(IEffectHolder holder, Action<MineEvent> trigger)
+        public OnMine(IEffectHolder holder, Func<MineEvent, IEnumerable<Wait>> eventFunction) : base(holder, eventFunction)
         {
-            Holder = holder;
-            Trigger = trigger;
-        }
-
-        public override void Apply()
-        {
-            EffectManager.AddEffect(Holder, this);
         }
     }
 }

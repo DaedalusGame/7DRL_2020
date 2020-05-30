@@ -214,7 +214,7 @@ namespace RoguelikeEngine
                     return;
                 }
             }
-            if (state.IsKeyPressed(Keys.R))
+            if (state.IsKeyPressed(Keys.R) && Player.HasFlag(Stat.SwapItem))
             {
                 var mainhand = Player.EquipMainhand;
                 var offhand = Player.EquipOffhand;
@@ -1155,11 +1155,14 @@ namespace RoguelikeEngine
     {
         public string Name;
         public Action Action;
+        public Func<bool> Enabled = () => true; 
 
-        public ActAction(string name, Action action)
+        public ActAction(string name, Action action, Func<bool> enabled = null)
         {
             Name = name;
             Action = action;
+            if(enabled != null)
+                Enabled = enabled;
         }
     }
 
