@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -196,7 +197,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Slash, 1.0));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
-            AddFullEffect(new Trait(this, "Splintering", "Deals some damage to surrounding enemies."));
+            AddFullEffect(new EffectTrait(this, Trait.Splintering));
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddAdzeEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.05));
         }
@@ -215,19 +216,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
-            AddFullEffect(new OnStartAttack(this, UndeadKiller));
-            AddFullEffect(new Trait(this, "Holy", "Extra damage to undead."));
-        }
-
-        public IEnumerable<Wait> UndeadKiller(Attack attack)
-        {
-            var isUndead = attack.Defender.HasStatusEffect(x => x is Undead);
-            if (isUndead)
-            {
-                attack.Damage *= 1.5f;
-            }
-
-            yield return Wait.NoWait;
+            AddFullEffect(new EffectTrait(this, Trait.Holy));
         }
     }
 
@@ -251,33 +240,7 @@ namespace RoguelikeEngine
 
             Random random = new Random();
             AddFullEffect(new EffectStat(this, Stat.Attack, 20));
-            AddFullEffect(new Trait(this, "Unstable", "Causes random explosions."));
-            AddFullEffect(new OnAttack(this, ExplodeAttack));
-            AddFullEffect(new OnMine(this, ExplodeMine));
-        }
-
-        public IEnumerable<Wait> ExplodeAttack(Attack attack)
-        {
-            var attacker = attack.Attacker;
-            if (Random.NextDouble() < 0.3 && attack.Defender is Creature defender)
-            {
-                new FireExplosion(defender.World, new Vector2(defender.X * 16 + 8, defender.Y * 18 + 8), Vector2.Zero, 0, 15);
-                //attacker.TakeDamage(5, Element.Fire);
-                //defender.TakeDamage(5, Element.Fire);
-            }
-
-            yield return Wait.NoWait;
-        }
-
-        public IEnumerable<Wait> ExplodeMine(MineEvent mine)
-        {
-            if (mine.Success && Random.NextDouble() < 0.3 && mine.Mineable is Tile tile)
-            {
-                new FireExplosion(mine.Miner.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 0, 15);
-                //mine.Miner.TakeDamage(5, Element.Fire);
-            }
-
-            yield return Wait.NoWait;
+            AddFullEffect(new EffectTrait(this, Trait.Unstable));
         }
     }
 
@@ -300,19 +263,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 5));
-            AddAdzeEffect(new Trait(this, "Softy", "Breaking rock restores some HP."));
-            AddAdzeEffect(new OnMine(this, SoftyHeal));
-        }
-
-        public IEnumerable<Wait> SoftyHeal(MineEvent mine)
-        {
-            if (mine.Mineable is Tile tile)
-            {
-                if (mine.RequiredMiningLevel <= 1 && mine.Success)
-                    mine.Miner.Heal(5);
-            }
-
-            yield return Wait.NoWait;
+            AddAdzeEffect(new EffectTrait(this, Trait.Softy));
         }
     }
 
@@ -332,30 +283,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 5));
-            AddEffect(ToolAdze.Head, new Trait(this, "Fragile", "Cracks nearby rock."));
-            AddEffect(ToolAdze.Head, new OnMine(this, Fracture));
-        }
-
-        public IEnumerable<Wait> Fracture(MineEvent mine)
-        {
-            if (mine.Mineable is Tile tile && mine.ReactionLevel <= 0 && mine.Success)
-            {
-                List<Wait> waitForMining = new List<Wait>();
-                foreach (var neighbor in tile.GetAdjacentNeighbors().OfType<IMineable>())
-                {
-                    if (MineEvent.Random.NextDouble() < 0.7)
-                    {
-                        MineEvent fracture = new MineEvent(mine.Miner, mine.Pickaxe)
-                        {
-                            ReactionLevel = mine.ReactionLevel + 1
-                        };
-                        waitForMining.Add(neighbor.Mine(fracture));
-                    }
-                }
-                yield return new WaitAll(waitForMining);
-            }
-
-            yield return Wait.NoWait;
+            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Fragile));
         }
 
         public override void MakeAlloy(Dictionary<Material, int> materials)
@@ -397,21 +325,10 @@ namespace RoguelikeEngine
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.3));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
-            AddEffect(ToolAdze.Head, new Trait(this, "Crumbling", "Destroys lower level rock faster."));
-            AddEffect(ToolAdze.Head, new Trait(this, "Pulverizing", "No mining drops."));
-            AddEffect(ToolAdze.Head, new OnStartMine(this, Pulverize));
+            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Crumbling));
+            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Pulverizing));
 
             AddFullEffect(new EffectStat(this, Stat.Attack, 15));
-        }
-
-        public IEnumerable<Wait> Pulverize(MineEvent mine)
-        {
-            var miningLevel = mine.Miner.GetStat(Stat.MiningLevel);
-            double delta = miningLevel - mine.ReactionLevel;
-            mine.Speed *= (1 + 0.15 * Math.Max(delta, 0));
-            mine.LootFunction = (miner) => { };
-
-            yield return Wait.NoWait;
         }
     }
 
@@ -433,9 +350,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddEffect(ToolAdze.Head, new EffectStatPercent.Randomized(this, Stat.MiningSpeed, -0.45, 0.9));
 
-            AddFullEffect(new EffectStat.Randomized(this, Stat.Attack, -5, 20));
-            AddFullEffect(new EffectStatPercent.Randomized(this, Stat.MiningSpeed, -0.5, 2.0));
-            AddFullEffect(new Trait(this, "Alien", "Randomize stats."));
+            AddFullEffect(new EffectTrait(this, Trait.Alien));
 
             AddHandleEffect(new EffectStatPercent(this, Element.Fire.DamageRate, -0.10));
 
@@ -463,32 +378,13 @@ namespace RoguelikeEngine
 
             AddFullEffect(new EffectStat(this, Element.Bludgeon.Resistance, 5));
 
-            AddHeadEffect(new Trait(this, "Sharp", "Causes bleeding."));
-            AddHeadEffect(new OnStartAttack(this, Bleed));
-            AddFullEffect(new Trait(this, "Stiff", "Reduce damage taken."));
-            AddFullEffect(new OnStartDefend(this, Stiff));
-        }
-
-        public IEnumerable<Wait> Bleed(Attack attack)
-        {
-            attack.StatusEffects.Add(new BleedLesser() { Buildup = 0.3, Duration = new Slider(20) });
-            attack.StatusEffects.Add(new BleedGreater() { Buildup = 0.1, Duration = new Slider(10) });
-
-            yield return Wait.NoWait;
-        }
-
-        public IEnumerable<Wait> Stiff(Attack attack)
-        {
-            attack.Defender.AddStatusEffect(new DefenseUp() { Buildup = 0.4, Duration = new Slider(10) });
-
-            yield return Wait.NoWait;
+            AddHeadEffect(new EffectTrait(this, Trait.Sharp));
+            AddFullEffect(new EffectTrait(this, Trait.Stiff));
         }
     }
 
     class Ovium : Material
     {
-        Random Random = new Random();
-
         public Ovium() : base("Ovium", string.Empty)
         {
             MeltingTemperature = 700;
@@ -508,17 +404,7 @@ namespace RoguelikeEngine
             AddHandleEffect(new EffectStatPercent(this, Stat.Defense, +0.2));
 
             
-            AddFullEffect(new Trait(this, "Fuming", "Sometimes produces smoke cloud."));
-            AddFullEffect(new OnAttack(this, EmitSmoke));
-        }
-
-        public IEnumerable<Wait> EmitSmoke(Attack attack)
-        {
-            var subject = attack.Defender;
-            if (Random.NextDouble() < 0.2 && subject is Creature creature)
-                new Smoke(creature.World, new Vector2(creature.X * 16 + 8, creature.Y * 18 + 8), Vector2.Zero, 0, 15);
-
-            yield return Wait.NoWait;
+            AddFullEffect(new EffectTrait(this, Trait.Fuming));
         }
     }
 
@@ -542,22 +428,12 @@ namespace RoguelikeEngine
             AddFullEffect(new EffectStat(this, Element.Pierce.Resistance, 5));
             AddFullEffect(new EffectStatPercent(this, Element.Poison.DamageRate, -0.3));
 
-            AddFullEffect(new Trait(this, "Poxic", "Sometimes turns enemies into slime."));
-            AddFullEffect(new OnStartAttack(this, Slime));
-        }
-
-        public IEnumerable<Wait> Slime(Attack attack)
-        {
-            attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 });
-
-            yield return Wait.NoWait;
+            AddFullEffect(new EffectTrait(this, Trait.Poxic));
         }
     }
 
     class Terrax : Material
     {
-        Random Random = new Random();
-
         public Terrax() : base("Terrax", string.Empty)
         {
             Priority = 3;
@@ -580,19 +456,8 @@ namespace RoguelikeEngine
             Random random = new Random();
             AddFullEffect(new EffectStat(this, Stat.Attack, 30));
             //AddHeadEffect(new Trait(this, "Slaughtering", "More drops, but no experience."));
-            AddHeadEffect(new Trait(this, "Slaughtering", "Sometimes steal life on attack."));
-            AddHeadEffect(new OnAttack(this, Slaughter));
-        }
-
-        public IEnumerable<Wait> Slaughter(Attack attack)
-        {
-            var totalDamage = attack.FinalDamage.Sum(dmg => dmg.Value);
-            if (Random.NextDouble() < 0.5 && totalDamage > 0)
-            {
-                attack.Attacker.Heal(totalDamage * 0.2);
-            }
-
-            yield return Wait.NoWait;
+            AddHeadEffect(new EffectTrait(this, Trait.Slaughtering));
+           
         }
 
         public override void MakeAlloy(Dictionary<Material, int> materials)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RoguelikeEngine.Traits;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,19 +7,17 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    class Trait : Effect
+    class EffectTrait : Effect
     {
         public IEffectHolder Holder;
-        public string Name;
-        public string Description;
+        public Trait Trait;
 
         public override double VisualPriority => 1000;
 
-        public Trait(IEffectHolder holder, string name, string description)
+        public EffectTrait(IEffectHolder holder, Trait trait)
         {
             Holder = holder;
-            Name = name;
-            Description = description;
+            Trait = trait;
         }
 
         public override void Apply()
@@ -28,18 +27,18 @@ namespace RoguelikeEngine.Effects
 
         public override bool StatEquals(Effect other)
         {
-            return other is Trait trait && trait.Name == Name;
+            return other is EffectTrait trait && trait.Trait == Trait;
         }
 
         public override int GetStatHashCode()
         {
-            return Name.GetHashCode();
+            return Trait.GetHashCode();
         }
 
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
-            statBlock += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
-            statBlock += $"- {Description}\n";
+            statBlock += $"{Game.FORMAT_BOLD}{Trait.Name}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
+            statBlock += $"- {Trait.Description}\n";
         }
     }
 }

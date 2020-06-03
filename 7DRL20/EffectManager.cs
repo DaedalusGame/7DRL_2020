@@ -138,7 +138,21 @@ namespace RoguelikeEngine
         {
             if (holder.ObjectID == ReusableID.Null)
                 return Enumerable.Empty<T>();
-            return GetDrawer(typeof(T)).Get(holder).OfType<T>();
+            IEnumerable<T> effects = GetDrawer(typeof(T)).Get(holder).OfType<T>();
+            IEnumerable<IEffectContainer> effectContainers = GetDrawer(typeof(IEffectContainer)).Get(holder).OfType<IEffectContainer>();
+            return effects.Concat(effectContainers.SelectMany(x => x.GetSubEffects<T>()));
+        }
+
+        public static IEnumerable<T> SplitEffects<T>(this IEnumerable<Effect> effects) where T : Effect
+        {
+            foreach(var effect in effects)
+            {
+                if (effect is T)
+                    yield return (T)effect;
+                if (effect is IEffectContainer container)
+                    foreach (var contained in container.GetSubEffects<T>().SplitEffects<T>())
+                        yield return contained;
+            }
         }
 
         private static Drawer GetDrawer(Type type)
@@ -162,6 +176,8 @@ namespace RoguelikeEngine
             {
                 GetDrawer(type).Add(holder,effect);
             }
+            if (effect is IEffectContainer)
+                GetDrawer(typeof(IEffectContainer)).Add(holder, effect);
         }
 
         public static void RemoveEffect(this IEffectHolder holder, Effect effect)
@@ -170,6 +186,8 @@ namespace RoguelikeEngine
             {
                 GetDrawer(type).Remove(holder, effect);
             }
+            if (effect is IEffectContainer)
+                GetDrawer(typeof(IEffectContainer)).Remove(holder, effect);
         }
 
         public static void ClearEffects(this IEffectHolder holder)

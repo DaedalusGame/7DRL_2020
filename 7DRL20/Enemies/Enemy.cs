@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Attacks;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Skills;
 using System;

@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="ActionQueue.cs" />
     <Compile Include="Attack.cs" />
+    <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Skills\Wallhach.cs" />
     <Compile Include="BossData.cs" />
     <Compile Include="ColorMatrix.cs" />
@@ -73,7 +74,7 @@
     <Compile Include="Effects\OnStartAttack.cs" />
     <Compile Include="Effects\OnAttack.cs" />
     <Compile Include="Effects\OnTile.cs" />
-    <Compile Include="Effects\Trait.cs" />
+    <Compile Include="Effects\EffectTrait.cs" />
     <Compile Include="Enemies\Enemy.cs" />
     <Compile Include="EnemySpawner.cs" />
     <Compile Include="FibonacciHeap\Constants.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="SpriteLoader.cs" />
     <Compile Include="StatusEffect.cs" />
     <Compile Include="Tile.cs" />
+    <Compile Include="Traits\Traits.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="VisualEffect.cs" />
   </ItemGroup>
