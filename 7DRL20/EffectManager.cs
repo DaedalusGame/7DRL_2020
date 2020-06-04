@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Traits;
 
 namespace RoguelikeEngine
 {
@@ -109,8 +110,14 @@ namespace RoguelikeEngine
                 else
                 {
                     if (Effects.Capacity > holder.ObjectID && Effects[holder.ObjectID] != null)
-                        foreach (var straggler in Effects[holder.ObjectID])
-                            straggler.Remove();
+                    {
+                        var effects = Effects[holder.ObjectID];
+                        for(int i = effects.Count; i >= 0; i--)
+                        {
+                            if (i < effects.Count)
+                                effects[i].Remove();
+                        }
+                    }
                     Effects[holder.ObjectID] = new EffectList(holder.ObjectID.Generation) { effect };
                 }
             }
@@ -138,9 +145,8 @@ namespace RoguelikeEngine
         {
             if (holder.ObjectID == ReusableID.Null)
                 return Enumerable.Empty<T>();
-            IEnumerable<T> effects = GetDrawer(typeof(T)).Get(holder).OfType<T>();
-            IEnumerable<IEffectContainer> effectContainers = GetDrawer(typeof(IEffectContainer)).Get(holder).OfType<IEffectContainer>();
-            return effects.Concat(effectContainers.SelectMany(x => x.GetSubEffects<T>()));
+            IEnumerable<T> effects = GetDrawer(typeof(Effect)).Get(holder).SplitEffects<T>();
+            return effects;
         }
 
         public static IEnumerable<T> SplitEffects<T>(this IEnumerable<Effect> effects) where T : Effect
@@ -150,7 +156,7 @@ namespace RoguelikeEngine
                 if (effect is T)
                     yield return (T)effect;
                 if (effect is IEffectContainer container)
-                    foreach (var contained in container.GetSubEffects<T>().SplitEffects<T>())
+                    foreach (var contained in container.GetSubEffects<T>())
                         yield return contained;
             }
         }
@@ -172,22 +178,12 @@ namespace RoguelikeEngine
 
         public static void AddEffect(this IEffectHolder holder, Effect effect)
         {
-            foreach (var type in Util.GetBaseTypes(effect))
-            {
-                GetDrawer(type).Add(holder,effect);
-            }
-            if (effect is IEffectContainer)
-                GetDrawer(typeof(IEffectContainer)).Add(holder, effect);
+            GetDrawer(typeof(Effect)).Add(holder, effect);
         }
 
         public static void RemoveEffect(this IEffectHolder holder, Effect effect)
         {
-            foreach (var type in Util.GetBaseTypes(effect))
-            {
-                GetDrawer(type).Remove(holder, effect);
-            }
-            if (effect is IEffectContainer)
-                GetDrawer(typeof(IEffectContainer)).Remove(holder, effect);
+            GetDrawer(typeof(Effect)).Remove(holder, effect);
         }
 
         public static void ClearEffects(this IEffectHolder holder)
@@ -214,6 +210,12 @@ namespace RoguelikeEngine
         public static Dictionary<Element, double> GetElements(this IEffectHolder holder)
         {
             return holder.GetEffects<EffectElement>().GroupBy(stat => stat.Element, stat => stat).ToDictionary(group => group.Key, group => group.Sum(element => element.Percentage));
+        }
+
+        public static int GetTrait(this IEffectHolder holder, Trait trait)
+        {
+            var effects = holder.GetEffects<EffectTrait>().Where(effect => effect.Trait == trait);
+            return effects.Count();
         }
 
         public static double CalculateStat(IEffectHolder holder, IEnumerable<Effect> effects, double defaultStat)
@@ -296,7 +298,7 @@ namespace RoguelikeEngine
 
         public static IEnumerable<Wait> PushEvent<T,V>(this IEffectHolder holder, T eventParam) where V : EffectEvent<T>
         {
-            foreach (var effect in holder.GetEffects<V>())
+            foreach (var effect in holder.GetEffects<V>().Distinct())
             {
                 yield return effect.Trigger(eventParam);
             }

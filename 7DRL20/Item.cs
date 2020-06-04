@@ -352,7 +352,7 @@ namespace RoguelikeEngine
             for(int i = 0; i < Parts.Length; i++)
             {
                 var part = GetMaterialPart(i);
-                list.AddRange(part.GetEffects().OfType<T>());
+                list.AddRange(part.GetEffects().SplitEffects<T>());
             }
             return list;
         }

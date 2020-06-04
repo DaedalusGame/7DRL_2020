@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    class EffectTrait : Effect
+    class EffectTrait : Effect, IEffectContainer
     {
         public IEffectHolder Holder;
         public Trait Trait;
@@ -39,6 +39,11 @@ namespace RoguelikeEngine.Effects
         {
             statBlock += $"{Game.FORMAT_BOLD}{Trait.Name}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
             statBlock += $"- {Trait.Description}\n";
+        }
+
+        public IEnumerable<T> GetSubEffects<T>() where T : Effect
+        {
+            return Trait.GetEffects<T>();
         }
     }
 }

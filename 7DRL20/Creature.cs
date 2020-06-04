@@ -916,11 +916,11 @@ namespace RoguelikeEngine
             var list = new List<T>();
             list.AddRange(EffectManager.GetEffects<T>(this));
             foreach (var equip in EffectManager.GetEffects<EffectItemEquipped>(this))
-                list.AddRange(equip.Effects.OfType<T>());
+                list.AddRange(equip.Effects.SplitEffects<T>());
             foreach (var statusEffect in EffectManager.GetEffects<EffectStatusEffect>(this))
-                list.AddRange(statusEffect.Effects.OfType<T>());
+                list.AddRange(statusEffect.Effects.SplitEffects<T>());
             var tiles = EffectManager.GetEffects<OnTile>(this);
-            var tileEffects = tiles.SelectMany(tile => tile.Effects.OfType<T>()).Distinct();
+            var tileEffects = tiles.SelectMany(tile => tile.Effects.SplitEffects<T>()).Distinct();
             list.AddRange(tileEffects);
             return list;
         }

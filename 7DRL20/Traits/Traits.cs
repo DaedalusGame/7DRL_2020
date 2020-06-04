@@ -21,6 +21,7 @@ namespace RoguelikeEngine.Traits
 
         public Trait(string name, string description)
         {
+            ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
         }
@@ -220,8 +221,10 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Bleed(Attack attack)
         {
-            attack.StatusEffects.Add(new BleedLesser() { Buildup = 0.3, Duration = new Slider(20) });
-            attack.StatusEffects.Add(new BleedGreater() { Buildup = 0.1, Duration = new Slider(10) });
+            int traitLvl = attack.Attacker.GetTrait(this);
+
+            attack.StatusEffects.Add(new BleedLesser() { Buildup = traitLvl * 0.3, Duration = new Slider(20) });
+            attack.StatusEffects.Add(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(10) });
 
             yield return Wait.NoWait;
         }
@@ -236,7 +239,9 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Stiff(Attack attack)
         {
-            attack.Defender.AddStatusEffect(new DefenseUp() { Buildup = 0.4, Duration = new Slider(10) });
+            int traitLvl = attack.Defender.GetTrait(this);
+
+            attack.Defender.AddStatusEffect(new DefenseUp() { Buildup = traitLvl * 0.4, Duration = new Slider(10) });
 
             yield return Wait.NoWait;
         }
