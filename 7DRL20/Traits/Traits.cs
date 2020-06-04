@@ -178,9 +178,11 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Crumble(MineEvent mine)
         {
+            int traitLvl = mine.Miner.GetTrait(this);
+
             var miningLevel = mine.Miner.GetStat(Stat.MiningLevel);
             double delta = miningLevel - mine.ReactionLevel;
-            mine.Speed *= (1 + 0.15 * Math.Max(delta, 0));
+            mine.Speed *= (1 + traitLvl * 0.15 * Math.Max(delta, 0));
 
             yield return Wait.NoWait;
         }
