@@ -262,8 +262,9 @@ namespace RoguelikeEngine
             generator.Generate();
             generator.Print(Map);
 
-            var smelterGroup = generator.StartRoomGroup;
-            var smelterPos = generator.StartRoom;
+            var smelterGroup = generator.Groups.Pick(Random);
+            var startTiles = smelterGroup.GetCells().Select(cell => Map.GetTile(cell.X, cell.Y));
+            var smelterPos = startTiles.ElementAt(0);
             Tile startTile = Map.GetTile(smelterPos.X, smelterPos.Y);
             Player = new Hero(this);
             Player.MoveTo(startTile,1);
@@ -291,7 +292,6 @@ namespace RoguelikeEngine
             Player.Pickup(new Ingot(this, Material.Terrax, 8));
             Player.Pickup(new Ingot(this, Material.Triberium, 8));
 
-            var startTiles = generator.StartRoomGroup.GetCells().Select(cell => Map.GetTile(cell.X, cell.Y));
             var startFloors = startTiles.Where(tile => !tile.Solid).Shuffle();
 
             var stairTile = startFloors.ElementAt(0);
@@ -494,9 +494,9 @@ namespace RoguelikeEngine
             Tooltip = Tooltip.Trim();
         }
 
-        public void DrawLava(Rectangle rectangle)
+        public void DrawLava(Rectangle rectangle, Color color)
         {
-            SpriteBatch.Draw(Lava, rectangle, new Rectangle(0,0,rectangle.Width,rectangle.Height), Color.White);
+            SpriteBatch.Draw(Lava, rectangle, rectangle, color);
         }
 
         private void DrawTextures()

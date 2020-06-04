@@ -665,6 +665,90 @@ namespace RoguelikeEngine
         }
     }
 
+    class Lava : Tile
+    {
+        public Lava() : base("Lava")
+        {
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class SuperLava : Tile
+    {
+        public SuperLava() : base("Super Lava")
+        {
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.Orange);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class HyperLava : Tile
+    {
+        public HyperLava() : base("Hyper Lava")
+        {
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.Red);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
     class Anvil : Tile
     {
         public Container Container;
@@ -886,7 +970,7 @@ namespace RoguelikeEngine
                 {
                     scene.SetupColorMatrix(color, matrix);
                 });
-                scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16));
+                scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
                 scene.PopSpriteBatch();
             }
             

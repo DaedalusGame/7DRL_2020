@@ -201,7 +201,7 @@ namespace RoguelikeEngine.Skills
             foreach (Creature creature in tile.Creatures)
             {
                 user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-                waits.Add(user.CurrentAction);
+                waits.Add(creature.CurrentAction);
             }
             yield return new WaitAll(waits);
         }
@@ -255,7 +255,7 @@ namespace RoguelikeEngine.Skills
             foreach (Creature creature in tile.Creatures)
             {
                 user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-                waits.Add(user.CurrentAction);
+                waits.Add(creature.CurrentAction);
             }
             yield return new WaitAll(waits);
         }
@@ -305,7 +305,7 @@ namespace RoguelikeEngine.Skills
             foreach (Creature creature in tile.Creatures)
             {
                 user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-                waits.Add(user.CurrentAction);
+                waits.Add(creature.CurrentAction);
             }
             yield return user.WaitSome(0);
         }

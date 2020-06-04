@@ -40,9 +40,9 @@ namespace RoguelikeEngine
         public static GeneratorTile FloorGlowing = new GeneratorTile('.', Color.Lerp(Color.Gray, Color.GreenYellow, 0.5f), PrintFloorBrick, TileTag.Floor);
         public static GeneratorTile Bridge = new GeneratorTile('.', Color.Brown, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
         public static GeneratorTile Statue = new GeneratorTile('.', Color.LightGray, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
-        public static GeneratorTile Lava = new GeneratorTile('.', Color.Red, PrintFloorBrick, TileTag.Liquid);
-        public static GeneratorTile SuperLava = new GeneratorTile('.', Color.Orange, PrintFloorBrick, TileTag.Liquid);
-        public static GeneratorTile HyperLava = new GeneratorTile('.', Color.Yellow, PrintFloorBrick, TileTag.Liquid);
+        public static GeneratorTile Lava = new GeneratorTile('.', Color.Red, PrintLava, TileTag.Liquid);
+        public static GeneratorTile SuperLava = new GeneratorTile('.', Color.Orange, PrintSuperLava, TileTag.Liquid);
+        public static GeneratorTile HyperLava = new GeneratorTile('.', Color.Yellow, PrintHyperLava, TileTag.Liquid);
 
         public char Character;
         public Color Color;
@@ -80,6 +80,21 @@ namespace RoguelikeEngine
         private static void PrintFloorBrick(MapGenerator generator, Tile tile, GeneratorGroup group)
         {
             tile.Replace(new FloorTiles());
+        }
+
+        private static void PrintLava(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new Lava());
+        }
+
+        private static void PrintSuperLava(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new SuperLava());
+        }
+
+        private static void PrintHyperLava(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new HyperLava());
         }
     }
 
@@ -258,7 +273,7 @@ namespace RoguelikeEngine
         public List<Point> Points = new List<Point>();
         public Point StartRoom;
         public GeneratorGroup StartRoomGroup;
-        List<GeneratorGroup> Groups = new List<GeneratorGroup>();
+        public List<GeneratorGroup> Groups = new List<GeneratorGroup>();
         Queue<SpreadTile> ToSpread = new Queue<SpreadTile>();
         Queue<CollapseTile> ToCollapse = new Queue<CollapseTile>();
         public GeneratorCell[,] Cells;
