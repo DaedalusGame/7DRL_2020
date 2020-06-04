@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Enemies;
+using RoguelikeEngine.MapGeneration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -103,12 +104,13 @@ namespace RoguelikeEngine
 
                 foreach (var spawnTile in baseTile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).Shuffle().Take(spawnAmount))
                 {
-                    foreach (var enemy in spawnTile.Group.Spawn(World, spawnTile))
+                    EnemySpawn spawn = spawnTile.Group.Spawns.Pick(Random);
+                    foreach (var enemy in spawn.Spawn(World,spawnTile))
                     {
                         Enemies.Add(enemy);
                         enemy.MakeAggressive(World.Player);
                         World.ActionQueue.Add(enemy);
-                        new Smoke(World, new Vector2(spawnTile.X * 16 + 8, spawnTile.Y * 16 + 8), Vector2.Zero, 0, 15);
+                        new Smoke(World, enemy.VisualTarget, Vector2.Zero, 0, 15);
                     }
                 }
 
