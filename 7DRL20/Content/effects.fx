@@ -135,7 +135,7 @@ float4 ClockPS(VertexShaderOutput input) : COLOR
 float4 DistortPS(VertexShaderOutput input) : COLOR
 {
 	float4 mask = texture_map.Sample(sampler_main, transformTexCoord(map_transform, input.TextureCoordinates));
-	float2 offset = mask.r * distort_offset;
+	float2 offset = (mask.r - 0.5) * 2 * distort_offset * mask.g;
 	float4 color = texture_main.Sample(sampler_main, input.TextureCoordinates + offset) * input.Color;
 	return color;
 }

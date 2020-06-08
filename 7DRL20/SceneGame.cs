@@ -225,6 +225,7 @@ namespace RoguelikeEngine
         public Map Map;
         public RenderTarget2D CameraTargetA;
         public RenderTarget2D CameraTargetB;
+        public RenderTarget2D DistortionMap;
 
         public RenderTarget2D Lava;
         public RenderTarget2D Water;
@@ -506,9 +507,6 @@ namespace RoguelikeEngine
 
             if (Lava == null || Lava.IsContentLost)
                 Lava = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
-            if (Water == null || Water.IsContentLost)
-                Water = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
-
             GraphicsDevice.SetRenderTarget(Lava);
             GraphicsDevice.Clear(Color.Transparent);
             PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
@@ -520,6 +518,8 @@ namespace RoguelikeEngine
             SpriteBatch.Draw(lava.Texture, new Rectangle(0, 0, Lava.Width, Lava.Height), new Rectangle(0, 0, Lava.Width, Lava.Height), Color.White);
             PopSpriteBatch();
 
+            if (Water == null || Water.IsContentLost)
+                Water = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
             GraphicsDevice.SetRenderTarget(Water);
             GraphicsDevice.Clear(Color.Transparent);
             PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
@@ -542,7 +542,8 @@ namespace RoguelikeEngine
             if (CameraTargetB == null || CameraTargetB.IsContentLost)
                 CameraTargetB = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
 
-            GraphicsDevice.SetRenderTarget(CameraTargetA);
+            if (DistortionMap == null || DistortionMap.IsContentLost)
+                DistortionMap = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
 
             Projection = Matrix.CreateOrthographicOffCenter(0, Viewport.Width, Viewport.Height, 0, 0, -1);
             WorldTransform = CreateViewMatrix();
@@ -556,10 +557,44 @@ namespace RoguelikeEngine
                     WorldTransform *= Matrix.CreateTranslation(screenShake.Offset.X, screenShake.Offset.Y, 0);
             }
 
-            var drawPasses = GameObjects.Where(x => x.ShouldDraw(CameraMap)).ToMultiLookup(x => x.GetDrawPasses());
+            var gameObjects = GameObjects.Where(x => x.ShouldDraw(CameraMap));
+            var tiles = DrawMap(CameraMap);
+            var drawPasses = gameObjects.Concat(tiles).ToMultiLookup(x => x.GetDrawPasses());
 
+            GraphicsDevice.SetRenderTarget(DistortionMap);
+            /*var noise = SpriteLoader.Instance.AddSprite("content/noise");
+            var noiseOffset = Util.AngleToVector(Frame * 0.1f) * 30;
+            noiseOffset = new Vector2(-Frame * 0.2f, -Frame * 0.5f);
+            PushSpriteBatch(samplerState: SamplerState.LinearWrap, blendState: BlendState.Additive);
+            SpriteBatch.Draw(Pixel, DistortionMap.Bounds, new Color(0,64,0));
+            SpriteBatch.Draw(noise.Texture, DistortionMap.Bounds, new Rectangle((int)noiseOffset.X, (int)noiseOffset.Y, DistortionMap.Width, DistortionMap.Height), Color.Red);
+            PopSpriteBatch();*/
             PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
-            DrawMap(CameraMap);
+            drawPasses.DrawPass(this, DrawPass.SeaDistort);
+            PopSpriteBatch();
+
+            GraphicsDevice.SetRenderTarget(CameraTargetA);
+            //Render Liquid to Target A
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
+            drawPasses.DrawPass(this, DrawPass.SeaFloor);
+            drawPasses.DrawPass(this, DrawPass.Sea);
+            PopSpriteBatch();
+
+            GraphicsDevice.SetRenderTarget(CameraTargetB);
+            SwapBuffers();
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
+            drawPasses.DrawPass(this, DrawPass.LiquidFloor);
+            //Render Target A (Liquid) to Target B (with distortion)
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: Matrix.Identity, shader: Shader, shaderSetup: (matrix) =>
+            {
+                SetupDistortion(DistortionMap, new Vector2(30f / DistortionMap.Width, 30f / DistortionMap.Height), Matrix.Identity, Matrix.Identity);
+            });
+            SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
+            //SpriteBatch.Draw(DistortionMap, DistortionMap.Bounds, Color.White);
+            PopSpriteBatch();
+            drawPasses.DrawPass(this, DrawPass.Liquid);
+            //Render Map
+
 
             drawPasses.DrawPass(this, DrawPass.Tile);
             drawPasses.DrawPass(this, DrawPass.Item);
@@ -665,19 +700,16 @@ namespace RoguelikeEngine
             }
         }
 
-        private void DrawMap(Map map)
+        private IEnumerable<IDrawable> DrawMap(Map map)
         {
             if (map == null)
-                return;
+                return Enumerable.Empty<IDrawable>();
 
             int drawX = (int)(Camera.X / 16);
             int drawY = (int)(Camera.Y / 16);
             int drawRadius = 30;
 
-            foreach (Tile tile in EnumerateCloseTiles(map, drawX, drawY, drawRadius))
-            {
-                tile.Draw(this);
-            }
+            return EnumerateCloseTiles(map, drawX, drawY, drawRadius).OfType<IDrawable>();
         }
 
         private void DrawQuests(Map map)

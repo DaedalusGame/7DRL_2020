@@ -35,9 +35,8 @@ namespace RoguelikeEngine
         public static GeneratorTile OreKarmesine = new GeneratorTile('K', Color.IndianRed, PrintWallCave, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreOvium = new GeneratorTile('O', Color.LightSteelBlue, PrintWallCave, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreJauxum = new GeneratorTile('J', Color.LimeGreen, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile AcidPool = new GeneratorTile('.', Color.GreenYellow, PrintFloorBrick, TileTag.Liquid);
-        public static GeneratorTile AcidCoral = new GeneratorTile('.', Color.LightGoldenrodYellow, PrintFloorBrick, TileTag.Floor);
-        public static GeneratorTile FloorGlowing = new GeneratorTile('.', Color.Lerp(Color.Gray, Color.GreenYellow, 0.5f), PrintFloorBrick, TileTag.Floor);
+        public static GeneratorTile AcidPool = new GeneratorTile('.', Color.GreenYellow, PrintAcid, TileTag.Liquid);
+        public static GeneratorTile AcidCoral = new GeneratorTile('.', Color.LightGoldenrodYellow, PrintAcidCoral, TileTag.Floor);
         public static GeneratorTile Bridge = new GeneratorTile('.', Color.Brown, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
         public static GeneratorTile Statue = new GeneratorTile('.', Color.LightGray, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
         public static GeneratorTile Lava = new GeneratorTile('.', Color.Red, PrintLava, TileTag.Liquid);
@@ -80,6 +79,17 @@ namespace RoguelikeEngine
         private static void PrintFloorBrick(MapGenerator generator, Tile tile, GeneratorGroup group)
         {
             tile.Replace(new FloorTiles());
+        }
+
+        private static void PrintAcid(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new AcidPool());
+        }
+
+        private static void PrintAcidCoral(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new FloorCave());
+            tile.PlaceOn(new AcidCoral());
         }
 
         private static void PrintLava(MapGenerator generator, Tile tile, GeneratorGroup group)
@@ -152,6 +162,7 @@ namespace RoguelikeEngine
             }
         }
         public RoomGroup Room;
+        public bool Glowing;
 
         /*int _ExpansionDistance;
         int ExpansionGeneration;
@@ -338,6 +349,7 @@ namespace RoguelikeEngine
                     var cell = Cells[x, y];
                     Tile mapTile = map.GetTile(x, y);
                     cell.Tile.Print(this, mapTile, cell.Group);
+                    mapTile.NewTile.Glowing = cell.Glowing;
                     mapTile.Group = cell.Group;
                 }
             }
@@ -505,7 +517,7 @@ namespace RoguelikeEngine
                 CaveColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160)),
                 BrickColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160))
             };
-            Groups.Add(new Cave(this) //Fire Cave
+            /*Groups.Add(new CaveLava(this) //Fire Cave
             {
                 CaveColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
                 Spawns = { EnemySpawn.Skeleton },
@@ -514,19 +526,19 @@ namespace RoguelikeEngine
             {
                 CaveColor = new TileColor(new Color(128, 160, 160), new Color(32, 64, 32)),
                 Spawns = { EnemySpawn.Skeleton, EnemySpawn.PoisonBlob },
-            });
-            Groups.Add(new Cave(this) //Acid Cave
+            });*/
+            Groups.Add(new CaveAcid(this) //Acid Cave
             {
                 CaveColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
-                GlowColor = (time) => Color.Lerp(Color.Black, Color.GreenYellow, 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
+                GlowColor = (time) => Color.Lerp(Color.Black, Color.GreenYellow, 0.75f + 0.25f * (float)Math.Sin(time / 60f)),
                 Spawns = { EnemySpawn.AcidBlob, EnemySpawn.Ctholoid, EnemySpawn.YellowDragon },
             });
-            Groups.Add(new Cave(this) //Sea of Dirac
+            /*Groups.Add(new Cave(this) //Sea of Dirac
             {
                 CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
                 Spawns = { EnemySpawn.PoisonBlob, EnemySpawn.GoreVala, EnemySpawn.BlueDragon, EnemySpawn.Ctholoid },
             });
-            Groups.Add(new Cave(this) //Magma Mine
+            Groups.Add(new CaveLava(this) //Magma Mine
             {
                 CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
                 Spawns = { EnemySpawn.BlastCannon, EnemySpawn.AcidBlob, EnemySpawn.Skeleton },
@@ -549,7 +561,7 @@ namespace RoguelikeEngine
                 BrickColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
                 GlowColor = (time) => Color.Lerp(new Color(62, 79, 2), new Color(227, 253, 138), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
                 Spawns = { EnemySpawn.DeathKnight, EnemySpawn.BlastCannon, EnemySpawn.Ctholoid },
-            });
+            });*/
             var i = 0;
             IEnumerable<Point> shuffled = Points.Shuffle(Random);
             var toAssign = shuffled.Take(Groups.Count);

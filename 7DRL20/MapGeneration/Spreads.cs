@@ -222,6 +222,50 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
+    class SpreadGlow : SpreadTile
+    {
+        int Distance;
+        float Chance;
+        bool Glowing;
+
+        public SpreadGlow(GeneratorCell origin, int distance, float chance, bool glowing) : base(origin)
+        {
+            Distance = distance;
+            Chance = chance;
+            Glowing = glowing;
+        }
+
+        public override void Spread()
+        {
+            if (Distance <= 0)
+                return;
+
+            int index = 0;
+            bool oneEmpty = false;
+
+            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
+            {
+                if (tile.Glowing != Glowing)
+                {
+                    if (index <= 0 || Generator.Random.NextDouble() > Chance)
+                    {
+                        tile.Glowing = Glowing;
+                        tile.AddSpread(new SpreadGlow(Origin, Distance - 1, Chance, Glowing));
+                    }
+                    else
+                    {
+                        oneEmpty = true;
+                    }
+                }
+                index++;
+            }
+            if (oneEmpty)
+            {
+                Cell.AddSpread(new SpreadGlow(Origin, Distance - 1, Chance, Glowing));
+            }
+        }
+    }
+
     class SpreadLake : SpreadTile
     {
         int Distance;

@@ -41,6 +41,11 @@ namespace RoguelikeEngine
             return Warmup.Done && Cooldown.Done && !Uses.Done;
         }
 
+        public virtual bool CanEnemyUse(Enemy user)
+        {
+            return CanUse(user);
+        }
+
         protected void Consume()
         {
             InstantUses += 1;

@@ -8,6 +8,11 @@ namespace RoguelikeEngine
 {
     enum DrawPass
     {
+        SeaDistort,
+        SeaFloor,
+        Sea,
+        LiquidFloor,
+        Liquid,
         Tile,
         EffectLow,
         EffectLowAdditive,

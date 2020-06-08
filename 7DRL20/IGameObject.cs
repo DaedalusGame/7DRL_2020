@@ -6,17 +6,12 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
-    interface IGameObject
+    interface IGameObject : IDrawable
     {
         SceneGame World
         {
             get;
             set;
-        }
-
-        double DrawOrder
-        {
-            get;
         }
 
         bool Destroyed
@@ -30,9 +25,5 @@ namespace RoguelikeEngine
         void OnDestroy();
 
         bool ShouldDraw(Map map);
-
-        IEnumerable<DrawPass> GetDrawPasses();
-
-        void Draw(SceneGame scene, DrawPass pass);
     }
 }

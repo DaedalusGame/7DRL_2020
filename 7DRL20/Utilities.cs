@@ -265,7 +265,7 @@ namespace RoguelikeEngine
             return new HashSet<T>(enumerable);
         }
 
-        public static void DrawPass(this ILookup<DrawPass, IGameObject> drawPasses, SceneGame scene, DrawPass pass)
+        public static void DrawPass(this ILookup<DrawPass, IDrawable> drawPasses, SceneGame scene, DrawPass pass)
         {
             foreach(var obj in drawPasses[pass].OrderBy(x => x.DrawOrder))
             {
@@ -554,5 +554,26 @@ namespace RoguelikeEngine
             }
             return null;
         }
+
+        public static Connectivity Rotate(this Connectivity connectivity, int halfTurns)
+        {
+            return (Connectivity)(ShiftWrap((int)connectivity, PositiveMod(halfTurns, 8), 8) & 255);
+        }
+
+        private static int Shift(int a, int b)
+        {
+            if (b > 0)
+                return a >> b;
+            else
+                return a << -b;
+        }
+
+        private static int ShiftWrap(int a, int b, int size)
+        {
+            int left = Shift(a, b);
+            int right = Shift(a, -(size - b));
+            return left | right;
+        }
+
     }
 }

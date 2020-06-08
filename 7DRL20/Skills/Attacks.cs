@@ -16,9 +16,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanUse(user) && InMeleeRange(user);
+            return base.CanEnemyUse(user) && InMeleeRange(user);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -168,11 +168,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -222,11 +220,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -332,11 +328,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (CheckTarget && user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, MaxDistance))
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && (!CheckTarget || InLineOfSight(user, user.AggroTarget, MaxDistance));
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -505,11 +499,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy && !InRange(user, enemy.AggroTarget, 4))
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -559,9 +551,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanUse(user);
+            return base.CanEnemyUse(user);
         }
 
         private float GetFacingAngle(Facing facing)
@@ -722,11 +714,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy && !GetPossibleTiles(user,enemy.AggroTarget).Any())
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && GetPossibleTiles(user, user.AggroTarget).Any();
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -866,11 +856,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy && InRange(user, enemy.AggroTarget, 4))
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && !InRange(user, user.AggroTarget, 4);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -897,11 +885,9 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override bool CanUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy && !InRange(user, enemy.AggroTarget, 4))
-                return false;
-            return base.CanUse(user);
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -934,7 +920,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && user.HasStatusEffect<PoweredUp>())
+            if (user.HasStatusEffect<PoweredUp>())
                 return false;
             return base.CanUse(user);
         }
@@ -965,9 +951,12 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 4) || !user.HasStatusEffect<PoweredUp>()))
-                return false;
-            return base.CanUse(user);
+            return base.CanUse(user) && user.HasStatusEffect<PoweredUp>();
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1013,11 +1002,12 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user.Tiles.Any(tile => !tile.Opaque))
-                return false;
-            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 8)))
-                return false;
-            return base.CanUse(user);
+            return base.CanUse(user) && !user.Tiles.Any(tile => !tile.Opaque);
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
@@ -1104,9 +1094,12 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && (!InRange(user, enemy.AggroTarget, 8) || !user.HasStatusEffect<PoweredUp>()))
-                return false;
-            return base.CanUse(user);
+            return base.CanUse(user) && user.HasStatusEffect<PoweredUp>();
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)

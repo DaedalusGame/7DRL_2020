@@ -16,8 +16,10 @@ namespace RoguelikeEngine
         void Destroy();
     }
 
-    abstract class Tile : IEffectHolder, IHasPosition
+    abstract class Tile : IEffectHolder, IHasPosition, IDrawable
     {
+        protected static Random Random = new Random();
+
         public class FakeOutside : Tile //Subtype that handles the tiles outside the map.
         {
             Map _Map;
@@ -52,7 +54,7 @@ namespace RoguelikeEngine
                 Solid = true;
             }
 
-            public override void Draw(SceneGame scene)
+            public override void Draw(SceneGame scene, DrawPass drawPass)
             {
                 //NOOP
             }
@@ -74,6 +76,7 @@ namespace RoguelikeEngine
         public Vector2 VisualTarget => VisualPosition + new Vector2(8, 8);
         public virtual Tile Under => Parent.UnderTile;
         public bool Orphaned => false;
+        public double DrawOrder => Y;
 
         public Func<Color> VisualUnderColor = () => Color.TransparentBlack;
 
@@ -91,6 +94,17 @@ namespace RoguelikeEngine
             set
             {
                 Parent.Group = value;
+            }
+        }
+        public bool Glowing
+        {
+            get
+            {
+                return Parent.Glowing;
+            }
+            set
+            {
+                Parent.Glowing = value;
             }
         }
 
@@ -201,7 +215,7 @@ namespace RoguelikeEngine
         {
             Color glow = Group.GlowColor(scene.Frame);
             Color underColor = VisualUnderColor();
-            if (IsVisible())
+            if (IsVisible() && Glowing)
                 return new Color(glow.R + underColor.R, glow.G + underColor.G, glow.B + underColor.B, glow.A + underColor.A);
             else
                 return underColor;
@@ -241,13 +255,19 @@ namespace RoguelikeEngine
             }
         }
 
-        public abstract void Draw(SceneGame scene);
+        public virtual IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Tile;
+        }
+
+        public abstract void Draw(SceneGame scene, DrawPass drawPass);
     }
 
     struct TileColor
     {
         static ColorMatrix FloorBackground = ColorMatrix.Scale(0.25f) * ColorMatrix.Saturate(0.5f);
         static ColorMatrix FloorForeground = ColorMatrix.Scale(0.35f) * ColorMatrix.Saturate(0.5f);
+        static ColorMatrix SeaFloor = ColorMatrix.Scale(0.25f) * ColorMatrix.Saturate(0.25f);
 
         public Color Background;
         public Color Foreground;
@@ -261,6 +281,11 @@ namespace RoguelikeEngine
         public TileColor ToFloor()
         {
             return new TileColor(FloorBackground.Transform(Background), FloorForeground.Transform(Foreground));
+        }
+
+        public TileColor ToSeaFloor()
+        {
+            return new TileColor(SeaFloor.Transform(Background), SeaFloor.Transform(Foreground));
         }
     }
 
@@ -277,7 +302,7 @@ namespace RoguelikeEngine
             return tile != null && tile.Contents.Any();
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var hidden0 = SpriteLoader.Instance.AddSprite("content/upstairs_base");
             var hidden1 = SpriteLoader.Instance.AddSprite("content/upstairs_layer");
@@ -312,7 +337,7 @@ namespace RoguelikeEngine
         {
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
@@ -335,7 +360,7 @@ namespace RoguelikeEngine
         {
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
             var cave0 = SpriteLoader.Instance.AddSprite("content/dancefloor_base");
@@ -359,7 +384,7 @@ namespace RoguelikeEngine
         {
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var cave0 = SpriteLoader.Instance.AddSprite("content/bigtile_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/bigtile_layer");
@@ -384,7 +409,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
@@ -419,7 +444,6 @@ namespace RoguelikeEngine
 
     class WallOre : Tile, IMineable
     {
-        static Random Random = new Random();
         int Frame = Random.Next(1000);
         Material Material;
 
@@ -436,12 +460,12 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             if (Under != null)
             {
                 Under.VisualUnderColor = VisualUnderColor;
-                Under.Draw(scene);
+                Under.Draw(scene, drawPass);
             }
             if (!IsVisible())
                 return;
@@ -486,7 +510,7 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var color = new TileColor(new Color(69 / 2, 54 / 2, 75 / 2), new Color(157, 143, 167));
             Color glow = Color.TransparentBlack;
@@ -537,7 +561,7 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var color = new TileColor(new Color(69, 75, 54), new Color(157, 167, 143));
             Color glow = Color.Lerp(new Color(16, 4, 1), new Color(255, 64, 16), 0.5f + 0.5f * (float)Math.Sin(scene.Frame / 60f));
@@ -588,7 +612,7 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var color = new TileColor(new Color(169, 169, 169), new Color(239, 236, 233));
             Color glow = new Color(128, 128, 128);
@@ -633,7 +657,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var cave0 = SpriteLoader.Instance.AddSprite("content/brick_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/brick_layer");
@@ -677,7 +701,7 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var color = Group.BrickColor;
 
@@ -695,6 +719,13 @@ namespace RoguelikeEngine
 
     class SuperLava : Tile
     {
+        static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
+            1.2f, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1),
+            new Vector4(0.2f, 0.2f, 0, 0));
+
         public SuperLava() : base("Super Lava")
         {
         }
@@ -705,14 +736,19 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var color = Group.BrickColor;
 
             if (!IsVisible())
                 color = HiddenColor;
 
-            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.Orange);
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(ColorMatrix, matrix);
+            });
+            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
+            scene.PopSpriteBatch();
         }
 
         public void Destroy()
@@ -723,6 +759,13 @@ namespace RoguelikeEngine
 
     class HyperLava : Tile
     {
+        static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
+            1.3f, 0, 0, 0,
+            0, 1.3f, 0, 0,
+            0, 0, 1.3f, 0,
+            0, 0, 0, 1),
+            new Vector4(0, 0, 0.4f, 0));
+
         public HyperLava() : base("Hyper Lava")
         {
         }
@@ -733,14 +776,204 @@ namespace RoguelikeEngine
             base.AddTooltip(ref tooltip);
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var color = Group.BrickColor;
 
             if (!IsVisible())
                 color = HiddenColor;
 
-            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.Red);
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(ColorMatrix, matrix);
+            });
+            scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
+            scene.PopSpriteBatch();
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class Coral : Tile
+    {
+        int Frame = Random.Next(1000);
+
+        List<Color> Colors = new List<Color>()
+        {
+            Color.LightPink,
+            Color.LightSkyBlue,
+            Color.LightSeaGreen,
+            Color.Orange
+        };
+
+        public Coral() : base("Coral")
+        {
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            if (Under != null)
+            {
+                Under.VisualUnderColor = VisualUnderColor;
+                Under.Draw(scene, drawPass);
+            }
+            if (!IsVisible())
+                return;
+            var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
+
+            scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Colors[Frame % Colors.Count], 0);
+        }
+
+        public void Destroy()
+        {
+            Scrape();
+        }
+    }
+
+    class AcidCoral : Tile
+    {
+        int Frame = Random.Next(1000);
+
+        List<Color> Colors = new List<Color>()
+        {
+            new Color(184, 177, 97)
+        };
+        
+        public AcidCoral() : base("Acid Coral")
+        {
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            if (Under != null)
+            {
+                Under.VisualUnderColor = VisualUnderColor;
+                Under.Draw(scene, drawPass);
+            }
+            if (!IsVisible())
+                return;
+            var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
+
+            scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Colors[Frame % Colors.Count], 0);
+        }
+
+        public void Destroy()
+        {
+            Scrape();
+        }
+    }
+
+    class AcidPool : Tile
+    {
+        static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
+            0.8f, 0, 0, 0,
+            0, 1.3f, 0, 0,
+            0, 0, 1.3f, 0,
+            0, 0, 0, 1),
+            new Vector4(0, 0.2f, 0, 0));
+        //static ColorMatrix ColorMatrix = ColorMatrix.TwoColorLight(new Color(152, 234, 0), new Color(236, 248, 201));
+        //static ColorMatrix ColorMatrix = ColorMatrix.Greyscale() * ColorMatrix.TwoColorLight(Color.Lerp(Color.Black,Color.GreenYellow,0.5f), Color.YellowGreen);
+
+        bool HasCoral = Random.NextDouble() < 0.3;
+        int Frame = Random.Next(1000);
+        ConnectivityHelper Connectivity;
+
+        public AcidPool() : base("Acid")
+        {
+            Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        private ConnectivityHelper GetConnection(Tile tile)
+        {
+            if (tile is AcidPool acid)
+                return acid.Connectivity;
+            return null;
+        }
+
+        private bool Connects(ConnectivityHelper a, ConnectivityHelper b)
+        {
+            return a != null && b != null;
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.SeaDistort;
+            yield return DrawPass.Sea;
+            yield return DrawPass.SeaFloor;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            if (drawPass == DrawPass.SeaDistort)
+            {
+                Connectivity.CalculateIfNeeded();
+                var noiseOffset = new Vector2(-World.Frame * 0.2f, -World.Frame * 0.5f);
+                var noise = SpriteLoader.Instance.AddSprite("content/noise");
+                var edge = SpriteLoader.Instance.AddSprite("content/connected_edge");
+                scene.PushSpriteBatch(blendState: Microsoft.Xna.Framework.Graphics.BlendState.Additive);
+                scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Color(0,64,0));
+                scene.SpriteBatch.Draw(noise.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X + (int)noiseOffset.X, 16 * Parent.Y + (int)noiseOffset.Y, 16, 16), Color.Red);
+                scene.PopSpriteBatch();
+                int ix = Connectivity.BlobIndex % 7;
+                int iy = Connectivity.BlobIndex / 7;
+                scene.SpriteBatch.Draw(edge.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ix * 16, iy * 16, 16, 16), Color.White);
+            }
+            else if (drawPass == DrawPass.SeaFloor)
+            {
+                var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
+                var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
+                var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
+                var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
+
+                var color = Group.CaveColor.ToSeaFloor();
+
+                if (!IsVisible())
+                    color = HiddenColor;
+
+                scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+                scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 6, 16, 16), color.Background);
+                scene.SpriteBatch.Draw(cave1.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 6, 16, 16), color.Foreground);
+                if(HasCoral)
+                    scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(184, 177, 97), 0);
+            }
+            else if (drawPass == DrawPass.Sea)
+            {
+                var lava = SpriteLoader.Instance.AddSprite("content/acid");
+                scene.PushSpriteBatch(blendState: Microsoft.Xna.Framework.Graphics.BlendState.Additive);
+                scene.SpriteBatch.Draw(lava.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White * 0.8f);
+                scene.PopSpriteBatch();
+            }
         }
 
         public void Destroy()
@@ -776,12 +1009,12 @@ namespace RoguelikeEngine
             }));
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var anvil = SpriteLoader.Instance.AddSprite("content/anvil");
 
             if (Under != null)
-                Under.Draw(scene);
+                Under.Draw(scene, drawPass);
             if (!IsVisible())
                 return;
 
@@ -934,7 +1167,7 @@ namespace RoguelikeEngine
                 tooltip += "- Empty\n";
         }
 
-        public override void Draw(SceneGame scene)
+        public override void Draw(SceneGame scene, DrawPass drawPass)
         {
             var smelter = SpriteLoader.Instance.AddSprite("content/smelter_receptacle");
             var smelter_overlay = SpriteLoader.Instance.AddSprite("content/smelter_receptacle_overlay");

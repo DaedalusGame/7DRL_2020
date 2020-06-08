@@ -43,6 +43,7 @@ namespace RoguelikeEngine
         public Tile UnderTile;
 
         public GeneratorGroup Group;
+        public bool Glowing;
 
         public MapTile(Map map, int x, int y, Tile tile)
         {

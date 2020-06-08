@@ -214,16 +214,16 @@ namespace RoguelikeEngine.MapGeneration
 
         protected override IEnumerator<Action> GetTechniques()
         {
-            yield return MakeLava;
-            yield return MakeSuperLava;
-            yield return MakeHyperLava;
+            //yield return MakeLava;
+            //yield return MakeSuperLava;
+            //yield return MakeHyperLava;
             //yield return MakeAcidLakes;
             //yield return MakeCoral;
             //yield return MakeGlowingFloor;
             yield return MakeBridges;
         }
 
-        private void MakeLava()
+        protected void MakeLava()
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.Wall));
@@ -239,7 +239,7 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        private void MakeSuperLava()
+        protected void MakeSuperLava()
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Lava);
@@ -251,7 +251,7 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        private void MakeHyperLava()
+        protected void MakeHyperLava()
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.SuperLava);
@@ -263,7 +263,7 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        private void MakeAcidLakes()
+        protected void MakeAcidLakes()
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.Wall));
@@ -279,7 +279,7 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        private void MakeCoral()
+        protected void MakeCoral()
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.AcidPool));
@@ -295,7 +295,7 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        private void MakeBridges()
+        protected void MakeBridges()
         {
             var rooms = GetCells().Where(cell => cell.Room != null).Select(cell => cell.Room).Distinct();
 
@@ -316,16 +316,59 @@ namespace RoguelikeEngine.MapGeneration
             }
         }
 
-        private void MakeGlowingFloor()
+        protected void MakeGlowingFloor()
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.AcidPool));
             validArea = validArea.Shuffle();
-            foreach (var cell in validArea.Take(rooms))
+            foreach (var cell in validArea.Take(rooms * 3))
             {
-                cell.AddSpread(new SpreadLake(null, 5, 0.6f, GeneratorTile.FloorGlowing));
+                cell.AddSpread(new SpreadGlow(null, 5, 0.6f, true));
             }
             Generator.Expand();
+        }
+
+        protected void MakeGlowingWall()
+        {
+            int rooms = Rooms.Count();
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Wall).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.AcidPool));
+            validArea = validArea.Shuffle();
+            foreach (var cell in validArea.Take(rooms))
+            {
+                cell.AddSpread(new SpreadGlow(null, 5, 0.6f, true));
+            }
+            Generator.Expand();
+        }
+    }
+
+    class CaveAcid : Cave
+    {
+        public CaveAcid(MapGenerator generator) : base(generator)
+        {
+        }
+
+        protected override IEnumerator<Action> GetTechniques()
+        {
+            yield return MakeAcidLakes;
+            yield return MakeCoral;
+            yield return MakeGlowingFloor;
+            yield return MakeGlowingWall;
+            yield return MakeBridges;
+        }
+    }
+
+    class CaveLava : Cave
+    {
+        public CaveLava(MapGenerator generator) : base(generator)
+        {
+        }
+
+        protected override IEnumerator<Action> GetTechniques()
+        {
+            yield return MakeLava;
+            yield return MakeSuperLava;
+            yield return MakeHyperLava;
+            yield return MakeBridges;
         }
     }
 }

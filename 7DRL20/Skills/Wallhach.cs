@@ -15,6 +15,11 @@ namespace RoguelikeEngine.Attacks
             InstantUses = new Slider(2);
         }
 
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
+        }
+
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             if (user is Enemy enemy)
@@ -78,6 +83,11 @@ namespace RoguelikeEngine.Attacks
         public override bool CanUse(Creature user)
         {
             return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 10;
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && !InRange(user, user.AggroTarget, 3);
         }
 
         public override void Update(Creature user)
@@ -148,6 +158,11 @@ namespace RoguelikeEngine.Attacks
         {
         }
 
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 5);
+        }
+
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             if (user is Enemy enemy)
@@ -189,9 +204,12 @@ namespace RoguelikeEngine.Attacks
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && enemy.AggroTarget.HasStatusEffect<Wedlock>())
-                return false;
             return base.CanUse(user) && user.GetStatusStacks<Chirality>() >= 16;
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && user.AggroTarget.HasStatusEffect<Wedlock>();
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
