@@ -34,7 +34,7 @@ namespace RoguelikeEngine.Enemies
             IEnumerable<Skill> skills = Skills.Shuffle().OrderByDescending(skill => skill.Priority);
             foreach (Skill skill in skills)
             {
-                if (skill.CanUse(this))
+                if (skill.CanEnemyUse(this))
                 {
                     return skill;
                 }

@@ -819,6 +819,11 @@ namespace RoguelikeEngine
 
     class WaterShallow : Water
     {
+        public WaterShallow() : base()
+        {
+            Name = "Shallow Water";
+        }
+
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
             yield return DrawPass.SeaDistort;
