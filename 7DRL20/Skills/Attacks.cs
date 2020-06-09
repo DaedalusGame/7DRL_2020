@@ -832,6 +832,11 @@ namespace RoguelikeEngine.Skills
         {
         }
 
+        public override bool CanUse(Creature user)
+        {
+            return base.CanUse(user) && user.Tile is Water;
+        }
+
         public override IEnumerable<Wait> RoutineUse(Creature user)
         {
             yield return user.CurrentAction;
@@ -839,7 +844,7 @@ namespace RoguelikeEngine.Skills
             Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
             new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);
             user.VisualColor = user.Static(Color.Transparent);
-            var nearbyTiles = user.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
+            var nearbyTiles = user.Tile.GetNearby(4).Where(tile => !tile.Solid && tile is Water && !tile.Creatures.Any()).ToList();
             user.MoveTo(nearbyTiles.Pick(Random),0);
             yield return user.WaitSome(5);
             new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);

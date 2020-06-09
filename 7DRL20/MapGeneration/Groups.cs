@@ -279,18 +279,50 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        protected void MakeCoral()
+        protected void MakeWaterLakes()
         {
             int rooms = Rooms.Count();
-            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.AcidPool));
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Wall)));
             validArea = validArea.Shuffle();
             foreach (var cell in validArea.Take(rooms / 3))
             {
-                cell.AddSpread(new SpreadPlant(null, 5, 0.0f, GeneratorTile.AcidCoral));
+                cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.Water));
             }
             foreach (var cell in validArea.Skip(rooms / 3).Take(rooms))
             {
-                cell.AddSpread(new SpreadPlant(null, 3, 0.0f, GeneratorTile.AcidCoral));
+                cell.AddSpread(new SpreadLake(null, 5, 0.8f, GeneratorTile.Water));
+            }
+            Generator.Expand();
+        }
+
+        protected void MakeWaterShallows()
+        {
+            int rooms = Rooms.Count();
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.Water));
+            validArea = validArea.Shuffle();
+            foreach (var cell in validArea.Take(rooms / 3))
+            {
+                cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.WaterShallow));
+            }
+            foreach (var cell in validArea.Skip(rooms / 3).Take(rooms))
+            {
+                cell.AddSpread(new SpreadLake(null, 5, 0.8f, GeneratorTile.WaterShallow));
+            }
+            Generator.Expand();
+        }
+
+        protected void MakeCoral(GeneratorTile coral)
+        {
+            int rooms = Rooms.Count();
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
+            validArea = validArea.Shuffle();
+            foreach (var cell in validArea.Take(rooms / 3))
+            {
+                cell.AddSpread(new SpreadPlant(null, 5, 0.0f, coral));
+            }
+            foreach (var cell in validArea.Skip(rooms / 3).Take(rooms))
+            {
+                cell.AddSpread(new SpreadPlant(null, 3, 0.0f, coral));
             }
             Generator.Expand();
         }
@@ -319,7 +351,7 @@ namespace RoguelikeEngine.MapGeneration
         protected void MakeGlowingFloor()
         {
             int rooms = Rooms.Count();
-            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.AcidPool));
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
             validArea = validArea.Shuffle();
             foreach (var cell in validArea.Take(rooms * 3))
             {
@@ -331,7 +363,7 @@ namespace RoguelikeEngine.MapGeneration
         protected void MakeGlowingWall()
         {
             int rooms = Rooms.Count();
-            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Wall).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.AcidPool));
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Wall).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
             validArea = validArea.Shuffle();
             foreach (var cell in validArea.Take(rooms))
             {
@@ -350,7 +382,7 @@ namespace RoguelikeEngine.MapGeneration
         protected override IEnumerator<Action> GetTechniques()
         {
             yield return MakeAcidLakes;
-            yield return MakeCoral;
+            yield return () => MakeCoral(GeneratorTile.AcidCoral);
             yield return MakeGlowingFloor;
             yield return MakeGlowingWall;
             yield return MakeBridges;
@@ -368,6 +400,22 @@ namespace RoguelikeEngine.MapGeneration
             yield return MakeLava;
             yield return MakeSuperLava;
             yield return MakeHyperLava;
+            yield return MakeBridges;
+        }
+    }
+
+    class CaveWater : Cave
+    {
+        public CaveWater(MapGenerator generator) : base(generator)
+        {
+        }
+
+        protected override IEnumerator<Action> GetTechniques()
+        {
+            yield return MakeWaterLakes;
+            yield return MakeWaterShallows;
+            yield return () => MakeCoral(GeneratorTile.Coral);
+            yield return MakeGlowingFloor;
             yield return MakeBridges;
         }
     }

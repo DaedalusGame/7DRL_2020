@@ -36,9 +36,12 @@ namespace RoguelikeEngine
         public static GeneratorTile OreOvium = new GeneratorTile('O', Color.LightSteelBlue, PrintWallCave, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreJauxum = new GeneratorTile('J', Color.LimeGreen, PrintWallCave, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile AcidPool = new GeneratorTile('.', Color.GreenYellow, PrintAcid, TileTag.Liquid);
+        public static GeneratorTile Coral = new GeneratorTile('.', Color.Pink, PrintCoral, TileTag.Floor);
         public static GeneratorTile AcidCoral = new GeneratorTile('.', Color.LightGoldenrodYellow, PrintAcidCoral, TileTag.Floor);
-        public static GeneratorTile Bridge = new GeneratorTile('.', Color.Brown, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
+        public static GeneratorTile Bridge = new GeneratorTile('.', Color.Brown, PrintBridge, TileTag.Floor, TileTag.Artificial);
         public static GeneratorTile Statue = new GeneratorTile('.', Color.LightGray, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
+        public static GeneratorTile Water = new GeneratorTile('.', Color.Blue, PrintWater, TileTag.Liquid);
+        public static GeneratorTile WaterShallow = new GeneratorTile('.', Color.Blue, PrintWaterShallow, TileTag.Liquid);
         public static GeneratorTile Lava = new GeneratorTile('.', Color.Red, PrintLava, TileTag.Liquid);
         public static GeneratorTile SuperLava = new GeneratorTile('.', Color.Orange, PrintSuperLava, TileTag.Liquid);
         public static GeneratorTile HyperLava = new GeneratorTile('.', Color.Yellow, PrintHyperLava, TileTag.Liquid);
@@ -81,6 +84,12 @@ namespace RoguelikeEngine
             tile.Replace(new FloorTiles());
         }
 
+        private static void PrintBridge(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new FloorBridge());
+        }
+
+
         private static void PrintAcid(MapGenerator generator, Tile tile, GeneratorGroup group)
         {
             tile.Replace(new AcidPool());
@@ -90,6 +99,22 @@ namespace RoguelikeEngine
         {
             tile.Replace(new FloorCave());
             tile.PlaceOn(new AcidCoral());
+        }
+
+        private static void PrintCoral(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new FloorCave());
+            tile.PlaceOn(new Coral());
+        }
+
+        private static void PrintWater(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new Water());
+        }
+
+        private static void PrintWaterShallow(MapGenerator generator, Tile tile, GeneratorGroup group)
+        {
+            tile.Replace(new WaterShallow());
         }
 
         private static void PrintLava(MapGenerator generator, Tile tile, GeneratorGroup group)
@@ -527,18 +552,19 @@ namespace RoguelikeEngine
                 CaveColor = new TileColor(new Color(128, 160, 160), new Color(32, 64, 32)),
                 Spawns = { EnemySpawn.Skeleton, EnemySpawn.PoisonBlob },
             });*/
-            Groups.Add(new CaveAcid(this) //Acid Cave
+            /*Groups.Add(new CaveAcid(this) //Acid Cave
             {
                 CaveColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 GlowColor = (time) => Color.Lerp(Color.Black, Color.GreenYellow, 0.75f + 0.25f * (float)Math.Sin(time / 60f)),
                 Spawns = { EnemySpawn.AcidBlob, EnemySpawn.Ctholoid, EnemySpawn.YellowDragon },
-            });
-            /*Groups.Add(new Cave(this) //Sea of Dirac
+            });*/
+            Groups.Add(new CaveWater(this) //Sea of Dirac
             {
                 CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
+                GlowColor = (time) => Color.Lerp(Color.Black, new Color(34, 255, 255), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
                 Spawns = { EnemySpawn.PoisonBlob, EnemySpawn.GoreVala, EnemySpawn.BlueDragon, EnemySpawn.Ctholoid },
             });
-            Groups.Add(new CaveLava(this) //Magma Mine
+            /*Groups.Add(new CaveLava(this) //Magma Mine
             {
                 CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
                 Spawns = { EnemySpawn.BlastCannon, EnemySpawn.AcidBlob, EnemySpawn.Skeleton },

@@ -401,6 +401,48 @@ namespace RoguelikeEngine
         }
     }
 
+    class FloorBridge : Tile
+    {
+        public ConnectivityHelper Connectivity;
+
+        public FloorBridge() : base("Bridge")
+        {
+            Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        private ConnectivityHelper GetConnection(Tile tile)
+        {
+            if (tile is FloorBridge bridge)
+                return bridge.Connectivity;
+            return null;
+        }
+
+        private bool Connects(ConnectivityHelper a, ConnectivityHelper b)
+        {
+            return a != null && b != null;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            Connectivity.CalculateIfNeeded();
+
+            var cave0 = SpriteLoader.Instance.AddSprite("content/connected_bridge_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/connected_bridge_layer");
+
+            var color = Group.CaveColor.ToFloor();
+            Color glow = Group.GlowColor(scene.Frame);
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            //scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            int ix = Connectivity.BlobIndex % 7;
+            int iy = Connectivity.BlobIndex / 7;
+            scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ix * 16, iy * 16, 16, 16), color.Background);
+            scene.SpriteBatch.Draw(cave1.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ix * 16, iy * 16, 16, 16), color.Foreground);
+        }
+    }
+
     class WallCave : Tile, IMineable
     {
         public WallCave() : base("Cave Wall")
@@ -689,6 +731,140 @@ namespace RoguelikeEngine
         }
     }
 
+    class Water : Tile
+    {
+        bool HasCoral = Random.NextDouble() < 0.3;
+        int Frame = Random.Next(1000);
+        public ConnectivityHelper Connectivity;
+
+        public Water() : base("Water")
+        {
+            Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        private ConnectivityHelper GetConnection(Tile tile)
+        {
+            if (tile is Water water)
+                return water.Connectivity;
+            return null;
+        }
+
+        private bool Connects(ConnectivityHelper a, ConnectivityHelper b)
+        {
+            return a != null && b != null;
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.SeaDistort;
+            yield return DrawPass.Sea;
+            yield return DrawPass.SeaFloor;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            if (drawPass == DrawPass.SeaDistort)
+            {
+                Connectivity.CalculateIfNeeded();
+                var noiseOffset = new Vector2(-World.Frame * 0.2f, -World.Frame * 0.5f);
+                var noise = SpriteLoader.Instance.AddSprite("content/noise");
+                var edge = SpriteLoader.Instance.AddSprite("content/connected_edge");
+                scene.PushSpriteBatch(blendState: Microsoft.Xna.Framework.Graphics.BlendState.Additive);
+                scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Color(0, 32, 0));
+                scene.SpriteBatch.Draw(noise.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X + (int)noiseOffset.X, 16 * Parent.Y + (int)noiseOffset.Y, 16, 16), Color.Red);
+                scene.PopSpriteBatch();
+                int ix = Connectivity.BlobIndex % 7;
+                int iy = Connectivity.BlobIndex / 7;
+                scene.SpriteBatch.Draw(edge.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ix * 16, iy * 16, 16, 16), Color.White);
+            }
+            else if (drawPass == DrawPass.SeaFloor)
+            {
+                var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
+                var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
+                var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
+                var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
+
+                var color = Group.CaveColor.ToSeaFloor();
+
+                if (!IsVisible())
+                    color = HiddenColor;
+
+                scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+                scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 6, 16, 16), color.Background);
+                scene.SpriteBatch.Draw(cave1.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 6, 16, 16), color.Foreground);
+                if (HasCoral)
+                    scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Coral.Colors[Frame % Coral.Colors.Count], 0);
+            }
+            else if (drawPass == DrawPass.Sea)
+            {
+                var lava = SpriteLoader.Instance.AddSprite("content/water");
+                scene.PushSpriteBatch(blendState: Microsoft.Xna.Framework.Graphics.BlendState.Additive);
+                int wiggle = (int)(8 * Math.Sin(World.Frame * 0.01));
+                scene.SpriteBatch.Draw(lava.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X + wiggle, 16 * Parent.Y, 16, 16), Color.White);
+                scene.PopSpriteBatch();
+            }
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class WaterShallow : Water
+    {
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.SeaDistort;
+            yield return DrawPass.Sea;
+            yield return DrawPass.SeaFloor;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            if (drawPass == DrawPass.SeaDistort)
+            {
+                Connectivity.CalculateIfNeeded();
+                var noiseOffset = new Vector2(-World.Frame * 0.2f, -World.Frame * 0.5f);
+                var noise = SpriteLoader.Instance.AddSprite("content/noise");
+                var edge = SpriteLoader.Instance.AddSprite("content/connected_edge");
+                int ix = Connectivity.BlobIndex % 7;
+                int iy = Connectivity.BlobIndex / 7;
+                scene.SpriteBatch.Draw(edge.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ix * 16, iy * 16, 16, 16), Color.White);
+            }
+            else if (drawPass == DrawPass.SeaFloor)
+            {
+                var floor = SpriteLoader.Instance.AddSprite("content/tile_floor");
+                var cave0 = SpriteLoader.Instance.AddSprite("content/cave_base");
+                var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
+                var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
+
+                var color = Group.CaveColor.ToFloor();
+
+                if (!IsVisible())
+                    color = HiddenColor;
+
+                scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+                scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 0, 16, 16), color.Background);
+                scene.SpriteBatch.Draw(cave1.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 0, 16, 16), color.Foreground);
+            }
+            else if (drawPass == DrawPass.Sea)
+            {
+                var lava = SpriteLoader.Instance.AddSprite("content/water");
+                scene.PushSpriteBatch(blendState: Microsoft.Xna.Framework.Graphics.BlendState.Additive);
+                int wiggle = (int)(8 * Math.Sin(World.Frame * 0.01));
+                scene.SpriteBatch.Draw(lava.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X + wiggle, 16 * Parent.Y, 16, 16), Color.Gray);
+                scene.PopSpriteBatch();
+            }
+        }
+    }
+
     class Lava : Tile
     {
         public Lava() : base("Lava")
@@ -801,7 +977,7 @@ namespace RoguelikeEngine
     {
         int Frame = Random.Next(1000);
 
-        List<Color> Colors = new List<Color>()
+        public static List<Color> Colors = new List<Color>()
         {
             Color.LightPink,
             Color.LightSkyBlue,
@@ -848,9 +1024,12 @@ namespace RoguelikeEngine
     {
         int Frame = Random.Next(1000);
 
-        List<Color> Colors = new List<Color>()
+        public static List<Color> Colors = new List<Color>()
         {
-            new Color(184, 177, 97)
+            new Color(184, 177, 97),
+            new Color(157, 147, 87),
+            new Color(169, 186, 173),
+            new Color(190, 189, 165),
         };
         
         public AcidCoral() : base("Acid Coral")
@@ -965,7 +1144,7 @@ namespace RoguelikeEngine
                 scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 6, 16, 16), color.Background);
                 scene.SpriteBatch.Draw(cave1.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 6, 16, 16), color.Foreground);
                 if(HasCoral)
-                    scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, new Color(184, 177, 97), 0);
+                    scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, AcidCoral.Colors[Frame % AcidCoral.Colors.Count], 0);
             }
             else if (drawPass == DrawPass.Sea)
             {
