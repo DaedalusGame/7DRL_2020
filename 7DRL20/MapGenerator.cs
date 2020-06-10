@@ -561,6 +561,7 @@ namespace RoguelikeEngine
             Groups.Add(new CaveWater(this) //Sea of Dirac
             {
                 CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
+                BrickColor = new TileColor(new Color(80, 80, 150), new Color(253, 234, 248)),
                 GlowColor = (time) => Color.Lerp(Color.Black, new Color(34, 255, 255), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
                 Spawns = { EnemySpawn.PoisonBlob, EnemySpawn.GoreVala, EnemySpawn.BlueDragon, EnemySpawn.Ctholoid },
             });

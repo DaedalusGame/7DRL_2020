@@ -35,6 +35,8 @@ namespace RoguelikeEngine.MapGeneration
 
         public override void Spread()
         {
+            Cell.Tile = GeneratorTile.Floor;
+
             int index = 0;
             if (Distance <= 1)
             {
