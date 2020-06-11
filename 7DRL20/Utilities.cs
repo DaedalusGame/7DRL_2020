@@ -555,6 +555,59 @@ namespace RoguelikeEngine
             return null;
         }
 
+        static Dictionary<int, int> BlobTileMap = new Dictionary<int, int>() //Mapper for the minimal tileset, index in memory -> index in image
+        {
+            {0, 0},
+            {4, 1},
+            {92, 2},
+            {124, 3},
+            {116, 4},
+            {80, 5},
+            //{0, 6},
+            {16, 7},
+            {20, 8},
+            {87, 9},
+            {223, 10},
+            {241, 11},
+            {21, 12},
+            {64, 13},
+            {29, 14},
+            {117, 15},
+            {85, 16},
+            {71, 17},
+            {221, 18},
+            {125, 19},
+            {112, 20},
+            {31, 21},
+            {253, 22},
+            {113, 23},
+            {28, 24},
+            {127, 25},
+            {247, 26},
+            {209, 27},
+            {23, 28},
+            {199, 29},
+            {213, 30},
+            {95, 31},
+            {255, 32},
+            {245, 33},
+            {81, 34},
+            {5, 35},
+            {84, 36},
+            {93, 37},
+            {119, 38},
+            {215, 39},
+            {193, 40},
+            {17, 41},
+            //{0, 42},
+            {1, 43},
+            {7, 44},
+            {197, 45},
+            {69, 46},
+            {68, 47},
+            {65, 48},
+        };
+
         public static Connectivity Rotate(this Connectivity connectivity, int halfTurns)
         {
             return (Connectivity)(ShiftWrap((int)connectivity, PositiveMod(halfTurns, 8), 8) & 255);
@@ -575,5 +628,23 @@ namespace RoguelikeEngine
             return left | right;
         }
 
+        public static Connectivity CullDiagonals(this Connectivity connectivity)
+        {
+            if (!connectivity.HasFlag(Connectivity.North))
+                connectivity &= Connectivity.KillNorth;
+            if (!connectivity.HasFlag(Connectivity.East))
+                connectivity &= Connectivity.KillEast;
+            if (!connectivity.HasFlag(Connectivity.South))
+                connectivity &= Connectivity.KillSouth;
+            if (!connectivity.HasFlag(Connectivity.West))
+                connectivity &= Connectivity.KillWest;
+            return connectivity;
+        }
+
+        public static int GetBlobTile(this Connectivity connectivity)
+        {
+            connectivity = connectivity.CullDiagonals();
+            return BlobTileMap.ContainsKey((int)connectivity) ? BlobTileMap[(int)connectivity] : BlobTileMap[0];
+        }
     }
 }

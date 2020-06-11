@@ -311,14 +311,15 @@ namespace RoguelikeEngine
             DrawFloor(scene, cave0, cave1, ox, oy, color);
         }
 
-        protected void DrawConnected(SceneGame scene, SpriteReference sprite, ConnectivityHelper connectivity, Color color)
+        protected void DrawConnected(SceneGame scene, SpriteReference sprite, Connectivity connectivity, Color color)
         {
-            int ix = connectivity.BlobIndex % 7;
-            int iy = connectivity.BlobIndex / 7;
+            int blobIndex = connectivity.GetBlobTile();
+            int ix = blobIndex % 7;
+            int iy = blobIndex / 7;
             scene.SpriteBatch.Draw(sprite.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ix * 16, iy * 16, 16, 16), color);
         }
 
-        protected void DrawNoise(SceneGame scene, ConnectivityHelper connectivity, Vector2 noiseOffset, float distance)
+        protected void DrawNoise(SceneGame scene, Connectivity connectivity, Vector2 noiseOffset, float distance)
         {
             var noise = SpriteLoader.Instance.AddSprite("content/noise");
             var edge = SpriteLoader.Instance.AddSprite("content/connected_edge");
@@ -481,10 +482,36 @@ namespace RoguelikeEngine
                 color = HiddenColor;
 
             //scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
-            DrawConnected(scene, cave0, Connectivity, color.Background);
+            DrawConnected(scene, cave0, Connectivity.Connectivity, color.Background);
+            DrawConnected(scene, cave1, Connectivity.Connectivity, color.Foreground);
+        }
+    }
+
+    class FloorCarpet : Tile
+    {
+        public TileColor Color = new TileColor(new Color(85, 107, 168), new Color(198, 190, 55));
+        public Connectivity Connectivity;
+
+        public FloorCarpet() : base("Carpet")
+        {
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/carpet_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/connected_carpet_layer");
+
+            var color = Color.ToFloor();
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            //scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 0, 16, 16), color.Background);
             DrawConnected(scene, cave1, Connectivity, color.Foreground);
         }
     }
+
 
     class WallCave : Tile, IMineable
     {
@@ -806,7 +833,7 @@ namespace RoguelikeEngine
             if (drawPass == DrawPass.SeaDistort)
             {
                 Connectivity.CalculateIfNeeded();
-                DrawNoise(scene, Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.125f);
+                DrawNoise(scene, Connectivity.Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.125f);
             }
             else if (drawPass == DrawPass.SeaFloor)
             {
@@ -854,7 +881,7 @@ namespace RoguelikeEngine
             if (drawPass == DrawPass.SeaDistort)
             {
                 Connectivity.CalculateIfNeeded();
-                DrawNoise(scene, Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.0f);
+                DrawNoise(scene, Connectivity.Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.0f);
             }
             else if (drawPass == DrawPass.SeaFloor)
             {
@@ -1003,11 +1030,6 @@ namespace RoguelikeEngine
             return null;
         }
 
-        private bool Connects(ConnectivityHelper a, ConnectivityHelper b)
-        {
-            return a != null && b != null;
-        }
-
         public override void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
@@ -1027,13 +1049,13 @@ namespace RoguelikeEngine
             if (drawPass == DrawPass.SeaDistort)
             {
                 Connectivity.CalculateIfNeeded();
-                DrawNoise(scene, Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.25f);
+                DrawNoise(scene, Connectivity.Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.25f);
             }
             if (drawPass == DrawPass.Sea)
             {
                 var lava = SpriteLoader.Instance.AddSprite("content/lava_dark");
                 scene.PushSpriteBatch(blendState: Microsoft.Xna.Framework.Graphics.BlendState.Additive);
-                scene.SpriteBatch.Draw(lava.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White * 0.8f);
+                scene.SpriteBatch.Draw(lava.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
                 scene.PopSpriteBatch();
             }
         }
@@ -1183,7 +1205,7 @@ namespace RoguelikeEngine
             if (drawPass == DrawPass.SeaDistort)
             {
                 Connectivity.CalculateIfNeeded();
-                DrawNoise(scene, Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.25f);
+                DrawNoise(scene, Connectivity.Connectivity, new Vector2(-base.World.Frame * 0.2f, -base.World.Frame * 0.5f), 0.25f);
             }
             else if (drawPass == DrawPass.SeaFloor)
             {

@@ -97,6 +97,7 @@ namespace RoguelikeEngine.MapGeneration
 
         public override void Spread()
         {
+            Cell.Tile = GeneratorTile.FloorBrick;
             int index = 0;
             if (Distance <= 1)
             {
@@ -123,7 +124,7 @@ namespace RoguelikeEngine.MapGeneration
                         {
                             if (IsRoom && Origin.Room != null)
                                 tile.Room = Origin.Room;
-                            tile.Tile = GeneratorTile.Floor;
+                            tile.Tile = GeneratorTile.FloorBrick;
                             tile.Group = Cell.Group;
                             tile.AddSpread(new SpreadTower(Origin, Distance - 1, Radius, WallOutside, IsRoom));
                         }
@@ -146,16 +147,19 @@ namespace RoguelikeEngine.MapGeneration
         bool WallOutside;
         bool IsRoom;
         int Distance;
+        GeneratorTile Floor;
 
-        public SpreadCastle(GeneratorCell origin, int distance, bool wallOutside = true, bool isRoom = true) : base(origin)
+        public SpreadCastle(GeneratorCell origin, int distance, GeneratorTile floor, bool wallOutside = true, bool isRoom = true) : base(origin)
         {
             Distance = distance;
             WallOutside = wallOutside;
             IsRoom = isRoom;
+            Floor = floor;
         }
 
         public override void Spread()
         {
+            Cell.Tile = Floor;
             int index = 0;
             if (Distance <= 1)
             {
@@ -178,9 +182,59 @@ namespace RoguelikeEngine.MapGeneration
                     {
                         if (IsRoom && Origin.Room != null)
                             tile.Room = Origin.Room;
-                        tile.Tile = GeneratorTile.Floor;
+                        tile.Tile = Floor;
                         tile.Group = Cell.Group;
-                        tile.AddSpread(new SpreadCastle(Origin, Distance - 1, WallOutside, IsRoom));
+                        tile.AddSpread(new SpreadCastle(Origin, Distance - 1, Floor, WallOutside, IsRoom));
+                    }
+                    index++;
+                }
+            }
+        }
+    }
+
+    class SpreadVault : SpreadTile
+    {
+        bool WallOutside;
+        bool IsRoom;
+        int Distance;
+        GeneratorTile Floor;
+
+        public SpreadVault(GeneratorCell origin, int distance, GeneratorTile floor, bool wallOutside = true, bool isRoom = true) : base(origin)
+        {
+            Distance = distance;
+            WallOutside = wallOutside;
+            IsRoom = isRoom;
+            Floor = floor;
+        }
+
+        public override void Spread()
+        {
+            Cell.Tile = Floor;
+            int index = 0;
+            if (Distance <= 1)
+            {
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null))
+                {
+                    if (tile.Tile == GeneratorTile.Empty && WallOutside)
+                    {
+                        if (IsRoom && Origin.Room != null)
+                            tile.Room = Origin.Room;
+                        tile.Tile = GeneratorTile.WallBrick;
+                        tile.Group = Cell.Group;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                {
+                    if (tile.Tile == GeneratorTile.Empty && tile.Room == null)
+                    {
+                        if (IsRoom && Origin.Room != null)
+                            tile.Room = Origin.Room;
+                        tile.Tile = Floor;
+                        tile.Group = Cell.Group;
+                        tile.AddSpread(new SpreadCastle(Origin, Distance - 1, Floor, WallOutside, IsRoom));
                     }
                     index++;
                 }
@@ -268,6 +322,36 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
+    class SpreadCarpet : SpreadTile
+    {
+        int Distance;
+        GeneratorTile Tile;
+
+        public SpreadCarpet(GeneratorCell origin, int distance, GeneratorTile tile) : base(origin)
+        {
+            Distance = distance;
+            Tile = tile;
+        }
+
+        public override void Spread()
+        {
+            int index = 0;
+            if(Distance > 1)
+            {
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                {
+                    if (tile.Tile.HasTag(TileTag.Floor))
+                    {
+                        tile.Tile = Tile;
+                        tile.Group = Cell.Group;
+                        tile.AddSpread(new SpreadCarpet(Origin, Distance - 1, Tile));
+                    }
+                    index++;
+                }
+            }
+        }
+    }
+
     class SpreadLake : SpreadTile
     {
         int Distance;
@@ -308,6 +392,36 @@ namespace RoguelikeEngine.MapGeneration
             if (oneEmpty)
             {
                 Cell.AddSpread(new SpreadLake(Origin, Distance - 1, Chance, Tile));
+            }
+        }
+    }
+
+    class SpreadPlatform : SpreadTile
+    {
+        int Distance;
+        GeneratorTile Tile;
+
+        public SpreadPlatform(GeneratorCell origin, int distance, GeneratorTile tile) : base(origin)
+        {
+            Distance = distance;
+            Tile = tile;
+        }
+
+        public override void Spread()
+        {
+            int index = 0;
+            if (Distance > 1)
+            {
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                {
+                    if (tile.Tile.HasTag(TileTag.Liquid) && tile.Tile != Tile)
+                    {
+                        tile.Tile = Tile;
+                        tile.Group = Cell.Group;
+                        tile.AddSpread(new SpreadPlatform(Origin, Distance - 1, Tile));
+                    }
+                    index++;
+                }
             }
         }
     }
