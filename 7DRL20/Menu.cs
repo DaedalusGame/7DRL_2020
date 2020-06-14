@@ -142,11 +142,11 @@ namespace RoguelikeEngine
                 if(GameOver.Done && GameOverMenu == null)
                 {
                     GameOverMenu = new MenuTextSelection(string.Empty, new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height * 3 / 4), 300, 2);
-                    GameOverMenu.Add(new ActAction("Restart", () =>
+                    GameOverMenu.Add(new ActAction("Restart", "Start over.", () =>
                     {
                         Scene.Restart();
                     }));
-                    GameOverMenu.Add(new ActAction("Quit", () =>
+                    GameOverMenu.Add(new ActAction("Quit", "Quit to Desktop.", () =>
                     {
                         Scene.Quit();
                     }));
@@ -241,12 +241,12 @@ namespace RoguelikeEngine
                 tile.AddActions(this, Player, selection);
                 foreach (Tile neighbor in tile.GetAdjacentNeighbors())
                     neighbor.AddActions(this, Player, selection);
-                selection.Add(new ActAction("Inventory", () =>
+                selection.Add(new ActAction("Inventory", "Opens your inventory.", () =>
                 {
                     selection.Close();
                     Open(new MenuInventory(this, Player));
                 }));
-                selection.AddDefault(new ActAction("Cancel", () => selection.Close()));
+                selection.AddDefault(new ActAction("Cancel", "Closes this menu.", () => selection.Close()));
 
                 Open(selection);
             }
@@ -555,19 +555,19 @@ namespace RoguelikeEngine
             Holder = holder;
             Anvil = anvil;
             BlueprintMenu = new MenuTextSelection("Anvil", new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 1 / 4), 256, 8);
-            BlueprintMenu.Add(new ActAction("Blade", () =>
+            BlueprintMenu.Add(new ActAction("Blade", "Blades do damage to enemies.", () =>
             {
                 OpenBlueprintMenu("Blade", ToolBlade.Parts, (materials) => ToolBlade.Create(Scene, materials[0], materials[1], materials[2]));
             }));
-            BlueprintMenu.Add(new ActAction("Adze", () =>
+            BlueprintMenu.Add(new ActAction("Adze", "Adzes can be used to mine blocks.", () =>
             {
                 OpenBlueprintMenu("Adze", ToolAdze.Parts, (materials) => ToolAdze.Create(Scene, materials[0], materials[1], materials[2]));
             }));
-            BlueprintMenu.Add(new ActAction("Plate", () =>
+            BlueprintMenu.Add(new ActAction("Plate", "Plates can be worn as armor.", () =>
             {
                 OpenBlueprintMenu("Plate", ToolPlate.Parts, (materials) => ToolPlate.Create(Scene, materials[0], materials[1], materials[2]));
             }));
-            BlueprintMenu.AddDefault(new ActAction("Cancel", () =>
+            BlueprintMenu.AddDefault(new ActAction("Cancel", "Closes this menu.", () =>
             {
                 BlueprintMenu.Close();
             }));
@@ -837,7 +837,7 @@ namespace RoguelikeEngine
         {
             ItemActionMenu = new MenuTextSelection($"{Game.FormatIcon(item)}{item.Name}", new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height / 2), 256, 6);
             item.AddItemActions(ItemMenu, Holder, ItemActionMenu);
-            ItemActionMenu.AddDefault(new ActAction("Cancel", () =>
+            ItemActionMenu.AddDefault(new ActAction("Cancel", "Closes this menu.", () =>
             {
                 ItemActionMenu.Close();
             }));
@@ -1157,7 +1157,7 @@ namespace RoguelikeEngine
         public Action Action;
         public Func<bool> Enabled = () => true; 
 
-        public ActAction(string name, Action action, Func<bool> enabled = null)
+        public ActAction(string name, string description, Action action, Func<bool> enabled = null)
         {
             Name = name;
             Action = action;
@@ -1189,7 +1189,8 @@ namespace RoguelikeEngine
 
         public override void Select(int selection)
         {
-            Actions[selection].Action();
+            if(Actions[selection].Enabled())
+                Actions[selection].Action();
         }
 
         public override void DrawLine(SceneGame scene, Vector2 linePos, int e)
@@ -1198,7 +1199,10 @@ namespace RoguelikeEngine
             SpriteReference cursor = SpriteLoader.Instance.AddSprite("content/cursor");
             if (Selection == e)
                 scene.SpriteBatch.Draw(cursor.Texture, linePos, cursor.GetFrameRect(0), Color.White);
-            scene.DrawText(action.Name, linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
+            Color color = Color.White;
+            if (!action.Enabled())
+                color = Color.Gray;
+            scene.DrawText(action.Name, linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(color, Color.Black));
         }
     }
 

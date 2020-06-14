@@ -93,6 +93,22 @@ namespace RoguelikeEngine
         {
             Heal = heal;
         }
+
+        public override bool CanCombine(Message other)
+        {
+            if (other.Holder == Holder && other is MessageHeal damage)
+                return true;
+            return false;
+        }
+
+        public override Message[] Combine(Message other)
+        {
+            if (other is MessageHeal damage)
+            {
+                return new[] { new MessageHeal(Holder, Heal + damage.Heal) };
+            }
+            return base.Combine(other);
+        }
     }
 
     class MessageStatusBuildup : Message

@@ -18,14 +18,18 @@ namespace RoguelikeEngine.Effects
         public double RequiredMiningLevel;
         public double Speed;
 
+        public double Force;
+
         public int ReactionLevel;
         public bool Success;
 
-        public MineEvent(Creature miner, Item pickaxe)
+        List<Wait> Waits = new List<Wait>();
+
+        public MineEvent(Creature miner, Item pickaxe, double force)
         {
             Miner = miner;
             Pickaxe = pickaxe;
-            
+            Force = force;
         }
 
         public void Setup(IMineable mineable, double requiredMiningLevel, double speed, Action<Creature> lootFunction)
@@ -38,6 +42,8 @@ namespace RoguelikeEngine.Effects
 
         public IEnumerable<Wait> RoutineStart()
         {
+            PopupManager.StartCollect();
+
             double miningLevel = Miner.GetStat(Stat.MiningLevel);
 
             if (miningLevel >= RequiredMiningLevel)
@@ -47,8 +53,12 @@ namespace RoguelikeEngine.Effects
 
             yield return Miner.OnStartMine(this);
 
-            if (Random.NextDouble() > Speed)
-                Success = false;
+            if (Success)
+            {
+                Mineable.Damage += Force * Speed;
+                if (Mineable.Damage < Mineable.Durability)
+                    Success = false;
+            }
 
             yield return Miner.OnMine(this);
 
@@ -57,6 +67,15 @@ namespace RoguelikeEngine.Effects
                 LootFunction(Miner);
                 Mineable.Destroy();
             }
+
+            PopupManager.FinishCollect();
+
+            yield return new WaitAll(Waits);
+        }
+
+        public void AddWait(Wait wait)
+        {
+            Waits.Add(wait);
         }
     }
 

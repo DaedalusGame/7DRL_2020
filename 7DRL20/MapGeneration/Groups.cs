@@ -17,6 +17,7 @@ namespace RoguelikeEngine.MapGeneration
         public Color Color;
         public TileColor CaveColor;
         public TileColor BrickColor;
+        public TileColor WoodColor;
         public Func<float, Color> GlowColor = (slide) => Color.TransparentBlack;
         public ColorMatrix Atmosphere = ColorMatrix.Identity;
         public List<EnemySpawn> Spawns = new List<EnemySpawn>();
@@ -143,21 +144,24 @@ namespace RoguelikeEngine.MapGeneration
             Generator.Expand();
         }
 
-        protected void MakeCarpets()
+        protected void MakeCarpets(int count, int size, GeneratorTile carpet, Func<GeneratorCell,bool> predicate)
         {
-            int rooms = Rooms.Count();
-            var validArea = GetCells().Where(cell => cell.Tile.HasTag(TileTag.Floor));
+            var validArea = GetCells().Where(predicate);
             validArea = validArea.Shuffle();
-            foreach (var cell in validArea.Take(rooms / 3))
+            foreach (var cell in validArea.Take(count))
             {
-                cell.AddSpread(new SpreadCarpet(null, 5, GeneratorTile.Carpet));
+                cell.AddSpread(new SpreadCarpet(null, size, carpet));
             }
 
+            Generator.Expand();
+        }
+
+        protected void ConnectCarpets()
+        {
             bool isCarpet(GeneratorCell cell) => cell != null && cell.Tile == GeneratorTile.Carpet;
 
-            Generator.Expand();
             var carpets = GetCells().Where(cell => cell.Tile == GeneratorTile.Carpet);
-            foreach(var carpet in carpets)
+            foreach (var carpet in carpets)
             {
                 carpet.Connectivity = Connectivity.None;
                 if (isCarpet(carpet.GetNeighbor(0, 1)))
@@ -343,7 +347,7 @@ namespace RoguelikeEngine.MapGeneration
                 if (room != null)
                 {
                     cell.Group = room.Group;
-                    cell.AddSpread(new SpreadVault(room, 2, GeneratorTile.FloorBrick, true));
+                    cell.AddSpread(new SpreadVault(room, 2, GeneratorTile.FloorBrick, GeneratorTile.WallBrick));
                     border.Tile = GeneratorTile.FloorBrick; //Punch a hole
                 }
             }
@@ -352,7 +356,7 @@ namespace RoguelikeEngine.MapGeneration
         #endregion
     }
 
-    class Home : GeneratorGroup
+    /*class Home : GeneratorGroup
     {
         public Home(MapGenerator generator) : base(generator)
         {
@@ -384,7 +388,7 @@ namespace RoguelikeEngine.MapGeneration
                 }
             }
         }
-    }
+    }*/
 
     class Castle : GeneratorGroup
     {
@@ -400,13 +404,13 @@ namespace RoguelikeEngine.MapGeneration
 
         public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
         {
-            cell.AddSpread(new SpreadCastle(null, 2, GeneratorTile.FloorBrick, true, false));
+            cell.AddSpread(new SpreadCastle(null, 2, GeneratorTile.FloorBrick, GeneratorTile.WallBrick, false));
         }
 
         public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
         {
             if (generator.Random.NextDouble() < 0.8)
-                cell.AddSpread(new SpreadCastle(null, generator.Random.Next(3, 7), GeneratorTile.FloorBrick));
+                cell.AddSpread(new SpreadCastle(null, generator.Random.Next(3, 7), GeneratorTile.FloorBrick, GeneratorTile.WallBrick));
             else
                 cell.AddSpread(new SpreadTower(null, generator.Random.Next(6, 10), generator.Random.Next(3, 6) + 0.5f));
         }
@@ -444,7 +448,7 @@ namespace RoguelikeEngine.MapGeneration
 
         public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
         {
-            cell.AddSpread(new SpreadCastle(null, 2, GeneratorTile.FloorBrick, false, false));
+            cell.AddSpread(new SpreadCastle(null, 2, GeneratorTile.FloorBrick, GeneratorTile.Empty, false));
         }
 
         public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
@@ -514,9 +518,35 @@ namespace RoguelikeEngine.MapGeneration
         protected override IEnumerator<Action> GetTechniques()
         {
             yield return MakeLava;
+            yield return MakeBridges;
+        }
+    }
+
+    class CaveMagma : Cave
+    {
+        public CaveMagma(MapGenerator generator) : base(generator)
+        {
+        }
+
+        protected override IEnumerator<Action> GetTechniques()
+        {
+            yield return MakeLava;
+            yield return MakeLava;
+            yield return MakeSuperLava;
             yield return MakeSuperLava;
             yield return MakeHyperLava;
+            yield return MakeHyperLava;
             yield return MakeBridges;
+        }
+
+        public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
+        {
+            cell.AddSpread(new SpreadCave(null, generator.Random.Next(4, 6)));
+        }
+
+        public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
+        {
+            cell.AddSpread(new SpreadCave(null, generator.Random.Next(5, 13)));
         }
     }
 
@@ -544,12 +574,37 @@ namespace RoguelikeEngine.MapGeneration
 
         protected override IEnumerator<Action> GetTechniques()
         {
-            yield return MakeCarpets;
+            int rooms = Rooms.Count();
+            yield return () => MakeCarpets(rooms / 3, 5, GeneratorTile.Carpet, cell => cell.Tile.HasTag(TileTag.Floor));
             yield return MakeDarkLava;
             yield return ShatterFloor;
             yield return MakeGlowingFloor;
             yield return MakeStoneBridges;
             yield return MakeOutsideRooms;
+            yield return ConnectCarpets;
+        }
+    }
+
+    class Home : Castle
+    {
+        public Home(MapGenerator generator) : base(generator)
+        {
+        }
+
+        protected override IEnumerator<Action> GetTechniques()
+        {
+            int rooms = Rooms.Count();
+            yield return () => MakeCarpets(rooms / 3, 5, GeneratorTile.Carpet, cell => cell.Tile == GeneratorTile.FloorPlank);
+            yield return MakeOutsideRooms;
+            yield return ConnectCarpets;
+        }
+
+        public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
+        {
+            if (generator.Random.NextDouble() < 0.5)
+                cell.AddSpread(new SpreadCastle(null, generator.Random.Next(3, 6), GeneratorTile.FloorBrick, GeneratorTile.WallBrick));
+            else
+                cell.AddSpread(new SpreadCastle(null, generator.Random.Next(3, 6), GeneratorTile.FloorPlank, GeneratorTile.WallPlank));
         }
     }
 }

@@ -54,7 +54,7 @@ namespace RoguelikeEngine
             List<Message> messages = Collections.Pop();
             foreach(var message in CombineMessages(messages))
             {
-                AddInternal(message);
+                Add(message);
             }
         }
 

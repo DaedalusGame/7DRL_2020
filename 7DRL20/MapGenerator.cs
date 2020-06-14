@@ -25,8 +25,10 @@ namespace RoguelikeEngine
         public static GeneratorTile Empty = new GeneratorTile(' ', Color.Black, PrintWallCave, TileTag.Wall);
         public static GeneratorTile Floor = new GeneratorTile('.', Color.Gray, PrintFloorCave, TileTag.Floor);
         public static GeneratorTile FloorBrick = new GeneratorTile('.', Color.Gray, PrintFloorBrick, TileTag.Floor, TileTag.Artificial);
+        public static GeneratorTile FloorPlank = new GeneratorTile('.', Color.Brown, PrintFloorPlank, TileTag.Floor, TileTag.Artificial);
         public static GeneratorTile Wall = new GeneratorTile('X', Color.White, PrintWallCave, TileTag.Wall);
         public static GeneratorTile WallBrick = new GeneratorTile('#', Color.White, PrintWallBrick, TileTag.Wall, TileTag.Artificial);
+        public static GeneratorTile WallPlank = new GeneratorTile('#', Color.White, PrintWallPlank, TileTag.Wall, TileTag.Artificial);
         public static GeneratorTile OreDilithium = new GeneratorTile('G', Color.LightCyan, PrintWallCave, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreTiberium = new GeneratorTile('T', Color.Lime, PrintWallCave, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreBasalt = new GeneratorTile('B', Color.White, PrintWallCave, TileTag.Wall, TileTag.Ore);
@@ -76,6 +78,11 @@ namespace RoguelikeEngine
             tile.Replace(new WallBrick());
         }
 
+        private static void PrintWallPlank(MapGenerator generator, Tile tile, GeneratorCell cell)
+        {
+            tile.Replace(new WallPlank());
+        }
+
         private static void PrintFloorCave(MapGenerator generator, Tile tile, GeneratorCell cell)
         {
             tile.Replace(new FloorCave());
@@ -84,6 +91,11 @@ namespace RoguelikeEngine
         private static void PrintFloorBrick(MapGenerator generator, Tile tile, GeneratorCell cell)
         {
             tile.Replace(new FloorTiles());
+        }
+
+        private static void PrintFloorPlank(MapGenerator generator, Tile tile, GeneratorCell cell)
+        {
+            tile.Replace(new FloorPlank());
         }
 
         private static void PrintCarpet(MapGenerator generator, Tile tile, GeneratorCell cell)
@@ -320,7 +332,7 @@ namespace RoguelikeEngine
         public Random Random;
         public List<Point> Points = new List<Point>();
         public Point StartRoom;
-        public GeneratorGroup StartRoomGroup;
+        //public GeneratorGroup StartRoomGroup;
         public List<GeneratorGroup> Groups = new List<GeneratorGroup>();
         Queue<SpreadTile> ToSpread = new Queue<SpreadTile>();
         Queue<CollapseTile> ToCollapse = new Queue<CollapseTile>();
@@ -332,7 +344,11 @@ namespace RoguelikeEngine
 
         public bool Done = true;
 
-        public MapGenerator(int width, int height, int seed)
+        public int PointCount = 50;
+        public int PointDeviation = 10;
+        public GroupGenerator GroupGenerator;
+
+        public MapGenerator(int width, int height, int seed, GroupGenerator groupGenerator)
         {
             Random = new Random(seed);
             Cells = new GeneratorCell[width, height];
@@ -344,6 +360,7 @@ namespace RoguelikeEngine
                     Cells[x, y].Weight = Random.NextDouble();
                 }
             }
+            GroupGenerator = groupGenerator;
         }
 
         public void AddCollapse(CollapseTile cell)
@@ -380,6 +397,11 @@ namespace RoguelikeEngine
             }
         }
 
+        public ILookup<RoomGroup, Tile> GetRooms(Map map)
+        {
+            return GetAllCells().Where(cell => cell.Room != null).ToLookup(cell => cell.Room, cell => map.GetTile(cell.X, cell.Y));
+        }
+
         public void Wait()
         {
         }
@@ -406,7 +428,7 @@ namespace RoguelikeEngine
         public void Generate()
         {
             Done = false;
-            SetupPoints(50, 10);
+            SetupPoints(PointCount, PointDeviation);
             Wait();
             ConnectPoints();
             Wait();
@@ -560,62 +582,12 @@ namespace RoguelikeEngine
                 if (!Points.Contains(new Point(x, y)))
                     Points.Add(new Point(x, y));
             }
-            StartRoomGroup = new Home(this)
+            /*StartRoomGroup = new Home(this)
             {
                 CaveColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160)),
                 BrickColor = new TileColor(new Color(64, 64, 64), new Color(160, 160, 160))
-            };
-            /*Groups.Add(new CaveLava(this) //Fire Cave
-            {
-                CaveColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
-                BrickColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
-                Spawns = { EnemySpawn.Skeleton },
-            });*/
-            /*Groups.Add(new Cave(this) //Adamant Cave
-            {
-                CaveColor = new TileColor(new Color(128, 160, 160), new Color(32, 64, 32)),
-                BrickColor = new TileColor(new Color(128, 160, 160), new Color(32, 64, 32)),
-                Spawns = { EnemySpawn.Skeleton, EnemySpawn.PoisonBlob },
-            });*/
-            /*Groups.Add(new CaveAcid(this) //Acid Cave
-            {
-                CaveColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
-                BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
-                GlowColor = (time) => Color.Lerp(Color.Black, Color.GreenYellow, 0.75f + 0.25f * (float)Math.Sin(time / 60f)),
-                Spawns = { EnemySpawn.AcidBlob, EnemySpawn.Ctholoid, EnemySpawn.YellowDragon },
-            });*/
-            /*Groups.Add(new CaveWater(this) //Sea of Dirac
-            {
-                CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
-                BrickColor = new TileColor(new Color(80, 80, 150), new Color(253, 234, 248)),
-                GlowColor = (time) => Color.Lerp(Color.Black, new Color(34, 255, 255), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
-                Spawns = { EnemySpawn.PoisonBlob, EnemySpawn.GoreVala, EnemySpawn.BlueDragon, EnemySpawn.Ctholoid },
-            });*/
-            /*Groups.Add(new CaveLava(this) //Magma Mine
-            {
-                CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
-                BrickColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
-                Spawns = { EnemySpawn.BlastCannon, EnemySpawn.AcidBlob, EnemySpawn.Skeleton },
-            });*/
-            /*Groups.Add(new Castle(this) //Dungeon
-            {
-                CaveColor = new TileColor(new Color(128, 128, 128), new Color(160, 160, 160)),
-                BrickColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
-                Spawns = { EnemySpawn.Skeleton, EnemySpawn.Vorrax, EnemySpawn.DeathKnight },
-            });
-            Groups.Add(new Tower(this) //Ivory Tower
-            {
-                CaveColor = new TileColor(new Color(108, 106, 79), new Color(188, 173, 139)),
-                BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
-                Spawns = { EnemySpawn.Skeleton, EnemySpawn.DeathKnight, EnemySpawn.BlueDragon },
-            });*/
-            Groups.Add(new CastleDark(this) //Dark Castle
-            {
-                CaveColor = new TileColor(new Color(54, 72, 101), new Color(109, 197, 112)),
-                BrickColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
-                GlowColor = (time) => Color.Lerp(new Color(62, 79, 2), new Color(227, 253, 138), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
-                Spawns = { EnemySpawn.DeathKnight, EnemySpawn.BlastCannon, EnemySpawn.Ctholoid },
-            });
+            };*/
+            Groups.AddRange(GroupGenerator.Generate(this));
             var i = 0;
             IEnumerable<Point> shuffled = Points.Shuffle(Random);
             var toAssign = shuffled.Take(Groups.Count);
@@ -634,6 +606,8 @@ namespace RoguelikeEngine
             startCell.Group = StartRoomGroup;
             StartRoomGroup.PlaceRoom(this, startCell);*/
         }
+
+        
 
         public void ConnectPoints()
         {
@@ -710,14 +684,14 @@ namespace RoguelikeEngine
             }
         }
 
-        public void GenerateStartRoom()
+        /*public void GenerateStartRoom()
         {
             var validTiles = AllCells().Select(GetCell).Where(cell => cell.Tile == GeneratorTile.Empty).Where(cell => cell.X >= 10 && cell.Y >= 10 && cell.X < Width - 10 && cell.Y < Height - 10).ToList();
 
             var startCell = validTiles.Pick(Random);
             StartRoomGroup.PlaceRoom(this, startCell);
             StartRoom = new Point(startCell.X, startCell.Y);
-        }
+        }*/
 
         private bool IsUngrouped(Point a, Point b)
         {
@@ -738,9 +712,9 @@ namespace RoguelikeEngine
             var baseTile = Cells[a.X, a.Y];
             var otherTile = Cells[b.X, b.Y];
             var group = baseTile.Group;
-            var path = group.GetPath(this, a, b);
+            var path = group.GetPath(this, a, b).Select(GetCell).ToList();
 
-            foreach (var cell in path.Select(GetCell))
+            foreach (var cell in path.Take(path.Count-1))
             {
                 cell.Tile = GeneratorTile.Floor;
                 cell.Group = group;

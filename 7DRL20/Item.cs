@@ -103,7 +103,7 @@ namespace RoguelikeEngine
 
         public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
-            selection.Add(new ActAction($"Pick up {Game.FormatIcon(this)}{Name}", () =>
+            selection.Add(new ActAction($"Pick up {Game.FormatIcon(this)}{Name}", "Picks up the item and stores it in your inventory.", () =>
             {
                 player.Pickup(this);
                 selection.Close();
@@ -112,7 +112,7 @@ namespace RoguelikeEngine
 
         public virtual void AddItemActions(InventoryItemList inventory, Creature player, MenuTextSelection selection)
         {
-            selection.Add(new ActAction("Throw Away", () =>
+            selection.Add(new ActAction("Throw Away", "Drop the item on the ground.", () =>
             {
                 MoveTo(player.Tile);
                 selection.Close();
@@ -405,14 +405,14 @@ namespace RoguelikeEngine
             foreach (var slot in ValidSlots)
             {
                 if(!currentEquip.Any(x => x.Slot == slot))
-                selection.Add(new ActAction($"Equip ({slot})", () =>
+                selection.Add(new ActAction($"Equip ({slot})", "Equips the item to the specified slot.", () =>
                 {
                     player.Equip(this, slot);
                     selection.Close();
                 }));
             }
             if(currentEquip.Any())
-                selection.Add(new ActAction($"Unequip", () =>
+                selection.Add(new ActAction($"Unequip", "Unequips the item.", () =>
                 {
                     foreach(var equip in currentEquip)
                     {

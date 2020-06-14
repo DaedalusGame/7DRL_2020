@@ -260,6 +260,13 @@ namespace RoguelikeEngine
             return PickInternal(enumerable, random, true);
         }
 
+        public static T PickAndRemoveBest<T>(this IList<T> enumerable, Func<T,IComparable> keySelector, Random random)
+        {
+            var pick = enumerable.Shuffle(random).OrderByDescending(keySelector).First();
+            enumerable.Remove(pick);
+            return pick;
+        }
+
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
         {
             return new HashSet<T>(enumerable);

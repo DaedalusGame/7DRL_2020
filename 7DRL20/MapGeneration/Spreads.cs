@@ -148,13 +148,14 @@ namespace RoguelikeEngine.MapGeneration
         bool IsRoom;
         int Distance;
         GeneratorTile Floor;
+        GeneratorTile Wall;
 
-        public SpreadCastle(GeneratorCell origin, int distance, GeneratorTile floor, bool wallOutside = true, bool isRoom = true) : base(origin)
+        public SpreadCastle(GeneratorCell origin, int distance, GeneratorTile floor, GeneratorTile wall, bool isRoom = true) : base(origin)
         {
             Distance = distance;
-            WallOutside = wallOutside;
             IsRoom = isRoom;
             Floor = floor;
+            Wall = wall;
         }
 
         public override void Spread()
@@ -165,11 +166,11 @@ namespace RoguelikeEngine.MapGeneration
             {
                 foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null))
                 {
-                    if (tile.Tile == GeneratorTile.Empty && WallOutside)
+                    if (tile.Tile == GeneratorTile.Empty && Wall != GeneratorTile.Empty)
                     {
                         if (IsRoom && Origin.Room != null)
                             tile.Room = Origin.Room;
-                        tile.Tile = GeneratorTile.WallBrick;
+                        tile.Tile = Wall;
                         tile.Group = Cell.Group;
                     }
                 }
@@ -184,7 +185,7 @@ namespace RoguelikeEngine.MapGeneration
                             tile.Room = Origin.Room;
                         tile.Tile = Floor;
                         tile.Group = Cell.Group;
-                        tile.AddSpread(new SpreadCastle(Origin, Distance - 1, Floor, WallOutside, IsRoom));
+                        tile.AddSpread(new SpreadCastle(Origin, Distance - 1, Floor, Wall, IsRoom));
                     }
                     index++;
                 }
@@ -194,17 +195,17 @@ namespace RoguelikeEngine.MapGeneration
 
     class SpreadVault : SpreadTile
     {
-        bool WallOutside;
         bool IsRoom;
         int Distance;
         GeneratorTile Floor;
+        GeneratorTile Wall;
 
-        public SpreadVault(GeneratorCell origin, int distance, GeneratorTile floor, bool wallOutside = true, bool isRoom = true) : base(origin)
+        public SpreadVault(GeneratorCell origin, int distance, GeneratorTile floor, GeneratorTile wall, bool isRoom = true) : base(origin)
         {
             Distance = distance;
-            WallOutside = wallOutside;
             IsRoom = isRoom;
             Floor = floor;
+            Wall = wall;
         }
 
         public override void Spread()
@@ -215,11 +216,11 @@ namespace RoguelikeEngine.MapGeneration
             {
                 foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null))
                 {
-                    if (tile.Tile == GeneratorTile.Empty && WallOutside)
+                    if (tile.Tile == GeneratorTile.Empty && Wall != GeneratorTile.Empty)
                     {
                         if (IsRoom && Origin.Room != null)
                             tile.Room = Origin.Room;
-                        tile.Tile = GeneratorTile.WallBrick;
+                        tile.Tile = Wall;
                         tile.Group = Cell.Group;
                     }
                 }
@@ -234,7 +235,7 @@ namespace RoguelikeEngine.MapGeneration
                             tile.Room = Origin.Room;
                         tile.Tile = Floor;
                         tile.Group = Cell.Group;
-                        tile.AddSpread(new SpreadCastle(Origin, Distance - 1, Floor, WallOutside, IsRoom));
+                        tile.AddSpread(new SpreadVault(Origin, Distance - 1, Floor, Wall, IsRoom));
                     }
                     index++;
                 }
@@ -518,6 +519,11 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
+        private bool IsNaturalWall(GeneratorCell cell)
+        {
+            return cell.Tile.HasTag(TileTag.Wall) && !cell.Tile.HasTag(TileTag.Artificial);
+        }
+
         public override void Spread()
         {
             if (Distance <= 0)
@@ -528,7 +534,7 @@ namespace RoguelikeEngine.MapGeneration
 
             foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
             {
-                if (tile.Tile == GeneratorTile.Wall || tile.Tile == GeneratorTile.Empty)
+                if (IsNaturalWall(tile))
                 {
                     if (index <= 0 || Generator.Random.NextDouble() > Chance)
                     {

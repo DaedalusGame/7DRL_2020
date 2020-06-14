@@ -11,6 +11,16 @@ namespace RoguelikeEngine
 {
     interface IMineable
     {
+        double Durability
+        {
+            get;
+        }
+        double Damage
+        {
+            get;
+            set;
+        }
+
         Wait Mine(MineEvent mine);
 
         void Destroy();
@@ -62,7 +72,7 @@ namespace RoguelikeEngine
 
         public static TileColor HiddenColor = new TileColor(Color.Black, Color.Black);
 
-        protected MapTile Parent;
+        public MapTile Parent;
         public virtual ReusableID ObjectID
         {
             get;
@@ -81,6 +91,11 @@ namespace RoguelikeEngine
         public Func<Color> VisualUnderColor = () => Color.TransparentBlack;
 
         public string Name;
+        public virtual double Durability => double.PositiveInfinity;
+        public double Damage {
+            get;
+            set;
+        }
 
         public bool Opaque;
         public bool Solid;
@@ -211,6 +226,15 @@ namespace RoguelikeEngine
             Effect.Apply(new Effects.OnTile(Parent, holder));
         }
 
+        public static void ConnectStair(Tile down, Tile up)
+        {
+            StairDown downStair = new StairDown();
+            StairUp upStair = new StairUp();
+            down.Replace(downStair);
+            up.Replace(upStair);
+            upStair.SetTarget(downStair);
+        }
+
         protected Color GetUnderColor(SceneGame scene)
         {
             Color glow = Group.GlowColor(scene.Frame);
@@ -311,6 +335,13 @@ namespace RoguelikeEngine
             DrawFloor(scene, cave0, cave1, ox, oy, color);
         }
 
+        protected void DrawPlankFloor(SceneGame scene, int ox, int oy, TileColor color)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/planks_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/planks_layer");
+            DrawFloor(scene, cave0, cave1, ox, oy, color);
+        }
+
         protected void DrawConnected(SceneGame scene, SpriteReference sprite, Connectivity connectivity, Color color)
         {
             int blobIndex = connectivity.GetBlobTile();
@@ -328,6 +359,15 @@ namespace RoguelikeEngine
             scene.SpriteBatch.Draw(noise.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X + (int)noiseOffset.X, 16 * Parent.Y + (int)noiseOffset.Y, 16, 16), Color.Red);
             scene.PopSpriteBatch();
             DrawConnected(scene, edge, connectivity, Color.White);
+        }
+
+        protected void DrawCracks(SceneGame scene, double slide, Color color)
+        {
+            if (slide <= 0)
+                return;
+            var cracks = SpriteLoader.Instance.AddSprite("content/cracks");
+            int frame = Math.Min((int)(slide * (cracks.SubImageCount)), cracks.SubImageCount-1);
+            scene.DrawSprite(cracks, frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color, 0);
         }
     }
 
@@ -357,11 +397,85 @@ namespace RoguelikeEngine
         }
     }
 
-    class StairUp : Tile
+    abstract class Stair : Tile
+    {
+        public GeneratorTemplate Template;
+        MapTile TargetTile;
+
+        public Tile Target
+        {
+            get
+            {
+                if (TargetTile != null)
+                    return TargetTile.Tile;
+                else
+                    return null;
+            }
+            set
+            {
+                TargetTile = value.Parent;
+            }
+        }
+
+        public Stair() : base("Stairs")
+        {
+        }
+
+        public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
+        {
+            base.AddActions(ui, player, selection);
+            if (player.Tiles.Contains(this))
+            {
+                selection.Add(new ActAction("Take the Stairs", "", () =>
+                {
+                    player.CurrentAction = Scheduler.Instance.RunAndWait(RoutineTakeStairs(player));
+                    player.TakeTurn(player.World.ActionQueue);
+                    selection.Close();
+                }, () => CanUseStairs(player)));
+            }
+        }
+
+        private IEnumerable<Wait> RoutineTakeStairs(Creature player)
+        {
+            var fadeOut = new ScreenFade(player.World, () => ColorMatrix.Tint(Color.Black), LerpHelper.Linear, false, 20);
+            yield return new WaitTime(20);
+            if (Target == null)
+            {
+                Template.Build(World);
+                var stair = Template.BuildStairRoom();
+                BuildTarget(stair);
+                Template = null;
+            }
+            player.MoveTo(Target, 0);
+            player.World.CameraMap = player.Map;
+            fadeOut.Destroy();
+            var fadeIn = new ScreenFade(player.World, () => ColorMatrix.Tint(Color.Black), LerpHelper.Invert(LerpHelper.Linear), true, 20);
+            yield return new WaitTime(20);
+        }
+
+        public void SetTarget(Stair other)
+        {
+            Target = other;
+            other.Target = this;
+        }
+
+        public abstract void BuildTarget(Tile target);
+
+        private bool CanUseStairs(Creature player)
+        {
+            if (Target is Stair)
+                return true;
+            if (Template != null)
+                return true;
+            return false;
+        }
+    }
+
+    class StairUp : Stair
     {
         private bool StairsHidden => HasContent(this) || HasContent(GetNeighbor(0, -1));
 
-        public StairUp() : base("Stairs")
+        public StairUp() : base()
         {
         }
 
@@ -396,6 +510,47 @@ namespace RoguelikeEngine
                 scene.DrawSprite(stairs0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y - 16), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
                 scene.DrawSprite(stairs1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y - 16), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
             }
+        }
+
+        public override void BuildTarget(Tile target)
+        {
+            var stairDown = new StairDown();
+            target.Replace(stairDown);
+            SetTarget(stairDown);
+        }
+    }
+
+    class StairDown : Stair
+    {
+        public StairDown() : base()
+        {
+        }
+
+        private bool HasContent(Tile tile)
+        {
+            return tile != null && tile.Contents.Any();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var stairs0 = SpriteLoader.Instance.AddSprite("content/downstair_base");
+            var stairs1 = SpriteLoader.Instance.AddSprite("content/downstair_layer");
+
+            var color = Group.BrickColor.ToFloor();
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            scene.DrawSprite(stairs0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(stairs1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+        }
+
+        public override void BuildTarget(Tile target)
+        {
+            var stairUp = new StairUp();
+            target.Replace(stairUp);
+            SetTarget(stairUp);
         }
     }
 
@@ -476,7 +631,7 @@ namespace RoguelikeEngine
             var cave0 = SpriteLoader.Instance.AddSprite("content/connected_bridge_base");
             var cave1 = SpriteLoader.Instance.AddSprite("content/connected_bridge_layer");
 
-            var color = Group.CaveColor.ToFloor();
+            var color = Group.WoodColor.ToFloor();
 
             if (!IsVisible())
                 color = HiddenColor;
@@ -512,9 +667,29 @@ namespace RoguelikeEngine
         }
     }
 
+    class FloorPlank : Tile
+    {
+        public FloorPlank() : base("Plank Floor")
+        {
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var color = Group.WoodColor.ToFloor();
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            DrawPlankFloor(scene, 0, 0, color);
+        }
+    }
+
 
     class WallCave : Tile, IMineable
     {
+        public override double Durability => 100;
+
         public WallCave() : base("Cave Wall")
         {
             Solid = true;
@@ -535,6 +710,51 @@ namespace RoguelikeEngine
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            DrawCracks(scene, Damage / Durability, new Color(0, 0, 0, 160));
+        }
+
+        public Wait Mine(MineEvent mine)
+        {
+            mine.Setup(this, 1, 0.25, LootGenerator);
+            return Scheduler.Instance.RunAndWait(mine.RoutineStart());
+        }
+
+        private void LootGenerator(Creature creature)
+        {
+            //NOOP
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+    class WallPlank : Tile, IMineable
+    {
+        public override double Durability => 200;
+
+        public WallPlank() : base("Plank Wall")
+        {
+            Solid = true;
+            Opaque = true;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var cave0 = SpriteLoader.Instance.AddSprite("content/planks_base");
+            var cave1 = SpriteLoader.Instance.AddSprite("content/planks_layer");
+
+            var color = Group.CaveColor;
+            Color glow = Group.GlowColor(scene.Frame);
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            DrawCracks(scene, Damage / Durability, new Color(0, 0, 0, 160));
         }
 
         public Wait Mine(MineEvent mine)
@@ -556,6 +776,8 @@ namespace RoguelikeEngine
 
     class WallOre : Tile, IMineable
     {
+        public override double Durability => (Under?.Durability ?? 0) + 50;
+
         int Frame = Random.Next(1000);
         Material Material;
 
@@ -585,6 +807,7 @@ namespace RoguelikeEngine
             });
             scene.DrawSprite(ore, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
             scene.PopSpriteBatch();
+            DrawCracks(scene, Damage / Durability, new Color(0,0,0,160));
         }
 
         public Wait Mine(MineEvent mine)
@@ -606,6 +829,8 @@ namespace RoguelikeEngine
 
     class WallObsidiorite : Tile, IMineable
     {
+        public override double Durability => 2000;
+
         public WallObsidiorite() : base("Obsidiorite")
         {
             Solid = true;
@@ -636,6 +861,7 @@ namespace RoguelikeEngine
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            DrawCracks(scene, Damage / Durability, new Color(0, 0, 0, 160));
         }
 
         public Wait Mine(MineEvent mine)
@@ -657,6 +883,8 @@ namespace RoguelikeEngine
 
     class WallMeteorite : Tile, IMineable
     {
+        public override double Durability => 4500;
+
         public WallMeteorite() : base("Meteorite")
         {
             Solid = true;
@@ -687,6 +915,7 @@ namespace RoguelikeEngine
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            DrawCracks(scene, Damage / Durability, new Color(0, 0, 0, 160));
         }
 
         public Wait Mine(MineEvent mine)
@@ -708,6 +937,8 @@ namespace RoguelikeEngine
 
     class WallBasalt : Tile, IMineable
     {
+        public override double Durability => 500;
+
         public WallBasalt() : base("Basalt")
         {
             Solid = true;
@@ -738,6 +969,7 @@ namespace RoguelikeEngine
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), glow);
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            DrawCracks(scene, Damage / Durability, new Color(0, 0, 0, 160));
         }
 
         public Wait Mine(MineEvent mine)
@@ -759,6 +991,8 @@ namespace RoguelikeEngine
 
     class WallBrick : Tile, IMineable
     {
+        public override double Durability => 1000;
+
         public WallBrick() : base("Brick Wall")
         {
             Solid = true;
@@ -778,6 +1012,7 @@ namespace RoguelikeEngine
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), VisualUnderColor());
             scene.DrawSprite(cave0, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
             scene.DrawSprite(cave1, 0, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            DrawCracks(scene, Damage / Durability, new Color(0, 0, 0, 160));
         }
 
         public Wait Mine(MineEvent mine)
@@ -1252,7 +1487,7 @@ namespace RoguelikeEngine
         public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
             base.AddActions(ui, player, selection);
-            selection.Add(new ActAction("Anvil", () =>
+            selection.Add(new ActAction("Anvil", "Anvils make tools from materials.", () =>
             {
                 selection.Close();
                 ui.Open(new MenuAnvil(ui, player, this));
@@ -1463,7 +1698,7 @@ namespace RoguelikeEngine
         public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
             base.AddActions(ui, player, selection);
-            selection.Add(new ActAction("Smelter", () =>
+            selection.Add(new ActAction("Smelter", "Smelters smelt ores into bars.", () =>
             {
                 selection.Close();
                 ui.Open(new MenuSmelter(ui, player, this));

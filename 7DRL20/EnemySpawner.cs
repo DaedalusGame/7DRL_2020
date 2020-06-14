@@ -89,8 +89,8 @@ namespace RoguelikeEngine
             Encounter += 1;
             EncounterBoss += 1;
             Cleanup();
-            SpawnEnemies();
-            SpawnBosses();
+            //SpawnEnemies();
+            //SpawnBosses();
             this.ResetTurn();
             return Wait.NoWait;
         }

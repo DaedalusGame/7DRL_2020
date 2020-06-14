@@ -790,7 +790,7 @@ namespace RoguelikeEngine
             {
                 if (tile is IMineable mineable)
                 {
-                    waitForDamage.Add(mineable.Mine(new MineEvent(this,EquipMainhand)));
+                    waitForDamage.Add(mineable.Mine(new MineEvent(this,EquipMainhand,100)));
                 }
                 else
                 {

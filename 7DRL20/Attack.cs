@@ -19,6 +19,8 @@ namespace RoguelikeEngine
         public double Damage;
         public Dictionary<Element, double> FinalDamage = new Dictionary<Element, double>();
 
+        List<Wait> Waits = new List<Wait>();
+
         public Attack(Creature attacker, IEffectHolder defender)
         {
             Attacker = attacker;
@@ -46,6 +48,8 @@ namespace RoguelikeEngine
 
             yield return Attacker.OnAttack(this);
             yield return Defender.OnDefend(this);
+
+            yield return new WaitAll(Waits);
         }
 
         protected virtual void CalculateDamage()

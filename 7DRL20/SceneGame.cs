@@ -257,18 +257,21 @@ namespace RoguelikeEngine
         public SceneGame(Game game) : base(game)
         {
             Menu = new PlayerUI(this);
-            Map = new Map(this, 100, 100);
+            
+            GeneratorTemplate template = new TemplateHome();
+            template.Build(this);
+            MapHome = template.Map;
 
-            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Random.Next());
-            generator.Generate();
-            generator.Print(Map);
+            Tile startTile = template.GetStartRoom();
+            Tile stairDown = template.BuildStairRoom();
 
-            var smelterGroup = generator.Groups.Pick(Random);
-            var startTiles = smelterGroup.GetCells().Select(cell => Map.GetTile(cell.X, cell.Y));
-            var smelterPos = startTiles.ElementAt(0);
-            Tile startTile = Map.GetTile(smelterPos.X, smelterPos.Y);
+            stairDown.Replace(new StairDown()
+            {
+                Template = new TemplateRandomLevel(new GroupGenerator(GroupGenerator.AcidCave), 0)
+            });
+
             Player = new Hero(this);
-            Player.MoveTo(startTile,1);
+            Player.MoveTo(startTile, 1);
             ActionQueue.Add(Player);
             /*Enemy testEnemy = new Wallhach(this);
             testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
@@ -279,7 +282,7 @@ namespace RoguelikeEngine
             testEnemy.MakeAggressive(Player);
             ActionQueue.Add(testEnemy);*/
 
-            CameraMap = Map;
+            CameraMap = MapHome;
             CameraFocus = new CameraFocus(Player);
 
             Player.Pickup(new Ingot(this, Material.Dilithium, 8));
@@ -292,27 +295,6 @@ namespace RoguelikeEngine
             Player.Pickup(new Ingot(this, Material.Ovium, 8));
             Player.Pickup(new Ingot(this, Material.Terrax, 8));
             Player.Pickup(new Ingot(this, Material.Triberium, 8));
-
-            var startFloors = startTiles.Where(tile => !tile.Solid).Shuffle();
-
-            var stairTile = startFloors.ElementAt(0);
-            var anvilTile = startFloors.ElementAt(1);
-            var smelterTile = startFloors.ElementAt(2);
-
-            stairTile.Replace(new StairUp());
-            anvilTile.PlaceOn(new Anvil());
-            smelterTile.PlaceOn(new Smelter(this));
-
-            Material[] possibleMaterials = new[] { Material.Karmesine, Material.Ovium, Material.Jauxum, Material.Basalt, Material.Coal };
-            for(int i = 0; i < 25; i++)
-            {
-                if (startFloors.Count() <= 3 + i)
-                    break;
-                var pick = possibleMaterials.Pick(Random);
-                var pickFloor = startFloors.ElementAt(3 + i);
-
-                new Ore(this, pick, 100).MoveTo(pickFloor);
-            }
 
             Quest getOre = new TutorialGetOre(this);
             Quest getFuel = new TutorialGetFuel(this, getOre);
@@ -761,6 +743,11 @@ namespace RoguelikeEngine
                     }
                 }
             }
+        }
+
+        public Map CreateMap(int width, int height)
+        {
+            return new Map(this, width, height);
         }
     }
 }

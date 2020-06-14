@@ -110,7 +110,8 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> ExplodeMine(MineEvent mine)
         {
-            if (mine.Success && Random.NextDouble() < 0.3 && mine.Mineable is Tile tile)
+            int traitLvl = mine.Miner.GetTrait(this);
+            if (mine.Success && Random.NextDouble() < 0.3 + (traitLvl - 1) * 0.4 && mine.Mineable is Tile tile)
             {
                 new FireExplosion(mine.Miner.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 0, 15);
                 //mine.Miner.TakeDamage(5, Element.Fire);
@@ -129,10 +130,11 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> SoftyHeal(MineEvent mine)
         {
+            int traitLvl = mine.Miner.GetTrait(this);
             if (mine.Mineable is Tile tile)
             {
-                if (mine.RequiredMiningLevel <= 1 && mine.Success)
-                    mine.Miner.Heal(5);
+                if (mine.RequiredMiningLevel <= traitLvl && mine.Success)
+                    mine.Miner.Heal(5 * traitLvl);
             }
 
             yield return Wait.NoWait;
@@ -148,21 +150,24 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Fracture(MineEvent mine)
         {
+            int traitLvl = mine.Miner.GetTrait(this);
             if (mine.Mineable is Tile tile && mine.ReactionLevel <= 0 && mine.Success)
             {
+                yield return new WaitTime(3);
+                new SeismSmall(mine.Miner.World, tile, 15);
                 List<Wait> waitForMining = new List<Wait>();
                 foreach (var neighbor in tile.GetAdjacentNeighbors().OfType<IMineable>())
                 {
-                    if (MineEvent.Random.NextDouble() < 0.7)
+                    if (MineEvent.Random.NextDouble() < 0.7 + (traitLvl - 1) * 0.1)
                     {
-                        MineEvent fracture = new MineEvent(mine.Miner, mine.Pickaxe)
+                        MineEvent fracture = new MineEvent(mine.Miner, mine.Pickaxe, 1000)
                         {
                             ReactionLevel = mine.ReactionLevel + 1
                         };
                         waitForMining.Add(neighbor.Mine(fracture));
                     }
                 }
-                yield return new WaitAll(waitForMining);
+                mine.AddWait(new WaitAll(waitForMining));
             }
 
             yield return Wait.NoWait;
