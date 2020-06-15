@@ -24,6 +24,15 @@ namespace RoguelikeEngine.MapGeneration
             return stairTile;
         }
 
+        public Tile BuildStairRoom(Type type)
+        {
+            var stairRoom = Rooms.PickAndRemoveBest(x => (x.Key.Origin.Group.GetType() == type ? 100 : 0) - x.Key.Connections.Count, Random);
+            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle();
+
+            var stairTile = stairRoomFloors.First();
+            return stairTile;
+        }
+
         public Tile GetStartRoom()
         {
             var stairRoom = Rooms.PickAndRemoveBest(x => x.Key.Connections.Count, Random);
@@ -36,10 +45,10 @@ namespace RoguelikeEngine.MapGeneration
 
     class TemplateRandomLevel : GeneratorTemplate
     {
-        GroupGenerator GroupGenerator;
+        GroupSet GroupGenerator;
         int Seed;
 
-        public TemplateRandomLevel(GroupGenerator groupGenerator, int seed)
+        public TemplateRandomLevel(GroupSet groupGenerator, int seed)
         {
             GroupGenerator = groupGenerator;
             Seed = seed;
@@ -64,9 +73,10 @@ namespace RoguelikeEngine.MapGeneration
             for(int i = 0; i < followups; i++)
             {
                 var nextStair = BuildStairRoom();
+                var group = nextStair.Group;
                 nextStair.Replace(new StairDown()
                 {
-                    Template = new TemplateRandomLevel(new GroupGenerator(GroupGenerator.DarkCastle), Random.Next())
+                    Template = new TemplateRandomLevel(new GroupRandom(group.Template), Random.Next())
                 });
             }
         }
@@ -83,7 +93,7 @@ namespace RoguelikeEngine.MapGeneration
 
             Map = world.CreateMap(100, 100);
 
-            MapGenerator generatorHome = new MapGenerator(Map.Width, Map.Height, Seed, new GroupGenerator(GroupGenerator.Home))
+            MapGenerator generatorHome = new MapGenerator(Map.Width, Map.Height, Seed, new GroupSet(GroupGenerator.Home))
             {
                 PointCount = 7,
                 PointDeviation = 35,

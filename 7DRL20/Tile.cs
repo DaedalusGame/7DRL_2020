@@ -442,7 +442,7 @@ namespace RoguelikeEngine
             if (Target == null)
             {
                 Template.Build(World);
-                var stair = Template.BuildStairRoom();
+                var stair = Template.BuildStairRoom(Group.GetType());
                 BuildTarget(stair);
                 Template = null;
             }

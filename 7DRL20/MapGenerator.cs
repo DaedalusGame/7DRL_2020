@@ -29,14 +29,14 @@ namespace RoguelikeEngine
         public static GeneratorTile Wall = new GeneratorTile('X', Color.White, PrintWallCave, TileTag.Wall);
         public static GeneratorTile WallBrick = new GeneratorTile('#', Color.White, PrintWallBrick, TileTag.Wall, TileTag.Artificial);
         public static GeneratorTile WallPlank = new GeneratorTile('#', Color.White, PrintWallPlank, TileTag.Wall, TileTag.Artificial);
-        public static GeneratorTile OreDilithium = new GeneratorTile('G', Color.LightCyan, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreTiberium = new GeneratorTile('T', Color.Lime, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreBasalt = new GeneratorTile('B', Color.White, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreMeteorite = new GeneratorTile('M', Color.DarkGray, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreObsidiorite = new GeneratorTile('D', Color.Purple, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreKarmesine = new GeneratorTile('K', Color.IndianRed, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreOvium = new GeneratorTile('O', Color.LightSteelBlue, PrintWallCave, TileTag.Wall, TileTag.Ore);
-        public static GeneratorTile OreJauxum = new GeneratorTile('J', Color.LimeGreen, PrintWallCave, TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreDilithium = new GeneratorTile('G', Color.LightCyan, PrintOreWall(Material.Dilithium), TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreTiberium = new GeneratorTile('T', Color.Lime, PrintOreWall(Material.Tiberium), TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreBasalt = new GeneratorTile('B', Color.White, PrintBasalt, TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreMeteorite = new GeneratorTile('M', Color.DarkGray, PrintMeteorite, TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreObsidiorite = new GeneratorTile('D', Color.Purple, PrintObsidiorite, TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreKarmesine = new GeneratorTile('K', Color.IndianRed, PrintOreWall(Material.Karmesine), TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreOvium = new GeneratorTile('O', Color.LightSteelBlue, PrintOreWall(Material.Ovium), TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreJauxum = new GeneratorTile('J', Color.LimeGreen, PrintOreWall(Material.Jauxum), TileTag.Wall, TileTag.Ore);
         public static GeneratorTile AcidPool = new GeneratorTile('.', Color.GreenYellow, PrintAcid, TileTag.Liquid);
         public static GeneratorTile Coral = new GeneratorTile('.', Color.Pink, PrintCoral, TileTag.Floor);
         public static GeneratorTile AcidCoral = new GeneratorTile('.', Color.LightGoldenrodYellow, PrintAcidCoral, TileTag.Floor);
@@ -153,6 +153,30 @@ namespace RoguelikeEngine
         private static void PrintDarkLava(MapGenerator generator, Tile tile, GeneratorCell cell)
         {
             tile.Replace(new DarkLava());
+        }
+
+        private static void PrintBasalt(MapGenerator generator, Tile tile, GeneratorCell cell)
+        {
+            tile.Replace(new WallBasalt());
+        }
+
+        private static void PrintMeteorite(MapGenerator generator, Tile tile, GeneratorCell cell)
+        {
+            tile.Replace(new WallMeteorite());
+        }
+
+        private static void PrintObsidiorite(MapGenerator generator, Tile tile, GeneratorCell cell)
+        {
+            tile.Replace(new WallObsidiorite());
+        }
+
+        private static PrintDelegate PrintOreWall(Material material)
+        {
+            return (MapGenerator generator, Tile tile, GeneratorCell cell) =>
+            {
+                tile.Replace(new WallCave());
+                tile.PlaceOn(new WallOre(material));
+            };
         }
     }
 
@@ -346,9 +370,9 @@ namespace RoguelikeEngine
 
         public int PointCount = 50;
         public int PointDeviation = 10;
-        public GroupGenerator GroupGenerator;
+        public GroupSet GroupGenerator;
 
-        public MapGenerator(int width, int height, int seed, GroupGenerator groupGenerator)
+        public MapGenerator(int width, int height, int seed, GroupSet groupGenerator)
         {
             Random = new Random(seed);
             Cells = new GeneratorCell[width, height];
@@ -429,12 +453,16 @@ namespace RoguelikeEngine
         {
             Done = false;
             SetupPoints(PointCount, PointDeviation);
+            Console.WriteLine("Made points");
             Wait();
             ConnectPoints();
+            Console.WriteLine("Connected points");
             Wait();
             ConnectGroups();
+            Console.WriteLine("Connected groups");
             Expand();
-            string map = "";
+            Console.WriteLine("Expanded connections");
+            /*string map = "";
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
@@ -446,8 +474,9 @@ namespace RoguelikeEngine
                         map += cell.Tile.Character;
                 }
                 map += '\n';
-            }
+            }*/
             RunGroupTechniques();
+            Console.WriteLine("Finished techniques");
             Wait();
             GenerateOres(250 / 5, 0, GeneratorTile.OreDilithium);
             GenerateOres(30 / 5, 3, GeneratorTile.OreBasalt);
@@ -458,8 +487,10 @@ namespace RoguelikeEngine
             GenerateOres(30 / 5, 6, GeneratorTile.OreObsidiorite);
             GenerateOres(20 / 5, 6, GeneratorTile.OreTiberium);
             Expand();
+            Console.WriteLine("Generated ores");
             Wait();
             FloodFillGroup();
+            Console.WriteLine("Floodfill complete");
             Done = true;
             Wait();
         }
@@ -653,6 +684,7 @@ namespace RoguelikeEngine
 
             while (unconnectedPairs.Any())
             {
+                int toGo = unconnectedPairs.Count();
                 var pick = unconnectedPairs.WithMin(pair => GetDistance(pair.Item1, pair.Item2));
                 var cellA = GetCell(pick.Item1);
                 var cellB = GetCell(pick.Item2);
@@ -667,6 +699,7 @@ namespace RoguelikeEngine
                 groupIds[cellA.Group] = groupIds[cellB.Group];
                 Connect(pick.Item1, pick.Item2);
                 WaitSoft();
+                unconnectedPairs = unconnectedPairs.Where(pair => groupIds[GetCell(pair.Item1).Group] != groupIds[GetCell(pair.Item2).Group]).ToList();
             }
         }
 

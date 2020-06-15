@@ -267,7 +267,7 @@ namespace RoguelikeEngine
 
             stairDown.Replace(new StairDown()
             {
-                Template = new TemplateRandomLevel(new GroupGenerator(GroupGenerator.AcidCave), 0)
+                Template = new TemplateRandomLevel(new GroupRandom(), 0)
             });
 
             Player = new Hero(this);

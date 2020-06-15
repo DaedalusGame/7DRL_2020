@@ -29,6 +29,139 @@ namespace RoguelikeEngine
         }
     }
 
+    interface IDijkstraMap
+    {
+        int Width
+        {
+            get;
+        }
+        int Height
+        {
+            get;
+        }
+
+        DijkstraTile this[int x, int y]
+        {
+            get;
+        }
+
+        FibonacciHeapNode<DijkstraTile, double> GetNode(int x, int y);
+    }
+
+    class DijkstraMap : IDijkstraMap
+    {
+        FibonacciHeap<DijkstraTile, double> Heap;
+        Dictionary<Point, DijkstraTile> Tiles = new Dictionary<Point, DijkstraTile>();
+        Dictionary<Point, FibonacciHeapNode<DijkstraTile, double>> NodeMap = new Dictionary<Point, FibonacciHeapNode<DijkstraTile, double>>();
+
+        public int Width
+        {
+            get;
+            set;
+        }
+        public int Height
+        {
+            get;
+            set;
+        }
+
+        public DijkstraMap(int width, int height, FibonacciHeap<DijkstraTile, double> heap, IEnumerable<Point> starts)
+        {
+            Heap = heap;
+            Width = width;
+            Height = height;
+            foreach (var start in starts)
+            {
+                GenerateNode(start, 0, 0);
+            }
+        }
+
+        public DijkstraTile this[int x, int y] {
+            get
+            {
+                DijkstraTile tile;
+                bool hasValue = Tiles.TryGetValue(new Point(x,y), out tile);
+                if(hasValue)
+                    return tile;
+                else
+                    return GenerateTile(new Point(x, y), double.PositiveInfinity, double.PositiveInfinity);
+            }
+        }
+
+        public FibonacciHeapNode<DijkstraTile, double> GetNode(int x, int y)
+        {
+            FibonacciHeapNode<DijkstraTile, double> node;
+            bool hasValue = NodeMap.TryGetValue(new Point(x, y), out node);
+            if (hasValue)
+                return node;
+            else
+                return GenerateNode(new Point(x, y), double.PositiveInfinity, double.PositiveInfinity);
+        }
+
+        private void GenerateNode(Point tile, double distance, double moveDist, out DijkstraTile outTile, out FibonacciHeapNode<DijkstraTile, double> outNode)
+        {
+            outTile = new DijkstraTile(tile, distance, moveDist);
+            outNode = new FibonacciHeapNode<DijkstraTile, double>(outTile, outTile.Distance);
+            Tiles.Add(tile, outTile);
+            NodeMap.Add(tile, outNode);
+            Heap.Insert(outNode);
+        }
+
+        private DijkstraTile GenerateTile(Point tile, double distance, double moveDist)
+        {
+            DijkstraTile outTile;
+            FibonacciHeapNode<DijkstraTile, double> outNode;
+            GenerateNode(tile, distance, moveDist, out outTile, out outNode);
+            return outTile;
+        }
+
+        private FibonacciHeapNode<DijkstraTile, double> GenerateNode(Point tile, double distance, double moveDist)
+        {
+            DijkstraTile outTile;
+            FibonacciHeapNode<DijkstraTile, double> outNode;
+            GenerateNode(tile, distance, moveDist, out outTile, out outNode);
+            return outNode;
+        }
+    }
+
+    class DijkstraArray : IDijkstraMap
+    {
+        FibonacciHeap<DijkstraTile, double> Heap;
+        DijkstraTile[,] Array;
+        FibonacciHeapNode<DijkstraTile, double>[,] NodeMap;
+
+        public DijkstraTile this[int x, int y] => Array[x,y];
+
+        public int Width => Array.GetLength(0);
+        public int Height => Array.GetLength(1);
+
+        public DijkstraArray(int width, int height, FibonacciHeap<DijkstraTile, double> heap, IEnumerable<Point> starts, Rectangle activeArea)
+        {
+            Heap = heap;
+            Array = new DijkstraTile[width, height];
+            NodeMap = new FibonacciHeapNode<DijkstraTile, double>[width, height];
+
+            for (int x = activeArea.X; x < activeArea.Width; x++)
+            {
+                for (int y = activeArea.Y; y < activeArea.Height; y++)
+                {
+                    Point tile = new Point(x, y);
+                    bool isStart = starts.Contains(tile);
+                    DijkstraTile dTile = new DijkstraTile(tile, isStart ? 0 : double.PositiveInfinity, isStart ? 0 : double.PositiveInfinity);
+                    var node = new FibonacciHeapNode<DijkstraTile, double>(dTile, dTile.Distance);
+                    Array[x, y] = dTile;
+                    NodeMap[x, y] = node;
+                    Heap.Insert(node);
+                }
+            }
+        }
+
+        public FibonacciHeapNode<DijkstraTile, double> GetNode(int x, int y)
+        {
+            return NodeMap[x, y];
+        }
+    }
+
     class TypeLookup<T>
     {
         Dictionary<Type, IEnumerable<T>> Content = new Dictionary<Type, IEnumerable<T>>();
@@ -58,16 +191,16 @@ namespace RoguelikeEngine
     static class Util
     {
         #region Dijkstra
-        public static DijkstraTile[,] Dijkstra(Point start, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
+        public static IDijkstraMap Dijkstra(Point start, Point end, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
         {
-            return Dijkstra(new[] { start }, width, height, activeArea, maxDist, length, neighbors);
+            return Dijkstra(new[] { start }, new[] { end }, width, height, activeArea, maxDist, length, neighbors);
         }
 
-        public static DijkstraTile[,] Dijkstra(IEnumerable<Point> start, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
+        public static IDijkstraMap Dijkstra(IEnumerable<Point> start, IEnumerable<Point> end, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
         {
-            var dijkstraMap = new DijkstraTile[width, height];
-            var nodeMap = new FibonacciHeapNode<DijkstraTile, double>[width, height];
-            var heap = new FibonacciHeap<DijkstraTile, double>(0);
+            HashSet<Point> ends = new HashSet<Point>(end);
+            FibonacciHeap<DijkstraTile, double> heap = new FibonacciHeap<DijkstraTile, double>(0);
+
             if (activeArea.X < 0)
                 activeArea.X = 0;
             if (activeArea.Y < 0)
@@ -77,21 +210,9 @@ namespace RoguelikeEngine
             if (activeArea.Height > height-1)
                 activeArea.Height = height-1;
 
-            for (int x = activeArea.X; x < activeArea.Width; x++)
-            {
-                for (int y = activeArea.Y; y < activeArea.Height; y++)
-                {
-                    Point tile = new Point(x, y);
-                    bool isStart = start.Contains(tile);
-                    DijkstraTile dTile = new DijkstraTile(tile, isStart ? 0 : double.PositiveInfinity, isStart ? 0 : double.PositiveInfinity);
-                    var node = new FibonacciHeapNode<DijkstraTile, double>(dTile, dTile.Distance);
-                    dijkstraMap[x, y] = dTile;
-                    nodeMap[x, y] = node;
-                    heap.Insert(node);
-                }
-            }
+            IDijkstraMap dijkstraMap = new DijkstraMap(width, height, heap, start);
 
-            while (!heap.IsEmpty())
+            while (!heap.IsEmpty() && end.Any() && ends.Count > 0)
             {
                 var node = heap.RemoveMin();
                 var dTile = node.Data;
@@ -99,11 +220,14 @@ namespace RoguelikeEngine
                 if (dTile.Distance >= maxDist)
                     break;
 
+                if (ends.Contains(dTile.Tile))
+                    ends.Remove(dTile.Tile);
+
                 foreach (var neighbor in neighbors(dTile.Tile))
                 {
                     if (!activeArea.Contains(neighbor.X,neighbor.Y)/*neighbor.X < 0 || neighbor.Y < 0 || neighbor.X >= width || neighbor.Y >= height*/)
                         continue;
-                    var nodeNeighbor = nodeMap[neighbor.X, neighbor.Y];
+                    var nodeNeighbor = dijkstraMap.GetNode(neighbor.X, neighbor.Y);
                     var dNeighbor = nodeNeighbor.Data;
                     double newDist = dTile.Distance + length(dTile.Tile, dNeighbor.Tile);
 
@@ -120,11 +244,11 @@ namespace RoguelikeEngine
             return dijkstraMap;
         }
 
-        public static IEnumerable<Point> FindEnds(this DijkstraTile[,] dijkstra, Func<Point, bool> predicate)
+        public static IEnumerable<Point> FindEnds(this IDijkstraMap dijkstra, Func<Point, bool> predicate)
         {
-            for (int x = 0; x < dijkstra.GetLength(0); x++)
+            for (int x = 0; x < dijkstra.Width; x++)
             {
-                for (int y = 0; y < dijkstra.GetLength(1); y++)
+                for (int y = 0; y < dijkstra.Height; y++)
                 {
                     var dTile = dijkstra[x, y];
                     if (!double.IsInfinity(dTile.Distance) && predicate(dTile.Tile))
@@ -133,7 +257,7 @@ namespace RoguelikeEngine
             }
         }
 
-        private static IEnumerable<Point> FindPathInternal(DijkstraTile[,] dijkstra, Point end)
+        private static IEnumerable<Point> FindPathInternal(IDijkstraMap dijkstra, Point end)
         {
             DijkstraTile dTile = dijkstra[end.X, end.Y];
 
@@ -144,7 +268,7 @@ namespace RoguelikeEngine
             }
         }
 
-        public static Point FindStart(this DijkstraTile[,] dijkstra, Point end)
+        public static Point FindStart(this IDijkstraMap dijkstra, Point end)
         {
             DijkstraTile dTile = dijkstra[end.X, end.Y];
 
@@ -156,27 +280,56 @@ namespace RoguelikeEngine
             return dTile.Tile;
         }
 
-        public static IEnumerable<Point> FindPath(this DijkstraTile[,] dijkstra, Point end)
+        public static IEnumerable<Point> FindPath(this IDijkstraMap dijkstra, Point end)
         {
             return FindPathInternal(dijkstra, end).Reverse();
         }
 
-        public static double GetMove(this DijkstraTile[,] dijkstra, Tile end)
+        public static double GetMove(this IDijkstraMap dijkstra, Tile end)
         {
             return dijkstra[end.X, end.Y].MoveDistance;
         }
 
-        public static double GetCost(this DijkstraTile[,] dijkstra, Tile end)
+        public static double GetCost(this IDijkstraMap dijkstra, Tile end)
         {
             return dijkstra[end.X, end.Y].Distance;
         }
 
-        public static bool Reachable(this DijkstraTile[,] dijkstra, Tile end)
+        public static bool Reachable(this IDijkstraMap dijkstra, Tile end)
         {
             DijkstraTile dTile = dijkstra[end.X, end.Y];
             return dTile.Previous != null;
         }
         #endregion
+
+        public static IEnumerable<Point> DrunkardWalk(Point a, Point b, Func<Point, IEnumerable<Point>> neighbors, Random random)
+        {
+            Point current = a;
+            Point last = a;
+            //Rectangle acceptableArea = new Rectangle(a.X, a.Y, b.X - a.X, b.Y - a.Y);
+            //acceptableArea.Inflate(3, 3);
+
+            while(current != b)
+            {
+                var validSquares = neighbors(current).Where(x => IsStepTowards(b, current, x)).OrderBy(x => random.Next());
+                last = current;
+                current = validSquares.First();
+                yield return current;
+            }
+        }
+
+        public static bool IsStepTowards(Point target, Point last, Point current)
+        {
+            return GetDistanceSquared(current, target) <= GetDistanceSquared(last, target);
+        }
+
+        public static int GetDistanceSquared(Point a, Point b)
+        {
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+
+            return dx * dx + dy * dy;
+        }
 
         public static int PositiveMod(int x, int m)
         {
