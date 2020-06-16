@@ -218,5 +218,15 @@ namespace RoguelikeEngine
             //color *= ColorMatrix.Scale(2);
             return color;
         }
+
+        internal static ColorMatrix Sun()
+        {
+            var color = ColorMatrix.Greyscale();
+            color *= ColorMatrix.Translate(new Color(50, 50, 50));
+            color *= ColorMatrix.TwoColorLight(new Color(222, 96, 12), new Color(252, 253, 193));
+            color = ColorMatrix.Lerp(color, ColorMatrix.Identity, 0.33f);
+            //color *= ColorMatrix.Scale(2);
+            return color;
+        }
     }
 }

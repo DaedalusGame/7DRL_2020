@@ -395,13 +395,13 @@ namespace RoguelikeEngine
         }
     }
 
-    class EnderNuke : Particle
+    class Nuke : Particle
     {
-        SpriteReference Sprite;
-        float MaxScale;
-        float Scale => (float)LerpHelper.Linear(0, MaxScale, GetScaleFunction(Frame.Slide));
+        protected SpriteReference Sprite;
+        protected float MaxScale;
+        protected float Scale => (float)LerpHelper.Linear(0, MaxScale, GetScaleFunction(Frame.Slide));
 
-        public EnderNuke(SceneGame world, SpriteReference sprite, Vector2 position, float scale, int time) : base(world, position)
+        public Nuke(SceneGame world, SpriteReference sprite, Vector2 position, float scale, int time) : base(world, position)
         {
             Sprite = sprite;
             Frame = new Slider(time);
@@ -413,6 +413,68 @@ namespace RoguelikeEngine
             base.Update();
             if (Frame.Done)
                 this.Destroy();
+        }
+
+        protected double GetScaleFunction(double amount)
+        {
+            if (amount < 0.33)
+                return LerpHelper.SineOut(0, 1, amount / 0.33);
+            else if (amount < 0.66)
+                return 1;
+            else
+                return LerpHelper.CubicIn(1, 0, (amount - 0.66) / 0.33);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
+    class FireNuke : Nuke
+    {
+        public FireNuke(SceneGame world, SpriteReference sprite, Vector2 position, float scale, int time) : base(world, sprite, position, scale, time)
+        {
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            for (int i = 0; i < 2; i++)
+            {
+                float angle = Random.NextFloat() * MathHelper.TwoPi;
+                float distance = Random.NextFloat() * Sprite.Width * 0.5f * Scale;
+                Vector2 offset = Util.AngleToVector(angle) * distance;
+                Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f);
+                new Cinder(World, SpriteLoader.Instance.AddSprite("content/cinder"), Position + offset, velocity, (int)Math.Min(Random.Next(90) + 90, Frame.EndTime - Frame.Time));
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                float angle = Random.NextFloat() * MathHelper.TwoPi;
+                float distance = Random.NextFloat() * 200;
+                Vector2 offset = Util.AngleToVector(angle) * distance;
+                Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f) * 3 + new Vector2(0f, -1.5f);
+                new Cinder(World, SpriteLoader.Instance.AddSprite("content/cinder"), Position + offset, velocity, Random.Next(20) + 20);
+            }
+        }
+    }
+
+    class EnderNuke : Nuke
+    {
+        public EnderNuke(SceneGame world, SpriteReference sprite, Vector2 position, float scale, int time) : base(world, sprite, position, scale, time)
+        {
+        }
+
+        public override void Update()
+        {
+            base.Update();
 
             for (int i = 0; i < 2; i++)
             {
@@ -445,26 +507,6 @@ namespace RoguelikeEngine
                 Vector2 velocity = Util.AngleToVector(angle) * (Random.NextFloat() + 0.5f) * 5;
                 new SmokeWave(World, smoke, Position + offset, velocity, Random.Next(20) + 20);
             }
-        }
-
-        protected double GetScaleFunction(double amount)
-        {
-            if (amount < 0.33)
-                return LerpHelper.SineOut(0, 1, amount / 0.33);
-            else if (amount < 0.66)
-                return 1;
-            else
-                return LerpHelper.CubicIn(1, 0,(amount - 0.66) / 0.33);
-        }
-
-        public override void Draw(SceneGame scene, DrawPass pass)
-        {
-            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
-        }
-
-        public override IEnumerable<DrawPass> GetDrawPasses()
-        {
-            yield return DrawPass.Effect;
         }
     }
 
@@ -537,6 +579,44 @@ namespace RoguelikeEngine
             if ((Frame.EndTime - Frame.Time) % 10 == 0)
             {
                 Generator(position, Velocity, 30);
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+
+    class BossExplosion : VisualEffect
+    {
+        Creature Anchor;
+        ExplosionGenerator Generator;
+
+        public BossExplosion(SceneGame world, Creature anchor, ExplosionGenerator generator) : base(world)
+        {
+            Frame = new Slider(1000000);
+            Anchor = anchor;
+            Generator = generator;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Anchor.Destroyed)
+                this.Destroy();
+
+            if ((Frame.EndTime - Frame.Time) % 20 == 0)
+            {
+                Vector2 emitPos = Anchor.VisualPosition() + Anchor.Mask.GetRandomPixel(Random);
+                Generator(emitPos, Vector2.Zero, 15);
+                new ScreenShakeRandom(World, 3, 15, LerpHelper.Linear);
             }
         }
 

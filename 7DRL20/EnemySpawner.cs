@@ -89,8 +89,8 @@ namespace RoguelikeEngine
             Encounter += 1;
             EncounterBoss += 1;
             Cleanup();
-            //SpawnEnemies();
-            //SpawnBosses();
+            SpawnEnemies();
+            SpawnBosses();
             this.ResetTurn();
             return Wait.NoWait;
         }
@@ -104,6 +104,8 @@ namespace RoguelikeEngine
 
                 foreach (var spawnTile in baseTile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).Shuffle().Take(spawnAmount))
                 {
+                    if (spawnTile.Group.Spawns.Empty())
+                        continue;
                     EnemySpawn spawn = spawnTile.Group.Spawns.Pick(Random);
                     foreach (var enemy in spawn.Spawn(World,spawnTile))
                     {

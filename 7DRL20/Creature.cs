@@ -598,6 +598,7 @@ namespace RoguelikeEngine
 
         public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
         public bool Dead => CurrentHP <= 0;
+        public Wait DeadWait = Wait.NoWait;
 
         Vector2 IHasPosition.VisualPosition => VisualPosition();
         public virtual Vector2 VisualTarget => VisualPosition() + new Vector2(8, 8);
@@ -637,6 +638,16 @@ namespace RoguelikeEngine
                     return on();
                 else
                     return off();
+            };
+        }
+
+        public Func<ColorMatrix> SoftFlash(ColorMatrix start, ColorMatrix end, LerpHelper.Delegate lerp, int period)
+        {
+            int startTime = Frame;
+            return () =>
+            {
+                double slide = (double)((Frame - startTime) % period) / period;
+                return ColorMatrix.Lerp(start, end, (float)lerp(0,1,slide));
             };
         }
 
@@ -713,8 +724,6 @@ namespace RoguelikeEngine
             this.ResetTurn();
             foreach (var statusEffect in this.GetStatusEffects())
                 statusEffect.Update();
-            if(Dead)
-                return Scheduler.Instance.RunAndWait(RoutineDie(0, 0));
             return Wait.NoWait;
         }
 
@@ -816,19 +825,26 @@ namespace RoguelikeEngine
             VisualPose = Static(CreaturePose.Stand);
             yield return new WaitFrames(this, 10);
             yield return CurrentPopups;
+            if(Dead)
+                Scheduler.Instance.Run(RoutineDie(dx, dy));
         }
 
-        public IEnumerable<Wait> RoutineDie(int dx, int dy)
+        public virtual IEnumerable<Wait> RoutineDie(int dx, int dy)
         {
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             VisualPosition = Slide(pos, pos + new Vector2(dx * 8, dy * 8), LerpHelper.Linear, 20);
             VisualPose = Static(CreaturePose.Stand);
             VisualColor = Flash(() => ColorMatrix.Identity, () => ColorMatrix.Tint(Color.Transparent), 2, 2);
-            yield return CurrentPopups;
-            yield return new WaitFrames(this, 50);
-            VisualColor = () => ColorMatrix.Tint(Color.Transparent);
+            DeadWait = new WaitTime(60);
+            yield return Wait.NoWait;
+        }
+
+        public virtual IEnumerable<Wait> RoutineDestroy()
+        {
+            yield return DeadWait;
             if (Dead && !Destroyed && this != World.Player)
                 this.Destroy();
+            yield return Wait.NoWait;
         }
 
         /*public IEnumerable<Wait> RoutineShowPopups()
@@ -989,7 +1005,7 @@ namespace RoguelikeEngine
             Mask.Add(Point.Zero);
 
             Effect.Apply(new EffectStat(this, Stat.HP, 1000));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 1000));
         }
     }
 }

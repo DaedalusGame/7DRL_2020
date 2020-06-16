@@ -490,6 +490,29 @@ namespace RoguelikeEngine.Enemies
             yield return WaitSome(10);
             WingOpen = Static(0f);
         }
+
+        public override IEnumerable<Wait> RoutineDie(int dx, int dy)
+        {
+            new BossExplosion(World, this, (position, velocity, time) => new FireExplosion(World, position, velocity, 0, time));
+            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+            VisualPosition = Slide(pos, pos + new Vector2(dx * 8, dy * 8), LerpHelper.Linear, 20);
+            VisualPose = Static(CreaturePose.Stand);
+            VisualColor = SoftFlash(ColorMatrix.Identity, ColorMatrix.Flat(Color.White), LerpHelper.QuadraticOut, 10);
+            DeadWait = new WaitTime(200);
+            yield return Wait.NoWait;
+        }
+
+        public override IEnumerable<Wait> RoutineDestroy()
+        {
+            yield return DeadWait;
+            if (Dead && !Destroyed && this != World.Player)
+                this.Destroy();
+            new ScreenFlashLocal(World, () => ColorMatrix.Sun(), VisualTarget, 60, 150, 80, 50);
+            new FireNuke(World, SpriteLoader.Instance.AddSprite("content/nuke_fire"), VisualTarget, 1, 80);
+            new ScreenShakeRandom(World, 8, 80, LerpHelper.QuarticIn);
+            
+            yield return new WaitTime(100);
+        }
     }
 
     class Erebizo : Enemy
