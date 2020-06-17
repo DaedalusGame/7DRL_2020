@@ -392,7 +392,7 @@ namespace RoguelikeEngine
 
         public override bool CanCombine(StatusEffect other)
         {
-            return other is Slimed slimed && slimed.Master == Master;
+            return other is Slimed slimed;
         }
 
         public override string ToString()

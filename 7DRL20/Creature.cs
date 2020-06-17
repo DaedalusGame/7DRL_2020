@@ -304,6 +304,9 @@ namespace RoguelikeEngine
         public static Stat Cooldown = new Stat("Cooldown", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_cooldown"));
         public static Stat Warmup = new Stat("Warmup", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_warmup"));
 
+        public static Stat SlimeHP = new Stat("SlimeHP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
+        public static Stat SlimeAttack = new Stat("SlimeAttack", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_attack"));
+
         public static Flag SwapItem = new Flag("Swap Item", true, SpriteLoader.Instance.AddSprite("content/stat_swap_enabled"));
         public static Flag EquipItem = new Flag("Equip Item", true, SpriteLoader.Instance.AddSprite("content/stat_equip_enabled"));
         public static Flag UnequipItem = new Flag("Unequip Item", true, SpriteLoader.Instance.AddSprite("content/stat_unequip_enabled"));
