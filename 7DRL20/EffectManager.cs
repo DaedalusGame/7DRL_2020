@@ -228,15 +228,19 @@ namespace RoguelikeEngine
             var locks = groups.Get<EffectStatLock>();
             var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
             var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
+            var damage = groups.Get<EffectStatDamage>().Sum(stat => stat.Amount);
 
-            return Math.Max(min, Math.Min((baseStat + percentage * baseStat + add) * multiplier, max));
+            return Math.Max(min, Math.Min((baseStat + percentage * baseStat + add) * multiplier - damage, max));
         }
 
         public static string GetStatBonus(this IEnumerable<Effect> effects, Stat statName)
         {
             string statBlock = string.Empty;
             var groups = effects.ToTypeLookup();
-            var add = groups.Get<EffectStat>().Sum(stat => stat.Amount);
+            var baseStat = groups.Get<EffectStat>().Where(stat => stat.Base).Sum(stat => stat.Amount);
+            if (baseStat != 0)
+                statBlock += $"{Game.FormatStat(statName)} {statName.Name} {baseStat.ToString("+0;-#")} Base\n";
+            var add = groups.Get<EffectStat>().Where(stat => !stat.Base).Sum(stat => stat.Amount);
             if (add != 0)
                 statBlock += $"{Game.FormatStat(statName)} {statName.Name} {add.ToString("+0;-#")}\n";
             var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
@@ -245,6 +249,7 @@ namespace RoguelikeEngine
             var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
             if (multiplier != 1)
                 statBlock += $"{Game.FormatStat(statName)} {statName.Name} x{Math.Round(multiplier,2)}\n";
+            var damage = groups.Get<EffectStatDamage>().Sum(stat => stat.Amount);
             var locks = groups.Get<EffectStatLock>();
             var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
             var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
@@ -256,6 +261,12 @@ namespace RoguelikeEngine
         {
             PopupManager.Add(new MessageDamage(holder, damage, element));
             Effect.Apply(new EffectDamage(holder, damage, element));
+        }
+
+        public static void TakeStatDamage(this IEffectHolder holder, double damage, Stat stat)
+        {
+            //PopupManager.Add(new MessageStatDamage(holder, damage, stat));
+            Effect.Apply(new EffectStatDamage(holder, damage, stat));
         }
 
         public static void Heal(this IEffectHolder holder, double heal)
