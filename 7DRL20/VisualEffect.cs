@@ -631,6 +631,13 @@ namespace RoguelikeEngine
         }
     }
 
+    class GreenBlobPop : Explosion
+    {
+        public GreenBlobPop(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/pop_blob_green"), position, velocity, angle, time)
+        {
+        }
+    }
+
     class SmokeSmall : Particle
     {
         SpriteReference Sprite;

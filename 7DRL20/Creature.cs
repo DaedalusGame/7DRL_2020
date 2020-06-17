@@ -759,7 +759,10 @@ namespace RoguelikeEngine
             if (tile == null)
                 return;
             SetMask(tile);
-            VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, time);
+            if (time <= 0)
+                VisualPosition = Static(new Vector2(tile.X, tile.Y) * 16);
+            else
+                VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, time);
             VisualCamera = VisualPosition;
         }
 

@@ -219,7 +219,7 @@ namespace RoguelikeEngine
 
         public PlayerUI Menu;
         public ActionQueue ActionQueue = new ActionQueue();
-        public Wait Wait = Wait.NoWait;
+        public WaitWorld Wait = new WaitWorld();
 
         public Map MapHome;
         public Map Map;
@@ -421,20 +421,21 @@ namespace RoguelikeEngine
                 Menu.HandleInput(this);
 
             PopupManager.Update(this);
+            Wait.Update();
 
             while (Wait.Done && !Player.Dead && CameraFocus.Done)
             {
                 var corpse = Entities.Where(x => x.Dead).FirstOrDefault();
                 if(corpse != null)
                 {
-                    Wait = Scheduler.Instance.RunAndWait(corpse.RoutineDestroy());
+                    Wait.Add(Scheduler.Instance.RunAndWait(corpse.RoutineDestroy()));
                     break;
                 }
 
                 Enemy foundBoss = Spawner.Bosses.Find(x => !x.Dead && IsBossVisible(x) && !SeenBosses.Contains(x));
                 if (foundBoss != null)
                 {
-                    Wait = Scheduler.Instance.RunAndWait(RoutineBossWarning(foundBoss));
+                    Wait.Add(Scheduler.Instance.RunAndWait(RoutineBossWarning(foundBoss)));
                     break;
                 }
 
@@ -451,7 +452,7 @@ namespace RoguelikeEngine
                 }
                 else if(turnTaker != null)
                 {
-                    Wait = turnTaker.TakeTurn(ActionQueue);
+                    Wait.Add(turnTaker.TakeTurn(ActionQueue));
                 }
             }
 

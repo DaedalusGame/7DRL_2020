@@ -59,6 +59,27 @@ namespace RoguelikeEngine
         }
     }
 
+    public class WaitWorld : Wait
+    {
+        List<Wait> Waits = new List<Wait>();
+
+        public override bool Done => Waits.All(wait => wait.Done);
+
+        public WaitWorld()
+        {
+        }
+
+        public void Add(Wait wait)
+        {
+            Waits.Add(wait);
+        }
+
+        public override void Update()
+        {
+            Waits.RemoveAll(wait => wait.Done);
+        }
+    }
+
     public class WaitForInput : Wait
     {
         public override bool Done => false;

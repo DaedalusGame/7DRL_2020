@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 
@@ -350,20 +351,43 @@ namespace RoguelikeEngine
 
         public override void OnStackChange(int delta)
         {
+            base.OnStackChange(delta);
             if (delta > 0)
             {
                 if(Creature is Creature creature)
                 {
                     SceneGame world = creature.World;
-                    creature.TakeStatDamage(100, Stat.HP);
-                    var slime = new GreenBlob(world);
-                    slime.MoveTo(creature.Tile, 0);
-                    slime.MakeAggressive(world.Player);
-                    world.ActionQueue.Add(slime);
+                    world.Wait.Add(Scheduler.Instance.RunAndWait(RoutineSpawn(creature)));
                 }
                 Remove();
             }
-            base.OnStackChange(delta);
+        }
+
+        private IEnumerable<Wait> RoutineSpawn(Creature creature)
+        {
+            SceneGame world = creature.World;
+            Tile tile = creature.Tile;
+            double slimeDamage = 100;
+            double slimeHP = Math.Min(slimeDamage, creature.CurrentHP);
+            creature.TakeStatDamage(slimeDamage, Stat.HP);
+            if (slimeHP > 0)
+            {
+                var slime = new GreenBlob(world, slimeHP);
+                slime.MoveTo(tile, 0);
+                slime.MakeAggressive(world.Player);
+                world.ActionQueue.Add(slime);
+                var neighbors = tile.GetAdjacentNeighbors().Shuffle();
+                var pick = neighbors.Where(x => !x.Solid && x.Creatures.Empty()).FirstOrDefault();
+                if (pick == null)
+                    pick = neighbors.FirstOrDefault();
+                slime.MoveTo(pick, 20);
+                yield return slime.WaitSome(20);
+                if (pick.Solid || pick.Creatures.Any(x => x != slime))
+                {
+                    new GreenBlobPop(slime.World, slime.VisualTarget, Vector2.Zero, 0, 10);
+                    slime.Destroy();
+                }
+            }
         }
 
         public override bool CanCombine(StatusEffect other)

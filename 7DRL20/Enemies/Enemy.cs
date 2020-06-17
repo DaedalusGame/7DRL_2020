@@ -838,7 +838,7 @@ namespace RoguelikeEngine.Enemies
 
     class GreenBlob : Enemy
     {
-        public GreenBlob(SceneGame world) : base(world)
+        public GreenBlob(SceneGame world, double hp) : base(world)
         {
             Name = "Green Blob";
             Description = "Forgive and forget";
@@ -849,7 +849,7 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 120));
+            Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
 
             Skills.Add(new SkillSlimeTouch());

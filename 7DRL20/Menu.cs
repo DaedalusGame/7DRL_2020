@@ -229,7 +229,7 @@ namespace RoguelikeEngine
             if (state.IsKeyPressed(Keys.Space))
             {
                 var offset = Player.Facing.ToOffset();
-                Scene.Wait = Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack));
+                Scene.Wait.Add(Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)));
                 Player.TakeTurn(Scene.ActionQueue);
                 return;
             }
