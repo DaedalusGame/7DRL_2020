@@ -282,7 +282,9 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Slime(Attack attack)
         {
-            attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 });
+            int traitLvl = attack.Attacker.GetTrait(this);
+
+            attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 + (traitLvl - 1) * 0.1 });
 
             yield return Wait.NoWait;
         }

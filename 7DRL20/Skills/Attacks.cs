@@ -95,6 +95,25 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillSlimeTouch : SkillAttackBase
+    {
+        public SkillSlimeTouch() : base("Attack", "Slime Touch", 0, 1, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 0.5);
+            attack.StatusEffects.Add(new Slimed(attacker)
+            {
+                Buildup = 0.4,
+                Duration = new Slider(15)
+            });
+            return attack;
+        }
+    }
+
     class SkillEnderClaw : SkillAttackBase
     {
         public SkillEnderClaw() : base("Attack", "Ender Claw", 0, 1, float.PositiveInfinity)

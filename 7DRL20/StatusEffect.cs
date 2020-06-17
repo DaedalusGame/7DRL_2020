@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Enemies;
 
 namespace RoguelikeEngine
 {
@@ -298,7 +299,7 @@ namespace RoguelikeEngine
         }
     }
 
-    class Slimed : StatusEffect
+    class HealSlimed : StatusEffect
     {
         public override string Name => $"Slimed";
         public override string Description => $"Slime sometimes restores health of the user.";
@@ -308,7 +309,7 @@ namespace RoguelikeEngine
         Creature Master;
         static Random Random = new Random();
 
-        public Slimed(Creature master) : base()
+        public HealSlimed(Creature master) : base()
         {
             Master = master;
         }
@@ -320,6 +321,49 @@ namespace RoguelikeEngine
                 AddBuildup(-0.5);
                 Master.Heal(40);
             }
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is HealSlimed slimed && slimed.Master == Master;
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class Slimed : StatusEffect
+    {
+        public override string Name => $"Slimed";
+        public override string Description => $"Slime sometimes restores health of the user.";
+
+        public override int MaxStacks => 1;
+
+        Creature Master;
+
+        public Slimed(Creature master) : base()
+        {
+            Master = master;
+        }
+
+        public override void OnStackChange(int delta)
+        {
+            if (delta > 0)
+            {
+                if(Creature is Creature creature)
+                {
+                    SceneGame world = creature.World;
+                    creature.TakeStatDamage(100, Stat.HP);
+                    var slime = new GreenBlob(world);
+                    slime.MoveTo(creature.Tile, 0);
+                    slime.MakeAggressive(world.Player);
+                    world.ActionQueue.Add(slime);
+                }
+                Remove();
+            }
+            base.OnStackChange(delta);
         }
 
         public override bool CanCombine(StatusEffect other)

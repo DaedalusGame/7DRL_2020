@@ -192,6 +192,11 @@ namespace RoguelikeEngine
                 effect.Remove();
         }
 
+        public static double GetDamage(this IEffectHolder holder, Element element)
+        {
+            return holder.GetEffects<EffectDamage>().Where(x => x.Element == element).Sum(x => x.Amount);
+        }
+
         public static double GetTotalDamage(this IEffectHolder holder)
         {
             return holder.GetEffects<EffectDamage>().Sum(x => x.Amount);
@@ -200,6 +205,11 @@ namespace RoguelikeEngine
         public static double GetStat(this IEffectHolder holder, Stat stat)
         {
             return CalculateStat(holder,holder.GetEffects<Effect>().Where(effect => effect is IStat statEffect && statEffect.Stat == stat),stat.DefaultStat);
+        }
+
+        public static double GetStatDamage(this IEffectHolder holder, Stat stat)
+        {
+            return holder.GetEffects<EffectStatDamage>().Where(x => x.Stat == stat).Sum(x => x.Amount);
         }
 
         public static Dictionary<Stat,double> GetStats(this IEffectHolder holder)
