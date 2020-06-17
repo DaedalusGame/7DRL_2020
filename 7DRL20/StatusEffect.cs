@@ -15,6 +15,7 @@ namespace RoguelikeEngine
             get;
             private set;
         }
+        public bool HasStacks => MaxStacks > 1;
         public int Stacks => (int)Math.Min(BuildupRound, MaxStacks);
         public virtual int MaxStacks => int.MaxValue;
         public double Buildup = 0;
@@ -105,29 +106,27 @@ namespace RoguelikeEngine
             int lastStacks = Stacks;
             Buildup += buildup;
             Buildup = Math.Max(0, Buildup);
-            if (!Hidden)
-                PopupManager.Add(new MessageStatusBuildup(Creature, this, buildup));
             if (Stacks > lastStacks)
                 OnStackChange(Stacks - lastStacks);
         }
 
         public virtual void OnAdd()
         {
-            if(!Hidden)
-                PopupManager.Add(new MessageStatusBuildup(Creature, this, Buildup));
+            if(!Hidden && Stacks > 0)
+                PopupManager.Add(new MessageStatusBuildup(Creature, this, Stacks));
         }
 
         public virtual void OnRemove()
         {
-            if (!Hidden)
-                PopupManager.Add(new MessageStatusEffect(Creature, this));
+            if (!Hidden && Stacks > 0)
+                PopupManager.Add(new MessageStatusBuildup(Creature, this, -Stacks));
         }
 
         public virtual void OnStackChange(int delta)
         {
             LastChange += delta;
             if (!Hidden)
-                PopupManager.Add(new MessageStatusEffect(Creature, this));
+                PopupManager.Add(new MessageStatusBuildup(Creature, this, delta));
         }
     }
 

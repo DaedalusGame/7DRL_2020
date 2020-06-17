@@ -114,11 +114,11 @@ namespace RoguelikeEngine
     class MessageStatusBuildup : Message
     {
         StatusEffect StatusEffect;
-        double Buildup;
+        int Buildup;
 
         public override string Text => GetMessage();
 
-        public MessageStatusBuildup(IEffectHolder holder, StatusEffect statusEffect, double buildup) : base(holder)
+        public MessageStatusBuildup(IEffectHolder holder, StatusEffect statusEffect, int buildup) : base(holder)
         {
             StatusEffect = statusEffect;
             Buildup = buildup;
@@ -126,10 +126,13 @@ namespace RoguelikeEngine
 
         public string GetMessage()
         {
-            if (Buildup >= StatusEffect.MaxStacks)
-                return $"{StatusEffect.Name}";
+            var color = string.Empty;
+            if (Buildup < 0)
+                color = Game.FormatColor(Microsoft.Xna.Framework.Color.Gray);
+            if (!StatusEffect.HasStacks)
+                return $"{color}{StatusEffect.Name}";
             else
-                return $"{StatusEffect.Name} {StatusEffect.BuildupText(Buildup)}";
+                return $"{color}{Buildup.ToString("+0;-#")} {StatusEffect.Name}";
         }
 
         public override bool CanCombine(Message other)
@@ -143,29 +146,12 @@ namespace RoguelikeEngine
         {
             if (other is MessageStatusBuildup buildup)
             {
-                return new[] { new MessageStatusBuildup(Holder, StatusEffect, Buildup + buildup.Buildup) };
+                if (Math.Abs(buildup.Buildup + Buildup) >= 1)
+                    return new Message[] { new MessageStatusBuildup(Holder, StatusEffect, Buildup + buildup.Buildup) };
+                else
+                    return new Message[] { };
             }
             return base.Combine(other);
-        }
-    }
-
-    class MessageStatusEffect : Message
-    {
-        StatusEffect StatusEffect;
-
-        public override string Text => GetMessage();
-
-        public MessageStatusEffect(IEffectHolder holder, StatusEffect statusEffect) : base(holder)
-        {
-            StatusEffect = statusEffect;
-        }
-
-        public string GetMessage()
-        {
-            if (StatusEffect.Stacks > 0)
-                return $"{StatusEffect.Name} {StatusEffect.StackText}";
-            else
-                return $"{Game.FormatColor(Microsoft.Xna.Framework.Color.Gray)}{StatusEffect.Name}";
         }
     }
 }
