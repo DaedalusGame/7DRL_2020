@@ -19,6 +19,7 @@ namespace RoguelikeEngine.Effects
             get;
             set;
         }
+        public bool Base = true;
 
         public override double VisualPriority => Stat.Priority + 0;
 

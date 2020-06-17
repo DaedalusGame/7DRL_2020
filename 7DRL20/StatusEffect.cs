@@ -105,7 +105,7 @@ namespace RoguelikeEngine
         {
             int lastStacks = Stacks;
             Buildup += buildup;
-            Buildup = Math.Max(0, Buildup);
+            Buildup = Math.Max(0, Math.Min(Buildup, MaxStacks));
             if (Stacks > lastStacks)
                 OnStackChange(Stacks - lastStacks);
         }
@@ -237,7 +237,7 @@ namespace RoguelikeEngine
         public DefenseDown() : base()
         {
             Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, -0.1));
-            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3));
+            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3) { Base = false });
         }
 
         public override string ToString()
@@ -256,7 +256,7 @@ namespace RoguelikeEngine
         public DefenseUp() : base()
         {
             Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, 0.1));
-            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3));
+            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3) { Base = false });
         }
 
         public override bool CanCombine(StatusEffect other)
