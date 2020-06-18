@@ -156,7 +156,11 @@ namespace RoguelikeEngine
         {
             base.Update();
             if (Stacks >= 1)
-                Creature.TakeDamage(2.5*Math.Pow(2,Stacks-1), Element.Bleed);
+            {
+                double damage = 2.5 * Math.Pow(2, Stacks - 1);
+                Creature.TakeDamage(damage, Element.Bleed);
+                Creature.TakeStatDamage(damage, Stat.Blood);
+            }
         }
 
         public override string ToString()
@@ -170,8 +174,6 @@ namespace RoguelikeEngine
         public override string Name => $"Greater Bleed";
         public override string Description => $"Sudden HP damage on each buildup.";
 
-        public double BloodLoss;
-
         public BleedGreater() : base()
         {
         }
@@ -180,12 +182,16 @@ namespace RoguelikeEngine
         {
             if (delta > 0)
             {
-                Creature.TakeDamage(delta * 30, Element.Bleed);
-                BloodLoss += delta * 30;
+                double damage = delta * 30;
+                Creature.TakeDamage(damage, Element.Bleed);
+                Creature.TakeStatDamage(damage, Stat.Blood);
             }
-            if (BloodLoss >= Creature.GetStat(Stat.HP))
+            if (Creature.GetStatDamage(Stat.Blood) >= Creature.GetStat(Stat.HP))
             {
-                //Proc Anemia
+                Creature.AddStatusEffect(new Anemia()
+                {
+                    Buildup = 0.1,
+                });
             }
             base.OnStackChange(delta);
         }
@@ -195,14 +201,33 @@ namespace RoguelikeEngine
             base.Update();
             if (Stacks >= 1)
             {
-                Creature.TakeDamage(5, Element.Bleed);
-                BloodLoss += 5;
+                double damage = 5;
+                Creature.TakeDamage(damage, Element.Bleed);
+                Creature.TakeStatDamage(damage, Stat.Blood);
             }
         }
 
         public override string ToString()
         {
-            return $"{base.ToString()} x{Stacks} ({BloodLoss} Blood Loss)";
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class Anemia : StatusEffect
+    {
+        public override string Name => $"Anemia";
+        public override string Description => $"";
+
+        public override int MaxStacks => 1;
+
+        public override void Update()
+        {
+            base.Update();
+            double bloodloss = Creature.GetStatDamage(Stat.Blood);
+            if (bloodloss < Creature.GetStat(Stat.HP))
+            {
+                AddBuildup(-0.1);
+            }
         }
     }
 
