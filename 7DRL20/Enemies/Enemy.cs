@@ -849,11 +849,58 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
+            Effect.Apply(new OnDeath(this, RoutineSplit));
+
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
 
             Skills.Add(new SkillSlimeTouch());
             Skills.Add(new SkillAttack());
+        }
+
+        private IEnumerable<Wait> RoutineSplit(DeathEvent death)
+        {
+            List<Wait> waits = new List<Wait>();
+            foreach (var neighbor in Tile.GetAdjacentNeighbors().Shuffle())
+            {
+                waits.Add(Scheduler.Instance.RunAndWait(RoutineSplitBranch(neighbor)));
+            }
+            yield return new WaitAll(waits);
+        }
+
+        private IEnumerable<Wait> RoutineSplitBranch(Tile neighbor)
+        {
+            var slime = new GreenAmoeba(World, 10);
+            slime.MoveTo(Tile, 0);
+            slime.MakeAggressive(World.Player);
+            World.ActionQueue.Add(slime);
+            slime.MoveTo(neighbor, 20);
+            yield return slime.WaitSome(20);
+            if (neighbor.Solid || neighbor.Creatures.Any(x => x != slime))
+            {
+                new GreenBlobPop(slime.World, slime.VisualTarget, Vector2.Zero, 0, 10);
+                slime.Destroy();
+            }
+        }
+    }
+
+    class GreenAmoeba : Enemy
+    {
+        public GreenAmoeba(SceneGame world, double hp) : base(world)
+        {
+            Name = "Green Amoeba";
+            Description = "I'm baby";
+
+            Render = new CreatureBlobRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/amoeba_green")
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, hp));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 15));
+
+            Skills.Add(new SkillSlimeTouch());
         }
     }
 }

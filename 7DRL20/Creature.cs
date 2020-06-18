@@ -604,7 +604,7 @@ namespace RoguelikeEngine
         public bool Walking = false;
 
         public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
-        public bool Dead => CurrentHP <= 0;
+        public bool Dead;
         public Wait DeadWait = Wait.NoWait;
 
         Vector2 IHasPosition.VisualPosition => VisualPosition();
@@ -726,6 +726,16 @@ namespace RoguelikeEngine
             Frame++;
         }
 
+        public void CheckDead(int dx, int dy)
+        {
+            if(CurrentHP <= 0 && !Dead)
+            {
+                Dead = true;
+                World.Wait.Add(this.OnDeath(new DeathEvent(this)));
+                Scheduler.Instance.Run(RoutineDie(dx, dy));
+            }
+        }
+
         public virtual Wait TakeTurn(ActionQueue queue)
         {
             this.ResetTurn();
@@ -835,8 +845,7 @@ namespace RoguelikeEngine
             VisualPose = Static(CreaturePose.Stand);
             yield return new WaitFrames(this, 10);
             yield return CurrentPopups;
-            if(Dead)
-                Scheduler.Instance.Run(RoutineDie(dx, dy));
+            CheckDead(dx, dy);
         }
 
         public virtual IEnumerable<Wait> RoutineDie(int dx, int dy)
