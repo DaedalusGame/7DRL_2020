@@ -1773,6 +1773,58 @@ namespace RoguelikeEngine
         }
     }
 
+    class ExperienceDrop : Particle
+    {
+        Vector2 Velocity;
+        Slider Start;
+        Slider End;
+        Creature Creature;
+        int Period;
+
+        public ExperienceDrop(SceneGame world, Creature creature, Vector2 position, Vector2 velocity, int start, int end) : base(world, position)
+        {
+            Frame = new Slider(start + end);
+            Velocity = velocity;
+            Start = new Slider(start);
+            End = new Slider(end);
+            Creature = creature;
+            Period = Random.Next(10,30);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (!Start.Done)
+            {
+                Start += 1;
+            }
+            else if(!End.Done)
+            {
+                End += 1;
+            }
+            else
+            {
+                this.Destroy();
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            var experience = SpriteLoader.Instance.AddSprite("content/exp_small");
+            
+            Vector2 startOffset = Vector2.Lerp(Vector2.Zero, Velocity, Start.Slide);
+            Vector2 pos = Vector2.Lerp(Position + startOffset, Creature.VisualTarget, End.Slide);
+
+            scene.DrawSpriteExt(experience, scene.AnimationFrame(experience, Frame.Time, Frame.EndTime), Position - experience.Middle, experience.Middle, 0, Vector2.One, SpriteEffects.None, Color.LightGoldenrodYellow, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
     class DamagePopup : Particle
     {
         protected Func<Vector2> Anchor;

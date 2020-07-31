@@ -691,6 +691,31 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class PrettyLich : Enemy
+    {
+        public PrettyLich(SceneGame world) : base(world)
+        {
+            Name = "Pretty Lich";
+            Description = "I AM BEAUTIFUL";
+
+            Render = new CreaturePaperdollRender()
+            {
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_pretty_lich"),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_robe"),
+                BodyColor = ColorMatrix.TwoColor(new Color(69, 56, 37), new Color(198, 213, 223)),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 50));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            this.AddStatusEffect(new Undead());
+
+            Skills.Add(new SkillDrainTouch());
+            Skills.Add(new SkillDrainTouch());
+            Skills.Add(new SkillAttack());
+        }
+    }
+
     class GoreVala : Enemy
     {
         public GoreVala(SceneGame world) : base(world)
@@ -852,7 +877,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new OnDeath(this, RoutineSplit));
 
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 15));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
             Skills.Add(new SkillSlimeTouch());
             Skills.Add(new SkillAttack());

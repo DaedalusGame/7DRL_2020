@@ -83,9 +83,14 @@ namespace RoguelikeEngine
             Parts[part].Effects.Add(effect);
         }
 
+        public void AddEffects(IEnumerable<PartType> parts, Effect effect)
+        {
+            foreach (var part in parts)
+                Parts[part].Effects.Add(effect);
+        }
+
         public void AddHeadEffect(Effect effect)
         {
-            effect.Apply();
             Parts[ToolBlade.Blade].Effects.Add(effect);
             Parts[ToolAdze.Head].Effects.Add(effect);
             Parts[ToolPlate.Composite].Effects.Add(effect);
@@ -105,36 +110,41 @@ namespace RoguelikeEngine
         public void AddFullEffect(Effect effect)
         {
             effect.Apply();
+            AddEffects(ToolBlade.Parts, effect);
+            AddEffects(ToolAdze.Parts, effect);
+            AddEffects(ToolPlate.Parts, effect);
+        }
+
+        public void AddOffensiveEffect(Effect effect)
+        {
+            effect.Apply();
             Parts[ToolBlade.Blade].Effects.Add(effect);
-            Parts[ToolBlade.Guard].Effects.Add(effect);
-            Parts[ToolBlade.Handle].Effects.Add(effect);
             Parts[ToolAdze.Head].Effects.Add(effect);
-            Parts[ToolAdze.Binding].Effects.Add(effect);
-            Parts[ToolAdze.Handle].Effects.Add(effect);
-            Parts[ToolPlate.Core].Effects.Add(effect);
-            Parts[ToolPlate.Composite].Effects.Add(effect);
-            Parts[ToolPlate.Trim].Effects.Add(effect);
         }
 
         public void AddBladeEffect(Effect effect)
         {
             effect.Apply();
-            foreach(var part in ToolBlade.Parts)
-                Parts[part].Effects.Add(effect);
+            AddEffects(ToolBlade.Parts, effect);
         }
 
         public void AddAdzeEffect(Effect effect)
         {
             effect.Apply();
-            foreach (var part in ToolAdze.Parts)
-                Parts[part].Effects.Add(effect);
+            AddEffects(ToolAdze.Parts, effect);
         }
 
         public void AddPlateEffect(Effect effect)
         {
             effect.Apply();
-            foreach (var part in ToolPlate.Parts)
-                Parts[part].Effects.Add(effect);
+            AddEffects(ToolPlate.Parts, effect);
+        }
+
+        public void AddOffensiveToolEffect(Effect effect)
+        {
+            effect.Apply();
+            AddEffects(ToolBlade.Parts, effect);
+            AddEffects(ToolAdze.Parts, effect);
         }
 
         public virtual void MakeAlloy(Dictionary<Material, int> materials)
@@ -155,9 +165,18 @@ namespace RoguelikeEngine
         public static Material Karmesine = new Karmesine();
         public static Material Ovium = new Ovium();
         public static Material Jauxum = new Jauxum();
+        public static Material Ardite = new Ardite();
+        public static Material Cobalt = new Cobalt();
+        public static Material Manyullyn = new Manyullyn();
         public static Material Terrax = new Terrax();
+        public static Material Aurorium = new Aurorium();
+        public static Material Violium = new Violium();
+        public static Material Astrium = new Astrium();
+        public static Material Ignitz = new Ignitz();
+        public static Material Tritonite = new Tritonite();
 
-        public static Material[] Alloys = new Material[] { Triberium, Terrax };
+
+        public static Material[] Alloys = new Material[] { Triberium, Terrax, Manyullyn, Violium, Astrium, Ignitz, Tritonite };
     }
 
     class Wood : Material
@@ -196,8 +215,8 @@ namespace RoguelikeEngine
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Slash, 1.0));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 10));
-            AddFullEffect(new EffectTrait(this, Trait.Splintering));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
+            AddOffensiveToolEffect(new EffectTrait(this, Trait.Splintering));
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddAdzeEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.05));
         }
@@ -215,8 +234,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 10));
-            AddFullEffect(new EffectTrait(this, Trait.Holy));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
+            AddOffensiveToolEffect(new EffectTrait(this, Trait.Holy));
         }
     }
 
@@ -239,7 +258,7 @@ namespace RoguelikeEngine
             AddHandleEffect(new EffectStatPercent(this, Element.Thunder.DamageRate, -0.20));
 
             Random random = new Random();
-            AddFullEffect(new EffectStat(this, Stat.Attack, 20));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 20));
             AddFullEffect(new EffectTrait(this, Trait.Unstable));
         }
     }
@@ -262,7 +281,7 @@ namespace RoguelikeEngine
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 5));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 5));
             AddAdzeEffect(new EffectTrait(this, Trait.Softy));
         }
     }
@@ -282,7 +301,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 5));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 5));
             AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Fragile));
         }
 
@@ -328,7 +347,7 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Crumbling));
             AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Pulverizing));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 15));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 15));
         }
     }
 
@@ -354,7 +373,7 @@ namespace RoguelikeEngine
 
             AddHandleEffect(new EffectStatPercent(this, Element.Fire.DamageRate, -0.10));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
         }
     }
 
@@ -378,8 +397,8 @@ namespace RoguelikeEngine
 
             AddFullEffect(new EffectStat(this, Element.Bludgeon.Resistance, 5));
 
-            AddHeadEffect(new EffectTrait(this, Trait.Sharp));
-            AddFullEffect(new EffectTrait(this, Trait.Stiff));
+            AddOffensiveEffect(new EffectTrait(this, Trait.Sharp));
+            AddPlateEffect(new EffectTrait(this, Trait.Stiff));
         }
     }
 
@@ -399,7 +418,7 @@ namespace RoguelikeEngine
 
             AddFullEffect(new EffectStat(this, Element.Slash.Resistance, 5));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddHandleEffect(new EffectStatPercent(this, Stat.Attack, -0.4));
             AddHandleEffect(new EffectStatPercent(this, Stat.Defense, +0.2));
 
@@ -422,13 +441,100 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 10));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddHandleEffect(new EffectStatPercent(this, Stat.HP, -0.2));
 
             AddFullEffect(new EffectStat(this, Element.Pierce.Resistance, 5));
             AddFullEffect(new EffectStatPercent(this, Element.Poison.DamageRate, -0.3));
 
-            AddFullEffect(new EffectTrait(this, Trait.Poxic));
+            AddOffensiveToolEffect(new EffectTrait(this, Trait.Poxic));
+        }
+    }
+
+    class Ardite : Material
+    {
+        public Ardite() : base("Ardite", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(215, 92, 11), new Color(252, 196, 112));
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+    }
+
+    class Cobalt : Material
+    {
+        public Cobalt() : base("Cobalt", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(61, 106, 143), new Color(63, 233, 233));
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+    }
+
+    class Manyullyn : Material
+    {
+        public Manyullyn() : base("Manyullyn", string.Empty)
+        {
+            Priority = 3;
+            MeltingTemperature = 1900;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(96, 57, 174), new Color(222, 118, 248));
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "reap";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+            AddHandleEffect(new EffectStatPercent(this, Stat.Defense, 0.3));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+
+        public override void MakeAlloy(Dictionary<Material, int> materials)
+        {
+            int ardite = materials.ContainsKey(Ardite) ? materials[Ardite] : 0;
+            int cobalt = materials.ContainsKey(Cobalt) ? materials[Cobalt] : 0;
+
+            int manyullyn = Math.Min(ardite, cobalt);
+
+            if (manyullyn > 0)
+            {
+                materials[Ardite] -= manyullyn;
+                materials[Cobalt] -= manyullyn;
+                if (materials.ContainsKey(Manyullyn))
+                    materials[Manyullyn] += manyullyn * 2;
+                else
+                    materials.Add(Manyullyn, manyullyn * 2);
+            }
         }
     }
 
@@ -454,10 +560,10 @@ namespace RoguelikeEngine
             AddHandleEffect(new EffectStatPercent(this, Stat.Defense, 0.3));
 
             Random random = new Random();
-            AddFullEffect(new EffectStat(this, Stat.Attack, 30));
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
             //AddHeadEffect(new Trait(this, "Slaughtering", "More drops, but no experience."));
             AddHeadEffect(new EffectTrait(this, Trait.Slaughtering));
-           
+
         }
 
         public override void MakeAlloy(Dictionary<Material, int> materials)
@@ -468,7 +574,7 @@ namespace RoguelikeEngine
 
             int terrax = Math.Min(Math.Min(karmesine, ovium), jauxum);
 
-            if(terrax > 0)
+            if (terrax > 0)
             {
                 materials[Karmesine] -= terrax;
                 materials[Ovium] -= terrax;
@@ -478,6 +584,116 @@ namespace RoguelikeEngine
                 else
                     materials.Add(Terrax, terrax * 3);
             }
+        }
+    }
+
+    class Aurorium : Material
+    {
+        public Aurorium() : base("Aurorium", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(191, 51, 86), new Color(243, 209, 218));
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+    }
+
+    class Violium : Material
+    {
+        public Violium() : base("Violium", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(58, 50, 80), new Color(128, 168, 198));
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+    }
+
+    class Astrium : Material
+    {
+        public Astrium() : base("Astrium", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(112, 46, 81), new Color(179, 197, 225));
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+    }
+
+    class Ignitz : Material
+    {
+        public Ignitz() : base("Ignitz", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(188, 95, 92), new Color(255, 186, 26)) * ColorMatrix.Scale(1.3f);
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
+        }
+    }
+
+    class Tritonite : Material
+    {
+        public Tritonite() : base("Tritonite", string.Empty)
+        {
+            MeltingTemperature = 2000;
+            ColorTransform = ColorMatrix.TwoColorLight(new Color(23, 29, 96), new Color(85, 190, 196)) * ColorMatrix.Scale(1.2f);
+
+            Parts[ToolBlade.Blade] = "rip";
+            Parts[ToolAdze.Head] = "sledge";
+
+            AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
+
+            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+
+            AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
+
+            AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 30));
         }
     }
 }

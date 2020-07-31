@@ -45,6 +45,8 @@ namespace RoguelikeEngine
             }
             foreach (var statusEffect in StatusEffects)
                 Defender.AddStatusEffect(statusEffect);
+            double total = FinalDamage.Sum(x => Math.Abs(x.Value));
+            Effect.Apply(new EffectLastHit(Defender, Attacker, total));
 
             yield return Attacker.OnAttack(this);
             yield return Defender.OnDefend(this);

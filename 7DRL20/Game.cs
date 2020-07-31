@@ -112,7 +112,7 @@ namespace RoguelikeEngine
             for (int i = 0; i < FontSpritesAmount; i++)
             {
                 FontSprites[i] = SpriteLoader.Instance.AddSprite("content/font/font_" + i + "_0");
-                FontSprites[i].ShouldLoad = true;
+                //FontSprites[i].ShouldLoad = true;
                 int fontIndex = i;
                 FontSprites[i].SetLoadFunction(() => LoadFontPart(FontSprites[fontIndex], fontIndex));
             }

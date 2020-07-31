@@ -459,6 +459,16 @@ namespace RoguelikeEngine
                 scene.SetupColorMatrix(material.ColorTransform, matrix);
             });
         }
+
+        protected void DrawSymbol(SceneGame scene, Vector2 position)
+        {
+            var equip = SpriteLoader.Instance.AddSprite("content/equip");
+
+            if(GetEffects<EffectItemEquipped>().Any())
+            {
+                //scene.DrawSprite(equip, 0, position - equip.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            }
+        }
     }
 
     class ToolBlade : ToolCore
@@ -508,6 +518,8 @@ namespace RoguelikeEngine
             PushMaterialBatch(scene, bladeMaterial);
             scene.DrawSprite(blade, 0, position - blade.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+
+            DrawSymbol(scene, position);
         }
     }
 
@@ -558,6 +570,8 @@ namespace RoguelikeEngine
             PushMaterialBatch(scene, headMaterial);
             scene.DrawSprite(head, 0, position - head.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+
+            DrawSymbol(scene, position);
         }
     }
 
@@ -608,6 +622,8 @@ namespace RoguelikeEngine
             PushMaterialBatch(scene, trimMaterial);
             scene.DrawSprite(trim, 0, position - trim.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+
+            DrawSymbol(scene, position);
         }
     }
 }
