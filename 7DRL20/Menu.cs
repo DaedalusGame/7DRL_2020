@@ -142,6 +142,12 @@ namespace RoguelikeEngine
                 Scene.Wait.Add(player.CurrentAction);
                 Turn.End();
             }
+            else if (frontier.Any(front => front is IMineable))
+            {
+                player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(dx, dy, Creature.MeleeAttack));
+                Scene.Wait.Add(player.CurrentAction);
+                Turn.End();
+            }
         }
 
 

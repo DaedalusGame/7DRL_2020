@@ -209,7 +209,7 @@ namespace RoguelikeEngine.Attacks
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && user.AggroTarget.HasStatusEffect<Wedlock>();
+            return base.CanEnemyUse(user) && !user.AggroTarget.HasStatusEffect<Wedlock>();
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user)
