@@ -429,7 +429,7 @@ namespace RoguelikeEngine
                 selection.Add(new ActAction("Take the Stairs", "", () =>
                 {
                     player.CurrentAction = Scheduler.Instance.RunAndWait(RoutineTakeStairs(player));
-                    player.TakeTurn(player.World.ActionQueue);
+                    //player.TakeTurn(player.World.ActionQueue);
                     selection.Close();
                 }, () => CanUseStairs(player)));
             }
@@ -1513,7 +1513,26 @@ namespace RoguelikeEngine
         }
     }
 
-    class Smelter : Tile, ITurnTaker
+    class TurnTakerSmelter : TurnTaker
+    {
+        Smelter Smelter;
+
+        public TurnTakerSmelter(ActionQueue queue, Smelter smelter) : base(queue)
+        {
+            Smelter = smelter;
+        }
+
+        public override object Owner => Smelter;
+        public override double Speed => 1;
+        public override bool RemoveFromQueue => Smelter.Orphaned;
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            return Smelter.TakeTurn(turn);
+        }
+    }
+
+    class Smelter : Tile
     {
         public double TurnSpeed => 1.0f;
         public double TurnBuildup { get; set; }
@@ -1533,9 +1552,16 @@ namespace RoguelikeEngine
         {
             Solid = true;
 
-            world.ActionQueue.Add(this);
+            world.ActionQueue.Add(new TurnTakerSmelter(world.ActionQueue, this));
             OreContainer = new Container();
             FuelContainer = new Container();
+        }
+
+        public Wait TakeTurn(Turn turn)
+        {
+            Work();
+
+            return Wait.NoWait;
         }
 
         private void Work()
@@ -1703,14 +1729,6 @@ namespace RoguelikeEngine
                 selection.Close();
                 ui.Open(new MenuSmelter(ui, player, this));
             }));
-        }
-
-        Wait ITurnTaker.TakeTurn(ActionQueue queue)
-        {
-            Work();
-
-            this.ResetTurn();
-            return Wait.NoWait;
         }
 
         public void Empty()

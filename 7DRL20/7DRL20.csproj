@@ -48,6 +48,8 @@
     <Compile Include="Effects\EffectStatDamage.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Effects\OnDeath.cs" />
+    <Compile Include="EventBus.cs" />
+    <Compile Include="Events\CreatureEvents.cs" />
     <Compile Include="IDrawable.cs" />
     <Compile Include="MapGeneration\GeneratorTemplate.cs" />
     <Compile Include="MapGeneration\GroupGenerator.cs" />

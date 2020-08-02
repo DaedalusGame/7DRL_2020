@@ -6,49 +6,246 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
-    interface ITurnTaker
+    abstract class TurnTaker
     {
-        double TurnSpeed
+        public delegate Wait TurnDelegate(Turn turn);
+
+        ActionQueue Queue;
+
+        public abstract object Owner { get; }
+        public abstract double Speed { get; }
+        public abstract bool RemoveFromQueue { get; }
+        public double Buildup;
+        public bool Ready => Buildup >= 1;
+        public virtual bool Controllable(Creature player) => false;
+
+        public int ExtraTurns;
+
+        public TurnTaker(ActionQueue queue)
         {
-            get;
-        }
-        double TurnBuildup
-        {
-            set;
-            get;
-        }
-        bool TurnReady
-        {
-            get;
-        }
-        bool RemoveFromQueue
-        {
-            get;
+            Queue = queue;
         }
 
-        Wait TakeTurn(ActionQueue queue);
+        public virtual Wait StartTurn(Turn turn)
+        {
+            return Wait.NoWait;
+        }
+
+        public virtual Wait TakeTurn(Turn turn)
+        {
+            return Wait.NoWait;
+        }
+
+        public virtual Wait EndTurn(Turn turn)
+        {
+            return Wait.NoWait;
+        }
+
+        public void AddImmediate(Turn parent)
+        {
+            Queue.AddImmediate(new Turn(parent, this));
+        }
+
+        public void AddImmediate()
+        {
+            Queue.AddImmediate(new Turn(Queue, this));
+        }
+
+        public void AddExtraTurns(int turns)
+        {
+            ExtraTurns += turns;
+        }
+
+        public void IncrementTurn()
+        {
+            Buildup += Speed;
+        }
+
+        public void ResetTurn()
+        {
+            Buildup -= 1;
+        }
+
+        public override string ToString()
+        {
+            return $"{Owner}: Buildup {Buildup}";
+        }
+    }
+
+    class TurnTakerWorld : TurnTaker
+    {
+        SceneGame World;
+
+        public TurnTakerWorld(ActionQueue queue, SceneGame world) : base(queue)
+        {
+            World = world;
+        }
+
+        public override object Owner => World;
+        public override double Speed => 0;
+        public override bool RemoveFromQueue => false;
+
+        public override Wait StartTurn(Turn turn)
+        {
+            return World.StartTurn(turn);
+        }
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            return World.TakeTurn(turn);
+        }
+
+        public override Wait EndTurn(Turn turn)
+        {
+            return World.EndTurn(turn);
+        }
+    }
+
+    class TurnTakerCreatureControl : TurnTaker
+    {
+        Creature Creature;
+
+        public TurnTakerCreatureControl(ActionQueue queue, Creature creature) : base(queue)
+        {
+            Creature = creature;
+        }
+
+        public override bool Controllable(Creature player) => Creature.IsControllable(player);
+        public override object Owner => Creature;
+        public override double Speed => Creature.GetStat(Stat.Speed);
+        public override bool RemoveFromQueue => Creature.Destroyed;
+
+        public override Wait StartTurn(Turn turn)
+        {
+            return Creature.StartTurn(turn);
+        }
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            return Creature.TakeTurn(turn);
+        }
+
+        public override Wait EndTurn(Turn turn)
+        {
+            return Creature.EndTurn(turn);
+        }
+    }
+
+    class TurnTakerCreatureNormal : TurnTaker
+    {
+        Creature Entity;
+
+        public TurnTakerCreatureNormal(ActionQueue queue, Creature entity) : base(queue)
+        {
+            Entity = entity;
+        }
+
+        public override object Owner => Entity;
+        public override double Speed => 1;
+        public override bool RemoveFromQueue => Entity.Destroyed;
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            return Entity.NormalTurn(turn);
+        }
+    }
+
+    enum TurnPhase
+    {
+        Start,
+        Tick,
+        End,
+        Delete,
+    }
+
+    class Turn
+    {
+        public ActionQueue Queue;
+        public TurnTaker TurnTaker;
+        public Turn Root;
+        public Wait Wait;
+        public TurnPhase Phase = TurnPhase.Start;
+
+        public Turn(ActionQueue queue, TurnTaker turnTaker)
+        {
+            Queue = queue;
+            TurnTaker = turnTaker;
+        }
+
+        public Turn(Turn root, TurnTaker turnTaker)
+        {
+            Queue = root.Queue;
+            TurnTaker = turnTaker;
+            Root = root;
+        }
+
+        public Wait StartTurn()
+        {
+            Wait wait = TurnTaker.StartTurn(this);
+            Phase = TurnPhase.Tick;
+            return wait;
+        }
+
+        public bool TakeTurn()
+        {
+            Wait = TurnTaker.TakeTurn(this);
+            if (Wait != null)
+            {
+                Phase = TurnPhase.End;
+                return true;
+            }
+            return false;
+        }
+
+        public Wait EndTurn()
+        {
+            Wait wait = TurnTaker.EndTurn(this);
+            for (int i = 0; i < TurnTaker.ExtraTurns; i++)
+            {
+                Queue.AddImmediate(new Turn(this, TurnTaker));
+            }
+            TurnTaker.ExtraTurns = 0;
+            Phase = TurnPhase.Delete;
+            return wait;
+        }
+
+        public void End()
+        {
+            Phase = TurnPhase.End;
+        }
     }
 
     class ActionQueue
     {
-        public List<ITurnTaker> TurnTakers = new List<ITurnTaker>();
-        public List<ITurnTaker> ImmediateTurns = new List<ITurnTaker>();
-        public ITurnTaker CurrentTurnTaker;
+        public SceneGame World;
 
-        public void Add(ITurnTaker turnTaker)
+        public List<TurnTaker> TurnTakers = new List<TurnTaker>();
+        public List<Turn> ImmediateTurns = new List<Turn>();
+        public Turn CurrentTurn;
+        public TurnTaker WorldTurnTaker;
+
+        public List<Turn> PredictedTurns = new List<Turn>();
+
+        public ActionQueue(SceneGame world)
+        {
+            World = world;
+            WorldTurnTaker = new TurnTakerWorld(this, world);
+        }
+
+        public void Add(TurnTaker turnTaker)
         {
             TurnTakers.Add(turnTaker);
         }
 
-        public void AddImmediate(ITurnTaker turnTaker)
+        public void AddImmediate(Turn turn)
         {
-            ImmediateTurns.Add(turnTaker);
+            ImmediateTurns.Add(turn);
         }
 
         public void Cleanup()
         {
-            if (CurrentTurnTaker != null && !CurrentTurnTaker.TurnReady)
-                CurrentTurnTaker = null;
+            if (CurrentTurn != null && CurrentTurn.Phase == TurnPhase.Delete)
+                CurrentTurn = null;
             TurnTakers.RemoveAll(x => x.RemoveFromQueue);
         }
 
@@ -56,26 +253,31 @@ namespace RoguelikeEngine
         {
             Cleanup();
 
-            if (ImmediateTurns.Any())
+            if (CurrentTurn == null && ImmediateTurns.Any())
             {
-                CurrentTurnTaker = ImmediateTurns.First();
+                CurrentTurn = ImmediateTurns.First();
                 ImmediateTurns.RemoveAt(0);
                 return;
             }
 
-            if (TurnTakers.Any(x => x.TurnSpeed > 0))
+            if (TurnTakers.Any(x => x.Speed > 0))
             {
-                while (CurrentTurnTaker == null)
+                while (CurrentTurn == null)
                 {
-                    foreach(var turnTaker in TurnTakers.GetAndClean(x => x.RemoveFromQueue))
-                    TurnTakers.ForEach(x => x.IncrementTurn());
-                    var fastest = TurnTakers.OrderByDescending(x => x.TurnBuildup); //TurnTakers.Aggregate((a, b) => a.TurnBuildup > b.TurnBuildup ? a : b);
-
-                    foreach(var turnTaker in fastest)
+                    if (!TurnTakers.Any(x => x.Ready))
                     {
-                        if (turnTaker.TurnReady)
+                        TurnTakers.ForEach(x => x.IncrementTurn());
+                        CurrentTurn = new Turn(this, WorldTurnTaker);
+                        break;
+                    }
+                    var fastest = TurnTakers.OrderByDescending(x => x.Buildup);
+
+                    foreach (var turnTaker in fastest)
+                    {
+                        if (turnTaker.Ready)
                         {
-                            CurrentTurnTaker = turnTaker;
+                            CurrentTurn = new Turn(this, turnTaker);
+                            turnTaker.ResetTurn();
                             break;
                         }
                     }
@@ -89,50 +291,58 @@ namespace RoguelikeEngine
 
         class TheoreticalCharacter
         {
-            public ITurnTaker Base;
-            public double TurnSpeed;
-            public double TurnBuildup;
+            public TurnTaker Base;
+            public double Speed;
+            public double Buildup;
+            public int ExtraTurns;
 
-            public bool TurnReady
-            {
-                get
-                {
-                    return TurnBuildup >= 1;
-                }
-            }
+            public bool Ready => Buildup >= 1;
 
-            public TheoreticalCharacter(ITurnTaker character)
+            public TheoreticalCharacter(TurnTaker character)
             {
                 Base = character;
-                TurnSpeed = character.TurnSpeed;
-                TurnBuildup = character.TurnBuildup;
+                Speed = character.Speed;
+                Buildup = character.Buildup;
+                ExtraTurns = character.ExtraTurns;
             }
 
             public void IncrementTurn()
             {
-                TurnBuildup += TurnSpeed;
+                Buildup += Speed;
             }
 
             public void ResetTurn()
             {
-                TurnBuildup %= 1;
+                Buildup %= 1;
             }
         }
 
-        public IEnumerable<ITurnTaker> Predict()
+        public IEnumerable<Turn> Predict()
         {
             var characters = TurnTakers.Select(x => new TheoreticalCharacter(x)).ToList();
-            if (characters.Any(x => x.TurnSpeed > 0))
+            foreach (Turn turn in ImmediateTurns)
+                yield return turn;
+
+            if (characters.Any(x => x.Speed > 0))
             {
                 while (true)
                 {
-                    foreach (var character in TurnTakers.GetAndClean(x => x.RemoveFromQueue))
-                        character.IncrementTurn();
-                    var fastest = characters.Aggregate((a, b) => a.TurnBuildup > b.TurnBuildup ? a : b);
-                    if (fastest.TurnReady)
+                    if (!characters.Any(x => x.Ready))
+                        foreach (var character in characters)
+                            characters.ForEach(x => x.IncrementTurn());
+                    var fastest = characters.OrderByDescending(x => x.Buildup);
+
+                    foreach (var turnTaker in fastest)
                     {
-                        yield return fastest.Base;
-                        fastest.ResetTurn();
+                        if (turnTaker.Ready)
+                        {
+                            var turn = new Turn(this, turnTaker.Base);
+                            yield return turn;
+                            turnTaker.ResetTurn();
+                            for (int i = 0; i < turnTaker.ExtraTurns; i++)
+                                yield return new Turn(turn, turnTaker.Base);
+                            break;
+                        }
                     }
                 }
             }

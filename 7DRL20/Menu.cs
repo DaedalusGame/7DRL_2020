@@ -66,6 +66,8 @@ namespace RoguelikeEngine
         MenuTextSelection GameOverMenu;
 
         public Creature Player => Scene.Player;
+        public Turn Turn => Scene.Turn;
+        public TurnTaker TurnTaker => Scene.Turn.TurnTaker;
 
         public override bool ShouldClose
         {
@@ -128,6 +130,21 @@ namespace RoguelikeEngine
             base.Update(scene);
         }
 
+        private void TryMove(Creature player, Facing facing)
+        {
+            Point offset = facing.ToOffset();
+            int dx = offset.X;
+            int dy = offset.Y;
+            var frontier = player.Mask.GetFrontier(dx, dy).Select(o => player.Tile.GetNeighbor(o.X, o.Y));
+            if (frontier.All(front => !front.Solid && !front.Creatures.Any()))
+            {
+                player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(dx, dy));
+                Scene.Wait.Add(player.CurrentAction);
+                Turn.End();
+            }
+        }
+
+
         public override void HandleInput(SceneGame scene)
         {
             base.HandleInput(scene);
@@ -170,8 +187,7 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(0, -1));
-                    Player.TakeTurn(Scene.ActionQueue);
+                    TryMove(Player, Facing.North);
                     return;
                 }
             }
@@ -183,8 +199,7 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(0, 1));
-                    Player.TakeTurn(Scene.ActionQueue);
+                    TryMove(Player, Facing.South);
                     return;
                 }
             }
@@ -196,8 +211,7 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(-1, 0));
-                    Player.TakeTurn(Scene.ActionQueue);
+                    TryMove(Player, Facing.West);
                     return;
                 }
             }
@@ -209,8 +223,7 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(1, 0));
-                    Player.TakeTurn(Scene.ActionQueue);
+                    TryMove(Player, Facing.East);
                     return;
                 }
             }
@@ -230,7 +243,7 @@ namespace RoguelikeEngine
             {
                 var offset = Player.Facing.ToOffset();
                 Scene.Wait.Add(Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)));
-                Player.TakeTurn(Scene.ActionQueue);
+                Turn.End();
                 return;
             }
             if (state.IsKeyPressed(Keys.Enter))

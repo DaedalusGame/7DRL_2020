@@ -60,9 +60,8 @@ namespace RoguelikeEngine.Enemies
             FaceTowards(target.Mask.GetRectangle(target.X,target.Y));
         }
 
-        public override Wait TakeTurn(ActionQueue queue)
+        public override Wait TakeTurn(Turn turn)
         {
-            this.ResetTurn();
             Wait wait = Wait.NoWait;
             if (Dead)
                 return wait;
@@ -72,25 +71,23 @@ namespace RoguelikeEngine.Enemies
                 skill.Update(this);
             if (usableSkill != null)
             {
-                CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(this, usableSkill));
+                CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(usableSkill));
                 wait = usableSkill.WaitUse ? CurrentAction : Wait.NoWait;
             }
             else
             {
                 var move = new[] { Facing.North, Facing.East, Facing.South, Facing.West }.Pick(Random).ToOffset();
                 CurrentAction = Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y));
+                wait = CurrentAction;
             }
-
-            foreach (StatusEffect statusEffect in this.GetStatusEffects())
-                statusEffect.Update();
             return wait;
         }
 
-        private IEnumerable<Wait> RoutineUseSkill(Creature user, Skill skill)
+        private IEnumerable<Wait> RoutineUseSkill(Skill skill)
         {
-            foreach(Wait wait in skill.RoutineUse(user))
+            foreach(Wait wait in skill.RoutineUse(this))
                 yield return wait;
-            skill.HideSkill(user);
+            skill.HideSkill(this);
         }
 
         public virtual void OnManifest()
@@ -379,7 +376,7 @@ namespace RoguelikeEngine.Enemies
 
         public override void OnManifest()
         {
-            ActionQueue.AddImmediate(this);
+            Control.AddImmediate();
         }
 
         public override void Update()
@@ -898,7 +895,7 @@ namespace RoguelikeEngine.Enemies
             var slime = new GreenAmoeba(World, 10);
             slime.MoveTo(Tile, 0);
             slime.MakeAggressive(World.Player);
-            World.ActionQueue.Add(slime);
+            slime.AddControlTurn();
             slime.MoveTo(neighbor, 20);
             yield return slime.WaitSome(20);
             if (neighbor.Solid || neighbor.Creatures.Any(x => x != slime))

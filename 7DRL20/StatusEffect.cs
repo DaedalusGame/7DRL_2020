@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
+using RoguelikeEngine.Events;
 
 namespace RoguelikeEngine
 {
@@ -400,7 +401,7 @@ namespace RoguelikeEngine
                 var slime = new GreenBlob(world, slimeHP);
                 slime.MoveTo(tile, 0);
                 slime.MakeAggressive(world.Player);
-                world.ActionQueue.Add(slime);
+                slime.AddControlTurn();
                 var neighbors = tile.GetAdjacentNeighbors().Shuffle();
                 var pick = neighbors.Where(x => !x.Solid && x.Creatures.Empty()).FirstOrDefault();
                 if (pick == null)
@@ -487,15 +488,10 @@ namespace RoguelikeEngine
         }
     }
 
-    class Geomancy : StatusEffect, ITurnTaker
+    class Geomancy : StatusEffect
     {
         public override string Name => $"Geomancy";
         public override string Description => GetDescription();
-
-        public double TurnSpeed => 1;
-        public double TurnBuildup { get; set; }
-        public bool TurnReady => TurnBuildup >= 1;
-        public bool RemoveFromQueue { get; set; }
 
         public override int MaxStacks => 1;
 
@@ -531,14 +527,14 @@ namespace RoguelikeEngine
             base.OnAdd();
             if(Creature is Creature creature)
             {
-                creature.ActionQueue.Add(this);
+                EventBus.Register(this);
             }
         }
 
         public override void OnRemove()
         {
             base.OnRemove();
-            RemoveFromQueue = true;
+            EventBus.Unregister(this);
         }
 
         public void UpdateStats()
@@ -572,11 +568,11 @@ namespace RoguelikeEngine
             }
         }
 
-        public Wait TakeTurn(ActionQueue queue)
+        [EventSubscribe]
+        public void OnMove(EventMove.Finish evt)
         {
-            UpdateStats();
-            this.ResetTurn();
-            return Wait.NoWait;
+            if(evt.Creature == Creature)
+                UpdateStats();
         }
     }
 

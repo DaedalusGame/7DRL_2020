@@ -218,7 +218,8 @@ namespace RoguelikeEngine
         Random Random = new Random();
 
         public PlayerUI Menu;
-        public ActionQueue ActionQueue = new ActionQueue();
+        public ActionQueue ActionQueue;
+        public Turn Turn;
         public WaitWorld Wait = new WaitWorld();
 
         public Map MapHome;
@@ -256,6 +257,7 @@ namespace RoguelikeEngine
 
         public SceneGame(Game game) : base(game)
         {
+            ActionQueue = new ActionQueue(this);
             Menu = new PlayerUI(this);
             
             GeneratorTemplate template = new TemplateHome();
@@ -272,7 +274,7 @@ namespace RoguelikeEngine
 
             Player = new Hero(this);
             Player.MoveTo(startTile, 1);
-            ActionQueue.Add(Player);
+            Player.AddControlTurn();
             /*Enemy testEnemy = new Wallhach(this);
             testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
             testEnemy.MakeAggressive(Player);
@@ -314,7 +316,6 @@ namespace RoguelikeEngine
             Quests.Add(buildAdze);
 
             Spawner = new EnemySpawner(this, 60);
-            ActionQueue.Add(Spawner);
         }
 
         private void BuildSmelterRoom(Tile center, GeneratorGroup group)
@@ -351,6 +352,22 @@ namespace RoguelikeEngine
                 }
             }
         }
+
+        public Wait StartTurn(Turn turn)
+        {
+            return RoguelikeEngine.Wait.NoWait;
+        }
+
+        public Wait TakeTurn(Turn turn)
+        {
+            return RoguelikeEngine.Wait.NoWait;
+        }
+
+        public Wait EndTurn(Turn turn)
+        {
+            return RoguelikeEngine.Wait.NoWait;
+        }
+
 
         public void Restart()
         {
@@ -431,7 +448,8 @@ namespace RoguelikeEngine
             PopupManager.Update(this);
             Wait.Update();
 
-            while (Wait.Done && !Player.Dead && CameraFocus.Done)
+            bool cancel = false;
+            while (!cancel && Wait.Done && !Player.Dead && CameraFocus.Done)
             {
                 var corpse = Entities.Where(x => x.Dead).FirstOrDefault();
                 if(corpse != null)
@@ -449,19 +467,30 @@ namespace RoguelikeEngine
 
                 ActionQueue.Step();
 
-                ITurnTaker turnTaker = ActionQueue.CurrentTurnTaker;
-                Creature creature = turnTaker as Creature;
-
-                if (creature == Player)
-                {
-                    if(creature.CurrentAction.Done)
-                        Menu.HandleInput(this);
+                Turn = ActionQueue.CurrentTurn;
+                if (Turn == null)
                     break;
-                }
-                else if(turnTaker != null)
+
+                switch (Turn.Phase)
                 {
-                    Wait.Add(turnTaker.TakeTurn(ActionQueue));
+                    case TurnPhase.Start:
+                        Wait.Add(Turn.StartTurn());
+                        break;
+                    case TurnPhase.Tick:
+                        if (Turn.TurnTaker.Controllable(Player))
+                        {
+                            Menu.HandleInput(this);
+                            cancel = true;
+                        }
+                        else if (Turn.TakeTurn())
+                            Wait.Add(Turn.Wait);
+                        break;
+                    case TurnPhase.End:
+                        Wait.Add(Turn.EndTurn());
+                        break;
                 }
+
+                Wait.Update();
             }
 
             foreach (var obj in GameObjects.GetAndClean(x => x.Destroyed))

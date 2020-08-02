@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Events;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -295,6 +296,7 @@ namespace RoguelikeEngine
         public static Stat Attack = new Stat("Attack", 0, 1, SpriteLoader.Instance.AddSprite("content/stat_attack"));
         public static Stat Defense = new Stat("Defense", 0, 2, SpriteLoader.Instance.AddSprite("content/stat_defense"));
         public static Stat AlchemyPower = new Stat("Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
+        public static Stat Speed = new Stat("Speed", 1, 8, SpriteLoader.Instance.AddSprite("content/stat_speed"));
 
         public static Stat DamageRate = new Stat("Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"));
 
@@ -525,7 +527,7 @@ namespace RoguelikeEngine
         }
     }
 
-    abstract class Creature : IEffectHolder, ITurnTaker, IGameObject, IHasPosition
+    abstract class Creature : IEffectHolder, IGameObject, IHasPosition
     {
         public class WaitFrames : Wait
         {
@@ -606,6 +608,7 @@ namespace RoguelikeEngine
         public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
         public bool Dead;
         public Wait DeadWait = Wait.NoWait;
+        public TurnTaker Control;
 
         Vector2 IHasPosition.VisualPosition => VisualPosition();
         public virtual Vector2 VisualTarget => VisualPosition() + new Vector2(8, 8);
@@ -736,9 +739,41 @@ namespace RoguelikeEngine
             }
         }
 
-        public virtual Wait TakeTurn(ActionQueue queue)
+        public void AddControlTurn()
         {
-            this.ResetTurn();
+            ActionQueue queue = World.ActionQueue;
+            Control = new TurnTakerCreatureControl(queue, this);
+            queue.Add(Control);
+            AddNormalTurn();
+        }
+
+        public void AddNormalTurn()
+        {
+            ActionQueue queue = World.ActionQueue;
+            queue.Add(new TurnTakerCreatureNormal(queue, this));
+        }
+
+        public virtual Wait StartTurn(Turn turn)
+        {
+            return Wait.NoWait;
+        }
+
+        public virtual Wait TakeTurn(Turn turn)
+        {
+            Wait wait = Wait.NoWait;
+            if (Dead)
+                return wait;
+
+            return Wait.NoWait;
+        }
+
+        public virtual Wait EndTurn(Turn turn)
+        {
+            return Wait.NoWait;
+        }
+
+        public virtual Wait NormalTurn(Turn turn)
+        {
             foreach (var statusEffect in this.GetStatusEffects())
                 statusEffect.Update();
             return Wait.NoWait;
@@ -772,6 +807,8 @@ namespace RoguelikeEngine
 
         public void MoveTo(Tile tile, int time)
         {
+            Tile previousTile = Tile;
+            EventBus.PushEvent(new EventMove(this, previousTile, tile));
             UnsetMask();
             if (tile == null)
                 return;
@@ -781,6 +818,7 @@ namespace RoguelikeEngine
             else
                 VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, time);
             VisualCamera = VisualPosition;
+            EventBus.PushEvent(new EventMove.Finish(this, previousTile, tile));
         }
 
         public void Move(int dx, int dy, int time)
@@ -1006,6 +1044,11 @@ namespace RoguelikeEngine
         public override string ToString()
         {
             return $"Creature {ObjectID.ID}";
+        }
+
+        public bool IsControllable(Creature player)
+        {
+            return player == this;
         }
     }
 

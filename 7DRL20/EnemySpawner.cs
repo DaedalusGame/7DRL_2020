@@ -11,7 +11,28 @@ namespace RoguelikeEngine
 {
     delegate IEnumerable<Enemy> EnemySpawnDelegate(SceneGame world, Tile tile);
 
-    class EnemySpawner : ITurnTaker
+    class TurnTakerSpawner : TurnTaker
+    {
+        EnemySpawner Spawner;
+
+        public TurnTakerSpawner(ActionQueue queue, EnemySpawner spawner) : base(queue)
+        {
+            Spawner = spawner;
+        }
+
+        public override object Owner => Spawner;
+        public override double Speed => 1;
+        public override bool RemoveFromQueue => false;
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            Spawner.TakeTurn(turn);
+
+            return Wait.NoWait;
+        }
+    }
+
+    class EnemySpawner
     {
         public double TurnSpeed => 1;
         public double TurnBuildup { get; set; }
@@ -34,6 +55,7 @@ namespace RoguelikeEngine
         public EnemySpawner(SceneGame world, int time)
         {
             World = world;
+            World.ActionQueue.Add(new TurnTakerSpawner(World.ActionQueue, this));
             Encounter = new Slider(time);
             EncounterBoss = new Slider(time);
 
@@ -42,7 +64,7 @@ namespace RoguelikeEngine
                 var boss = new EnderErebizo(World);
                 boss.MoveTo(tile, 0);
                 boss.MakeAggressive(World.Player);
-                World.ActionQueue.Add(boss);
+                boss.AddControlTurn();
                 return new[] { boss };
             })
             .SetSlowChance(data => data.AliveBosses.Count < 2, 0.0)
@@ -61,7 +83,7 @@ namespace RoguelikeEngine
                 var boss = new Wallhach(World);
                 boss.MoveTo(tile, 0);
                 boss.MakeAggressive(World.Player);
-                World.ActionQueue.Add(boss);
+                boss.AddControlTurn();
                 return new[] { boss };
             })
             .SetSlowChance(data => data.AliveBosses.Count < 2, 1.0)
@@ -84,14 +106,14 @@ namespace RoguelikeEngine
                 .Shuffle(Random);
         }
 
-        public Wait TakeTurn(ActionQueue queue)
+        public Wait TakeTurn(Turn turn)
         {
             Encounter += 1;
             EncounterBoss += 1;
             Cleanup();
             SpawnEnemies();
             SpawnBosses();
-            this.ResetTurn();
+            turn.End();
             return Wait.NoWait;
         }
 
@@ -111,7 +133,7 @@ namespace RoguelikeEngine
                     {
                         Enemies.Add(enemy);
                         enemy.MakeAggressive(World.Player);
-                        World.ActionQueue.Add(enemy);
+                        enemy.AddControlTurn();
                         new Smoke(World, enemy.VisualTarget, Vector2.Zero, 0, 15);
                     }
                 }

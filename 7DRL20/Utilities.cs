@@ -188,6 +188,37 @@ namespace RoguelikeEngine
         }
     }
 
+    class MultiDict<TKey, TValue>
+    {
+        private Dictionary<TKey, List<TValue>> Data = new Dictionary<TKey, List<TValue>>();
+
+        public IEnumerable<TValue> this[TKey key]
+        {
+            get
+            {
+                return Data[key];
+            }
+        }
+
+        public void Add(TKey key, TValue value)
+        {
+            List<TValue> list;
+            if (Data.TryGetValue(key, out list))
+                list.Add(value);
+            else
+                Data.Add(key, new List<TValue>() { value });
+        }
+
+        public IEnumerable<TValue> GetOrEmpty(TKey key)
+        {
+            List<TValue> list;
+            if (Data.TryGetValue(key, out list))
+                return list;
+            else
+                return Enumerable.Empty<TValue>();
+        }
+    }
+
     static class Util
     {
         #region Dijkstra
@@ -347,21 +378,6 @@ namespace RoguelikeEngine
             {
                 return (x / m);
             }
-        }
-
-        public static void IncrementTurn(this ITurnTaker turnTaker)
-        {
-            turnTaker.TurnBuildup += turnTaker.TurnSpeed;
-        }
-
-        public static void ReduceTurn(this ITurnTaker turnTaker, double turns)
-        {
-            turnTaker.TurnBuildup -= turns;
-        }
-
-        public static void ResetTurn(this ITurnTaker turnTaker)
-        {
-            turnTaker.TurnBuildup %= 1;
         }
 
         public static T WithMin<T, V>(this IEnumerable<T> enumerable, Func<T, V> selector) where V : IComparable
@@ -574,6 +590,19 @@ namespace RoguelikeEngine
             {
                 type = type.BaseType;
                 yield return type;
+            }
+        }
+
+        public static IEnumerable<Type> GetBaseTypes<T>(Type type)
+        {
+            if (typeof(T).IsAssignableFrom(type))
+            {
+                yield return type;
+                while (type != typeof(T))
+                {
+                    type = type.BaseType;
+                    yield return type;
+                }
             }
         }
 
