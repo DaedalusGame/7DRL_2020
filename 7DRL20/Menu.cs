@@ -139,7 +139,7 @@ namespace RoguelikeEngine
             if (frontier.All(front => !front.Solid && !front.Creatures.Any()))
             {
                 player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(dx, dy));
-                Scene.Wait.Add(player.CurrentAction);
+                //Scene.Wait.Add(player.CurrentAction);
                 Turn.End();
             }
             else if (frontier.Any(front => front is IMineable))
@@ -185,72 +185,79 @@ namespace RoguelikeEngine
                 return;
             }
 
-            if (state.IsKeyPressed(Keys.W, 15, 5))
+            if (Player.CurrentAction.Done)
             {
-                if (Player.Facing != Facing.North)
+                if (state.IsKeyPressed(Keys.W, 15, 5))
                 {
-                    Player.Facing = Facing.North;
+                    if (Player.Facing != Facing.North)
+                    {
+                        Player.Facing = Facing.North;
+                        return;
+                    }
+                    else
+                    {
+                        TryMove(Player, Facing.North);
+                        return;
+                    }
                 }
-                else
+                if (state.IsKeyPressed(Keys.S, 15, 5))
                 {
-                    TryMove(Player, Facing.North);
+                    if (Player.Facing != Facing.South)
+                    {
+                        Player.Facing = Facing.South;
+                        return;
+                    }
+                    else
+                    {
+                        TryMove(Player, Facing.South);
+                        return;
+                    }
+                }
+                if (state.IsKeyPressed(Keys.A, 15, 5))
+                {
+                    if (Player.Facing != Facing.West)
+                    {
+                        Player.Facing = Facing.West;
+                        return;
+                    }
+                    else
+                    {
+                        TryMove(Player, Facing.West);
+                        return;
+                    }
+                }
+                if (state.IsKeyPressed(Keys.D, 15, 5))
+                {
+                    if (Player.Facing != Facing.East)
+                    {
+                        Player.Facing = Facing.East;
+                        return;
+                    }
+                    else
+                    {
+                        TryMove(Player, Facing.East);
+                        return;
+                    }
+                }
+                if (state.IsKeyPressed(Keys.R) && Player.HasFlag(Stat.SwapItem))
+                {
+                    var mainhand = Player.EquipMainhand;
+                    var offhand = Player.EquipOffhand;
+                    Player.Unequip(EquipSlot.Mainhand);
+                    Player.Unequip(EquipSlot.Offhand);
+                    if (offhand != null)
+                        Player.Equip(offhand, EquipSlot.Mainhand);
+                    if (mainhand != null)
+                        Player.Equip(mainhand, EquipSlot.Offhand);
                     return;
                 }
-            }
-            if (state.IsKeyPressed(Keys.S, 15, 5))
-            {
-                if (Player.Facing != Facing.South)
+                if (state.IsKeyPressed(Keys.Space))
                 {
-                    Player.Facing = Facing.South;
-                }
-                else
-                {
-                    TryMove(Player, Facing.South);
+                    var offset = Player.Facing.ToOffset();
+                    Scene.Wait.Add(Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)));
+                    Turn.End();
                     return;
                 }
-            }
-            if (state.IsKeyPressed(Keys.A, 15, 5))
-            {
-                if (Player.Facing != Facing.West)
-                {
-                    Player.Facing = Facing.West;
-                }
-                else
-                {
-                    TryMove(Player, Facing.West);
-                    return;
-                }
-            }
-            if (state.IsKeyPressed(Keys.D, 15, 5))
-            {
-                if (Player.Facing != Facing.East)
-                {
-                    Player.Facing = Facing.East;
-                }
-                else
-                {
-                    TryMove(Player, Facing.East);
-                    return;
-                }
-            }
-            if (state.IsKeyPressed(Keys.R) && Player.HasFlag(Stat.SwapItem))
-            {
-                var mainhand = Player.EquipMainhand;
-                var offhand = Player.EquipOffhand;
-                Player.Unequip(EquipSlot.Mainhand);
-                Player.Unequip(EquipSlot.Offhand);
-                if(offhand != null)
-                    Player.Equip(offhand, EquipSlot.Mainhand);
-                if (mainhand != null)
-                    Player.Equip(mainhand, EquipSlot.Offhand);
-                return;
-            }
-            if (state.IsKeyPressed(Keys.Space))
-            {
-                var offset = Player.Facing.ToOffset();
-                Scene.Wait.Add(Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)));
-                Turn.End();
-                return;
             }
             if (state.IsKeyPressed(Keys.Enter))
             {

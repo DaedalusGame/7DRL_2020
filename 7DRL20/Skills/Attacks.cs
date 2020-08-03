@@ -845,6 +845,42 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillChaosJaunt : Skill
+    {
+        public override bool Hidden(Creature user) => true;
+        public override bool WaitUse => true;
+
+        public SkillChaosJaunt() : base("Chaos Jaunt", "Move to chase enemy, deal chaos damage to surrounding tiles.", 0, 2, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && !InRange(user, user.AggroTarget, 4);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user)
+        {
+            if (user is Enemy enemy)
+            {
+                yield return user.CurrentAction;
+                Consume();
+                new ChaosSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);
+                user.VisualColor = user.Static(Color.Transparent);
+                var nearbyTiles = enemy.AggroTarget.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
+                user.MoveTo(nearbyTiles.Pick(Random), 0);
+                ColorMatrix chaos = new ColorMatrix(new Matrix(
+                    1, 0, 0, 0,
+                    1, 1, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 0, 1), 
+                    new Vector4(1,0,0,0));
+                user.VisualColor = user.Flick(user.Flash(user.Static(Color.Transparent), user.Static(chaos), 1, 1), user.Static(Color.White), 5);
+                //yield return user.WaitSome(20);
+            }
+        }
+    }
+
     class SkillIronMaiden : Skill
     {
         public SkillIronMaiden() : base("Iron Maiden", "Lowers enemy defense.", 4, 10, float.PositiveInfinity)

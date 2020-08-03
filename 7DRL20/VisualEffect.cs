@@ -359,6 +359,13 @@ namespace RoguelikeEngine
         }
     }
 
+    class ChaosSplash : Explosion
+    {
+        public ChaosSplash(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/splash_chaos"), position, velocity, angle, time)
+        {
+        }
+    }
+
     class LightningFlash : Explosion
     {
         public LightningFlash(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/lightning_flash"), position, velocity, angle, time)

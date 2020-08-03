@@ -49,7 +49,7 @@ namespace RoguelikeEngine
         public List<Enemy> Enemies = new List<Enemy>();
         public List<Enemy> Bosses = new List<Enemy>();
 
-        public int SpawnRadius = 6;
+        public int SpawnRadius = 10;
         public int DespawnRadius = 16;
 
         public EnemySpawner(SceneGame world, int time)
@@ -67,7 +67,7 @@ namespace RoguelikeEngine
                 boss.AddControlTurn();
                 return new[] { boss };
             })
-            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.0)
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.1)
             .SetTile(tile => tile.Opaque, tile => {
                 var rectangle = new Rectangle(tile.X, tile.Y, 2, 2);
                 var checkTiles = tile.GetNearby(rectangle, 0);
@@ -86,7 +86,7 @@ namespace RoguelikeEngine
                 boss.AddControlTurn();
                 return new[] { boss };
             })
-            .SetSlowChance(data => data.AliveBosses.Count < 2, 1.0)
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.1)
             .SetTile(tile => !tile.Opaque && tile.Creatures.Empty()));
         }
 

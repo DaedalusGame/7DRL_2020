@@ -78,7 +78,7 @@ namespace RoguelikeEngine.Enemies
             {
                 var move = new[] { Facing.North, Facing.East, Facing.South, Facing.West }.Pick(Random).ToOffset();
                 CurrentAction = Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y));
-                wait = CurrentAction;
+                //wait = CurrentAction;
             }
             return wait;
         }
@@ -614,7 +614,7 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());
-            Skills.Add(new SkillWarp());
+            Skills.Add(new SkillChaosJaunt());
         }
     }
 
