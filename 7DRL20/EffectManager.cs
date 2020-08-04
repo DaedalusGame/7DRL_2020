@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Traits;
 
 namespace RoguelikeEngine
@@ -409,6 +410,14 @@ namespace RoguelikeEngine
             if (effects.Any())
                 return effects.WithMax(effect => effect.Priority).Value;
             return flag.DefaultValue;
+        }
+
+        public static bool HasFamily(this IEffectHolder holder, Family family)
+        {
+            var effects = holder.GetEffects<EffectFamily>().Where(effect => effect.Family == family);
+            if (effects.Any())
+                return effects.WithMax(effect => effect.Priority).Value;
+            return false;
         }
 
         public static void ClearPosition(this IEffectHolder subject)

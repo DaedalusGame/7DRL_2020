@@ -10,6 +10,24 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Enemies
 {
+    class Family
+    {
+        public static List<Family> AllFamilies = new List<Family>();
+
+        int ID;
+        string Name;
+
+        public Family(string name)
+        {
+            ID = AllFamilies.Count;
+            Name = name;
+            AllFamilies.Add(this);
+        }
+
+        public static Family Slime = new Family("Slime");
+        public static Family GreenSlime = new Family("Green Slime");
+    }
+
     abstract class Enemy : Creature
     {
         static public Random Random = new Random();
@@ -31,7 +49,7 @@ namespace RoguelikeEngine.Enemies
 
         public override bool IsHostile(Creature other)
         {
-            return other != this;
+            return !(other is Enemy);
         }
 
         private Skill GetUsableSkill()
@@ -900,8 +918,15 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
+            Effect.Apply(new EffectFamily(this, Family.GreenSlime));
+
             Skills.Add(new SkillSlimeTouch());
             Skills.Add(new SkillAttack());
+        }
+
+        public override bool IsHostile(Creature other)
+        {
+            return !other.HasFamily(Family.GreenSlime);
         }
 
         private IEnumerable<Wait> RoutineSplit(DeathEvent death)
@@ -946,7 +971,14 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
 
+            Effect.Apply(new EffectFamily(this, Family.GreenSlime));
+
             Skills.Add(new SkillSlimeTouch());
+        }
+
+        public override bool IsHostile(Creature other)
+        {
+            return !other.HasFamily(Family.GreenSlime);
         }
     }
 }

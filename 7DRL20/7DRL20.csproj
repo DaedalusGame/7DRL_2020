@@ -44,6 +44,7 @@
     <Compile Include="ActionQueue.cs" />
     <Compile Include="Attack.cs" />
     <Compile Include="ConnectivityHelper.cs" />
+    <Compile Include="Effects\EffectFamily.cs" />
     <Compile Include="Effects\EffectLastHit.cs" />
     <Compile Include="Effects\EffectStatDamage.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
