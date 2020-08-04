@@ -21,11 +21,20 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InMeleeRange(user);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            return user.RoutineAttack(offset.X, offset.Y, Attack);
+            return user.Facing;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Facing facing)
+            {
+                Consume();
+                var offset = facing.ToOffset();
+                return user.RoutineAttack(offset.X, offset.Y, Attack);
+            }
+            return Enumerable.Empty<Wait>();
         }
 
         protected abstract Attack Attack(Creature attacker, IEffectHolder defender);
@@ -124,6 +133,11 @@ namespace RoguelikeEngine.Skills
         {
         }
 
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.Facing;
+        }
+
         //TODO: Probably add projectile class so we can have stuff like mirror spells
         protected IEnumerable<Wait> ShootStraight(Creature user, Tile tile, Point velocity, int time, int maxDistance, Bullet bullet, TrailDelegate trail, CanCollideDelegate canCollide, ImpactDelegate impact)
         {
@@ -177,16 +191,19 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            Point velocity = user.Facing.ToOffset();
-            Consume();
-            ShowSkill(user);
-            yield return user.WaitSome(20);
-            var pos = new Vector2(user.X * 16, user.Y * 16);
-            user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
-            user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
-            yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+            if (target is Facing facing)
+            {
+                Point velocity = facing.ToOffset();
+                Consume();
+                ShowSkill(user);
+                yield return user.WaitSome(20);
+                var pos = new Vector2(user.X * 16, user.Y * 16);
+                user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
+                user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+                yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+            }
         }
 
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
@@ -229,16 +246,19 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            Consume();
-            var velocity = user.Facing.ToOffset();
-            Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
-            ShowSkill(user);
-            yield return user.WaitSome(50);
-            user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * -8, velocity.Y * -8), pos, LerpHelper.Linear, 10);
-            yield return user.WaitSome(20);
-            yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+            if (target is Facing facing)
+            {
+                Point velocity = facing.ToOffset();
+                Consume();
+                Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
+                ShowSkill(user);
+                yield return user.WaitSome(50);
+                user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * -8, velocity.Y * -8), pos, LerpHelper.Linear, 10);
+                yield return user.WaitSome(20);
+                yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+            }
         }
 
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
@@ -275,21 +295,24 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            Point velocity = user.Facing.ToOffset();
-            Consume();
-            yield return user.WaitSome(20);
-            var pos = new Vector2(user.X * 16, user.Y * 16);
-            user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
-            user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
-            List<Wait> bulletWaits = new List<Wait>();
-            Point sideOffset = user.Facing.TurnRight().ToOffset();
-            for (int i = -1; i <= 1; i++)
+            if (target is Facing facing)
             {
-                bulletWaits.Add(Scheduler.Instance.RunAndWait(Shoot(user, user.Tile.GetNeighbor(sideOffset.X * i, sideOffset.Y * i), velocity)));
+                Point velocity = facing.ToOffset();
+                Consume();
+                yield return user.WaitSome(20);
+                var pos = new Vector2(user.X * 16, user.Y * 16);
+                user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
+                user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+                List<Wait> bulletWaits = new List<Wait>();
+                Point sideOffset = user.Facing.TurnRight().ToOffset();
+                for (int i = -1; i <= 1; i++)
+                {
+                    bulletWaits.Add(Scheduler.Instance.RunAndWait(Shoot(user, user.Tile.GetNeighbor(sideOffset.X * i, sideOffset.Y * i), velocity)));
+                }
+                yield return new WaitAll(bulletWaits);
             }
-            yield return new WaitAll(bulletWaits);
         }
 
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
@@ -337,12 +360,17 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && (!CheckTarget || InLineOfSight(user, user.AggroTarget, MaxDistance));
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return user.Facing;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Facing facing)
             {
                 Consume();
-                var offset = user.Facing.ToOffset();
+                var offset = facing.ToOffset();
                 yield return user.WaitSome(20);
                 Tile lastSafeTile = user.Tile;
                 var frontier = user.Mask.GetFrontier(offset.X, offset.Y);
@@ -465,20 +493,22 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             Consume();
             ShowSkill(user);
             yield return user.WaitSome(50);
 
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
-            Creature aggroTarget = null;
-            if (user is Enemy enemy)
-                aggroTarget = enemy.AggroTarget;
             var nearbyTiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X,user.Y),6).Where(tile => tile != user.Tile).Shuffle();
             Tile shootTile = null;
             var trigger = Random.NextDouble();
-            var nearbyTarget = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => c == aggroTarget));
+            var nearbyTarget = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => user.IsHostile(c)));
             var nearbyDragon = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => c is BlueDragon));
             if (trigger < 0.5 && nearbyTarget != null)
                 shootTile = nearbyTarget;
@@ -489,10 +519,10 @@ namespace RoguelikeEngine.Skills
             new Lightning(user.World, user.VisualTarget, shootTile.VisualTarget, 10, 10);
             yield return user.WaitSome(20);
 
-            foreach (var target in shootTile.Creatures)
+            foreach (var chainTarget in shootTile.Creatures)
             {
-                user.Attack(target, 0, 0, ThunderAttack);
-                yield return target.CurrentAction;
+                user.Attack(chainTarget, 0, 0, ThunderAttack);
+                yield return chainTarget.CurrentAction;
                 break;
             }
             yield return user.WaitSome(20);
@@ -517,6 +547,11 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user);
         }
 
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.Facing;
+        }
+
         private float GetFacingAngle(Facing facing)
         {
             switch (facing)
@@ -538,30 +573,34 @@ namespace RoguelikeEngine.Skills
             return user.Tile.Map.GetTile(tileX, tileY);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            float centerAngle = GetFacingAngle(user.Facing);
-
-            float startAngle = centerAngle - MathHelper.PiOver2;
-            float endAngle = centerAngle + MathHelper.PiOver2;
-            float radius = 4;
-
-            float arcLength = (endAngle - startAngle) * radius;
-            float arcSpeed = 1;
-            float increment = arcLength / arcSpeed;
-
-            List<Wait> breaths = new List<Wait>();
-            HashSet<Tile> tiles = new HashSet<Tile>();
-            PopupManager.StartCollect();
-            for (float slide = 0; slide <= arcLength; slide += arcSpeed)
+            if (target is Facing facing)
             {
-                float angle = MathHelper.Lerp(startAngle, endAngle, slide / arcLength);
-                breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius, tiles)));
-                yield return user.WaitSome(5);
+                float centerAngle = GetFacingAngle(facing);
+                Consume();
+
+                float startAngle = centerAngle - MathHelper.PiOver2;
+                float endAngle = centerAngle + MathHelper.PiOver2;
+                float radius = 4;
+
+                float arcLength = (endAngle - startAngle) * radius;
+                float arcSpeed = 1;
+                float increment = arcLength / arcSpeed;
+
+                List<Wait> breaths = new List<Wait>();
+                HashSet<Tile> tiles = new HashSet<Tile>();
+                PopupManager.StartCollect();
+                for (float slide = 0; slide <= arcLength; slide += arcSpeed)
+                {
+                    float angle = MathHelper.Lerp(startAngle, endAngle, slide / arcLength);
+                    breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius, tiles)));
+                    yield return user.WaitSome(5);
+                }
+                yield return new WaitAll(breaths);
+                PopupManager.FinishCollect();
+                AfterBreath(user, tiles);
             }
-            yield return new WaitAll(breaths);
-            PopupManager.FinishCollect();
-            AfterBreath(user, tiles);
         }
 
         public abstract IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles);
@@ -680,18 +719,23 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && GetPossibleTiles(user, user.AggroTarget).Any();
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy) {
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature) {
                 Consume();
                 yield return user.WaitSome(20);
-                var tiles = GetPossibleTiles(user, enemy.AggroTarget);
+                var tiles = GetPossibleTiles(user, targetCreature);
                 if (tiles.Any())
                 {
                     TileDirection tile = tiles.First();
                     Vector2 startJump = user.VisualPosition();
-                    enemy.MoveTo(tile.Tile, 20);
-                    enemy.Facing = tile.Facing;
+                    user.MoveTo(tile.Tile, 20);
+                    user.Facing = tile.Facing;
                     user.VisualPosition = user.SlideJump(startJump, new Vector2(user.X, user.Y) * 16, 16, LerpHelper.Linear, 20);
                     yield return user.WaitSome(20);
                     Land(user);
@@ -793,12 +837,17 @@ namespace RoguelikeEngine.Skills
         {
         }
 
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
         public override bool CanUse(Creature user)
         {
             return base.CanUse(user) && user.Tile is Water;
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             yield return user.CurrentAction;
             Consume();
@@ -822,21 +871,26 @@ namespace RoguelikeEngine.Skills
         {
         }
 
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.AggroTarget;
+        }
+
         public override bool CanEnemyUse(Enemy user)
         {
             return base.CanEnemyUse(user) && !InRange(user, user.AggroTarget, 4);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            if (user is Enemy enemy)
+            if (target is Creature targetCreature)
             {
                 yield return user.CurrentAction;
                 Consume();
                 user.VisualColor = user.Flick(user.Flash(user.Static(Color.Transparent), user.Static(Color.White), 2, 2), user.Static(Color.White), 20);
                 yield return user.WaitSome(20);
                 user.VisualColor = user.Static(Color.Transparent);
-                var nearbyTiles = enemy.AggroTarget.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
+                var nearbyTiles = targetCreature.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
                 user.MoveTo(nearbyTiles.Pick(Random),0);
                 yield return user.WaitSome(20);
                 user.VisualColor = user.Flick(user.Flash(user.Static(Color.Transparent), user.Static(Color.White), 2, 2), user.Static(Color.White), 20);
@@ -854,30 +908,79 @@ namespace RoguelikeEngine.Skills
         {
         }
 
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.AggroTarget;
+        }
+
         public override bool CanEnemyUse(Enemy user)
         {
             return base.CanEnemyUse(user) && !InRange(user, user.AggroTarget, 4);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        private void EmitFlare(Creature creature, int n)
         {
-            if (user is Enemy enemy)
+            SpriteReference sprite = SpriteLoader.Instance.AddSprite("content/cinder");
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 emitPos = new Vector2(creature.X * 16, creature.Y * 16) + creature.Mask.GetRandomPixel(Random);
+                Vector2 centerPos = creature.VisualTarget;
+                Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 1;
+                new Cinder(creature.World, sprite, emitPos, velocity, (int)Math.Min(Random.Next(90) + 90, 50));
+            }
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
             {
                 yield return user.CurrentAction;
                 Consume();
-                new ChaosSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);
+                new ChaosSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 15);
                 user.VisualColor = user.Static(Color.Transparent);
-                var nearbyTiles = enemy.AggroTarget.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
+                EmitFlare(user, 10);
+                var nearbyTiles = targetCreature.Tile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).ToList();
                 user.MoveTo(nearbyTiles.Pick(Random), 0);
-                ColorMatrix chaos = new ColorMatrix(new Matrix(
-                    1, 0, 0, 0,
-                    1, 1, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 0, 1), 
-                    new Vector4(1,0,0,0));
-                user.VisualColor = user.Flick(user.Flash(user.Static(Color.Transparent), user.Static(chaos), 1, 1), user.Static(Color.White), 5);
-                //yield return user.WaitSome(20);
+                EmitFlare(user, 10);
+                user.VisualColor = user.Flick(user.Flash(user.Static(Color.Transparent), user.Static(ColorMatrix.Chaos()), 1, 1), user.Static(Color.White), 10);
+                var impact = user.Tile.GetAllNeighbors();
+                SpriteReference chaosBall = SpriteLoader.Instance.AddSprite("content/projectile_chaos");
+                List<Creature> targets = new List<Creature>();
+                List<Tile> targetTiles = new List<Tile>();
+                int emitTime = 15;
+                int ballTime = 5;
+                foreach (var tile in impact) {
+                    if(tile.Creatures.Any())
+                    {
+                        new ProjectileEmitter(user.World, () => user.VisualTarget, () => tile.VisualTarget, emitTime, (start, end) => new Ball(user.World, chaosBall, start, end, LerpHelper.Linear, ballTime));
+                        targets.AddRange(tile.Creatures);
+                        targetTiles.Add(tile);
+                    }
+                }
+                if(targets.Any())
+                    yield return user.WaitSome(emitTime + ballTime);
+                foreach (var blastTarget in targets)
+                {
+                    user.Attack(blastTarget, 0, 0, ExplosionAttack);
+                    EmitFlare(blastTarget, 10);
+                }
+                foreach (var targetTile in targetTiles)
+                {
+                    new FireExplosion(user.World, targetTile.VisualTarget, Vector2.Zero, 0, 12);
+                }
+                if (targets.Any())
+                {
+                    new ScreenShakeRandom(user.World, 5, 10, LerpHelper.Linear);
+                    yield return user.WaitSome(20);
+                }
             }
+        }
+
+        protected Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Chaos, 1.0);
+            return attack;
         }
     }
 
@@ -892,18 +995,22 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
             {
                 Consume();
                 ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
-                var target = enemy.AggroTarget;
-                var effect = new IronMaiden(user.World, () => user.VisualTarget, () => target.VisualTarget, 5, 7, 10);
+                var effect = new IronMaiden(user.World, () => user.VisualTarget, () => targetCreature.VisualTarget, 5, 7, 10);
                 yield return new WaitEffect(effect);
-                target.AddStatusEffect(new DefenseDown() {
+                targetCreature.AddStatusEffect(new DefenseDown() {
                     Buildup = 0.4,
                     Duration = new Slider(20),
                 });
@@ -919,7 +1026,12 @@ namespace RoguelikeEngine.Skills
             Priority = 10;
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             throw new NotImplementedException();
         }
@@ -932,7 +1044,12 @@ namespace RoguelikeEngine.Skills
             Priority = 10;
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             throw new NotImplementedException();
         }
@@ -945,7 +1062,12 @@ namespace RoguelikeEngine.Skills
             Priority = 10;
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             throw new NotImplementedException();
         }

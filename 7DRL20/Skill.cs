@@ -163,6 +163,10 @@ namespace RoguelikeEngine
             return creature.CurrentAction;
         }
 
-        public abstract IEnumerable<Wait> RoutineUse(Creature user);
+        public abstract object GetEnemyTarget(Enemy user);
+
+        //public abstract bool IsTargetValid(Creature user, object target);
+
+        public abstract IEnumerable<Wait> RoutineUse(Creature user, object target);
     }
 }

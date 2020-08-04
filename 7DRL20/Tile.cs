@@ -428,8 +428,7 @@ namespace RoguelikeEngine
             {
                 selection.Add(new ActAction("Take the Stairs", "", () =>
                 {
-                    player.CurrentAction = Scheduler.Instance.RunAndWait(RoutineTakeStairs(player));
-                    //player.TakeTurn(player.World.ActionQueue);
+                    ui.TakeAction(Scheduler.Instance.RunAndWait(RoutineTakeStairs(player)), true);
                     selection.Close();
                 }, () => CanUseStairs(player)));
             }

@@ -20,13 +20,17 @@ namespace RoguelikeEngine.Attacks
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
             {
                 List<Creature> targets = new List<Creature>();
                 Consume();
-                Creature target = enemy.AggroTarget;
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(10);
                 int chiralStacks = user.GetStatusStacks<Chirality>();
@@ -34,14 +38,14 @@ namespace RoguelikeEngine.Attacks
                 List<Wait> waits = new List<Wait>();
                 for (int i = 0; i < chiralStacks + 1; i++)
                 {
-                    targets.Add(target);
-                    waits.Add(Scheduler.Instance.RunAndWait(RoutineHand(user, target, hits)));
+                    targets.Add(targetCreature);
+                    waits.Add(Scheduler.Instance.RunAndWait(RoutineHand(user, targetCreature, hits)));
                     hits++;
                     yield return user.WaitSome(7);
                 }
                 yield return new WaitAll(waits);
                 double chiralBuildup = 0.2 * hits;
-                if (target.HasStatusEffect<DeltaMark>())
+                if (targetCreature.HasStatusEffect<DeltaMark>())
                     chiralBuildup *= 3;
                 //chiralBuildup = Math.Min(chiralBuildup, 5);
                 user.AddStatusEffect(new Chirality()
@@ -90,6 +94,11 @@ namespace RoguelikeEngine.Attacks
             return base.CanEnemyUse(user) && !InRange(user, user.AggroTarget, 3);
         }
 
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.AggroTarget;
+        }
+
         public override void Update(Creature user)
         {
             base.Update(user);
@@ -97,26 +106,25 @@ namespace RoguelikeEngine.Attacks
                 Warmup.Time = 0;
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            if (user is Enemy enemy)
+            if (target is Creature targetCreature)
             {
                 List<Creature> targets = new List<Creature>();
                 Consume();
                 ShowSkill(user);
                 var chirality = user.GetStatusEffect<Chirality>();
                 chirality?.AddBuildup(-5);
-                Creature target = enemy.AggroTarget;
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
                 var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), user.VisualTarget, ColorMatrix.Tint(Color.Black), 15);
-                bullet.Move(target.VisualTarget, 15);
+                bullet.Move(targetCreature.VisualTarget, 15);
                 yield return new WaitBullet(bullet);
                 SpriteReference triangle = SpriteLoader.Instance.AddSprite("content/triangle");
                 for (int i = 0; i < 50; i++)
                 {
-                    Vector2 emitPos = new Vector2(target.X * 16, target.Y * 16) + target.Mask.GetRandomPixel(Random);
-                    Vector2 centerPos = target.VisualTarget;
+                    Vector2 emitPos = new Vector2(targetCreature.X * 16, targetCreature.Y * 16) + targetCreature.Mask.GetRandomPixel(Random);
+                    Vector2 centerPos = targetCreature.VisualTarget;
                     Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 40f;
                     new Triangle(user.World, triangle, emitPos, velocity, MathHelper.ToRadians(40 * (Random.NextFloat() - 0.5f)), Color.Black, Random.Next(80) + 5);
                 }
@@ -125,8 +133,8 @@ namespace RoguelikeEngine.Attacks
                 PopupManager.StartCollect();
                 for (int i = 0; i < 10; i++)
                 {
-                    targets.Add(target);
-                    waits.Add(Scheduler.Instance.RunAndWait(RoutineSlap(user, target)));
+                    targets.Add(targetCreature);
+                    waits.Add(Scheduler.Instance.RunAndWait(RoutineSlap(user, targetCreature)));
                     yield return user.WaitSome(4);
                 }
                 yield return new WaitAll(waits);
@@ -163,22 +171,26 @@ namespace RoguelikeEngine.Attacks
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 5);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
             {
                 Consume();
                 ShowSkill(user);
-                Creature target = enemy.AggroTarget;
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
                 var bullet = new BulletDelta(user.World, SpriteLoader.Instance.AddSprite("content/delta"), user.VisualTarget, ColorMatrix.Tint(Color.Goldenrod), MathHelper.ToRadians(20), 50);
-                bullet.Move(target.VisualTarget, 30);
+                bullet.Move(targetCreature.VisualTarget, 30);
                 yield return user.WaitSome(30);
-                new RockTremor(user.World, target, 30);
+                new RockTremor(user.World, targetCreature, 30);
                 yield return new WaitBullet(bullet);
-                user.Attack(target, 0, 0, AttackDelta);
-                yield return target.CurrentAction;
+                user.Attack(targetCreature, 0, 0, AttackDelta);
+                yield return targetCreature.CurrentAction;
             }
         }
 
@@ -212,16 +224,20 @@ namespace RoguelikeEngine.Attacks
             return base.CanEnemyUse(user) && !user.AggroTarget.HasStatusEffect<Wedlock>();
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             Wallhach wallhach = user as Wallhach;
-            if (user is Enemy enemy)
+            if (target is Creature targetCreature)
             {
                 Consume();
                 ShowSkill(user);
                 var chirality = user.GetStatusEffect<Chirality>();
                 chirality?.AddBuildup(-8);
-                Creature target = enemy.AggroTarget;
                 if (wallhach != null)
                 {
                     yield return Scheduler.Instance.RunAndWait(wallhach.RoutineOpenWing(0.6f, 50, LerpHelper.Quadratic));
@@ -242,12 +258,12 @@ namespace RoguelikeEngine.Attacks
                     List<Vector2> wingPositions = Wallhach.GetWingPositions(user.VisualTarget, 1.0f);
                     Vector2 velocity = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * 160;
                     Vector2 emitPos = wingPositions.Pick(Random);
-                    var bullet = new MissileHand(user.World, emitPos, target.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), 60, timeLeft - i);
+                    var bullet = new MissileHand(user.World, emitPos, targetCreature.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), 60, timeLeft - i);
                     waits.Add(new WaitBullet(bullet));
                     yield return user.WaitSome(1);
                 }
                 yield return new WaitAll(waits);
-                target.AddStatusEffect(new Wedlock(user)
+                targetCreature.AddStatusEffect(new Wedlock(user)
                 {
                     Duration = new Slider(float.PositiveInfinity),
                     Buildup = 1.0,
@@ -268,7 +284,12 @@ namespace RoguelikeEngine.Attacks
             Priority = 10;
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
             Consume();
             ShowSkill(user);

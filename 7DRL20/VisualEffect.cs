@@ -979,6 +979,68 @@ namespace RoguelikeEngine
         }
     }
 
+    class ProjectileEmitter : VisualEffect
+    {
+        Func<Vector2> Start, End;
+        Func<Vector2, Vector2, Projectile> Emit;
+
+        public ProjectileEmitter(SceneGame world, Func<Vector2> start, Func<Vector2> end, int time, Func<Vector2, Vector2, Projectile> emit) : base(world)
+        {
+            Frame = new Slider(time);
+            Start = start;
+            End = end;
+            Emit = emit;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if(Frame.Time % 3 == 0)
+            {
+                Projectile projectile = Emit(Start(), End());
+            }
+
+            if (Frame.Done)
+            {
+                this.Destroy();
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class Ball : Projectile
+    {
+        public SpriteReference Sprite;
+        public LerpHelper.Delegate Lerp;
+        public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, (float)Lerp(0, 1, Frame.Slide));
+       
+        public Ball(SceneGame world, SpriteReference sprite, Vector2 positionStart, Vector2 positionEnd, LerpHelper.Delegate lerp, int time) : base(world, positionStart, positionEnd, time)
+        {
+            Sprite = sprite;
+            Lerp = lerp;
+        }
+        
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(1), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
     class MissileHand : Projectile
     {
         public Vector2 Velocity;

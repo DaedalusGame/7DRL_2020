@@ -29,6 +29,11 @@ namespace RoguelikeEngine.Enemies
             AggroTarget = target;
         }
 
+        public override bool IsHostile(Creature other)
+        {
+            return other == AggroTarget;
+        }
+
         private Skill GetUsableSkill()
         {
             IEnumerable<Skill> skills = Skills.Shuffle().OrderByDescending(skill => skill.Priority);
@@ -71,7 +76,8 @@ namespace RoguelikeEngine.Enemies
                 skill.Update(this);
             if (usableSkill != null)
             {
-                CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(usableSkill));
+                var target = usableSkill.GetEnemyTarget(this);
+                CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(usableSkill, target));
                 wait = usableSkill.WaitUse ? CurrentAction : Wait.NoWait;
             }
             else
@@ -83,9 +89,9 @@ namespace RoguelikeEngine.Enemies
             return wait;
         }
 
-        private IEnumerable<Wait> RoutineUseSkill(Skill skill)
+        private IEnumerable<Wait> RoutineUseSkill(Skill skill, object target)
         {
-            foreach(Wait wait in skill.RoutineUse(this))
+            foreach(Wait wait in skill.RoutineUse(this, target))
                 yield return wait;
             skill.HideSkill(this);
         }

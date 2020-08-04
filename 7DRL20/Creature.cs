@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Events;
 using System;
 using System.Collections;
@@ -244,7 +245,7 @@ namespace RoguelikeEngine
         public override IDictionary<Element, double> Split()
         {
             var pick = Composites.Shuffle().Take(Random.Next(1, Composites.Count));
-            var rates = pick.ToDictionary(x => x, x => Random.NextDouble());
+            var rates = pick.ToDictionary(x => x, x => Random.Next(10) + 1);
             var total = rates.Sum(x => x.Value);
             return rates.ToDictionary(x => x.Key, x => x.Value * Total / total);
         }
@@ -917,6 +918,11 @@ namespace RoguelikeEngine
                 yield return new WaitFrames(this, 30);
             }
         }*/
+
+        public virtual bool IsHostile(Creature other)
+        {
+            return other is Enemy;
+        }
 
         public static Attack MeleeAttack(Creature attacker, IEffectHolder defender)
         {

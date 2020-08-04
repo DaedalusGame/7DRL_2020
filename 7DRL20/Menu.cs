@@ -138,18 +138,21 @@ namespace RoguelikeEngine
             var frontier = player.Mask.GetFrontier(dx, dy).Select(o => player.Tile.GetNeighbor(o.X, o.Y));
             if (frontier.All(front => !front.Solid && !front.Creatures.Any()))
             {
-                player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineMove(dx, dy));
-                //Scene.Wait.Add(player.CurrentAction);
-                Turn.End();
+                TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineMove(dx, dy)), false);
             }
             else if (frontier.Any(front => front is IMineable))
             {
-                player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(dx, dy, Creature.MeleeAttack));
-                Scene.Wait.Add(player.CurrentAction);
-                Turn.End();
+                TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineAttack(dx, dy, Creature.MeleeAttack)), true);
             }
         }
 
+        public void TakeAction(Wait wait, bool shouldBlock)
+        {
+            Player.CurrentAction = wait;
+            if(shouldBlock)
+                Scene.Wait.Add(Player.CurrentAction);
+            Turn.End();
+        }
 
         public override void HandleInput(SceneGame scene)
         {
@@ -254,8 +257,7 @@ namespace RoguelikeEngine
                 if (state.IsKeyPressed(Keys.Space))
                 {
                     var offset = Player.Facing.ToOffset();
-                    Scene.Wait.Add(Player.CurrentAction = Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)));
-                    Turn.End();
+                    TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)), true);
                     return;
                 }
             }

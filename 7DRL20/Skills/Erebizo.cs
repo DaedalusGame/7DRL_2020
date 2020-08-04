@@ -81,19 +81,26 @@ namespace RoguelikeEngine.Skills
             return base.CanUse(user);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override bool CanEnemyUse(Enemy user)
         {
-            if (user is Enemy enemy)
-            {
-                Consume();
-                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
-                yield return user.WaitSome(50);
-                SpriteReference cinder = SpriteLoader.Instance.AddSprite("content/cinder_ender");
-                new FlarePower(user.World, cinder, user, 50);
-                new ScreenFlashPowerUp(user, () => ColorMatrix.Ender(), 100, 100, 50, 50);
-                user.AddStatusEffect(new PoweredUp());
-                yield return user.WaitSome(20);
-            }
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            SpriteReference cinder = SpriteLoader.Instance.AddSprite("content/cinder_ender");
+            new FlarePower(user.World, cinder, user, 50);
+            new ScreenFlashPowerUp(user, () => ColorMatrix.Ender(), 100, 100, 50, 50);
+            user.AddStatusEffect(new PoweredUp());
+            yield return user.WaitSome(20);
         }
     }
 
@@ -115,27 +122,31 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
             {
                 Consume();
                 ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
-                var target = enemy.AggroTarget;
-                var effect = new FlareCharge(user.World, SpriteLoader.Instance.AddSprite("content/cinder_ender"), user, () => target.VisualTarget, 200);
+                var effect = new FlareCharge(user.World, SpriteLoader.Instance.AddSprite("content/cinder_ender"), user, () => targetCreature.VisualTarget, 200);
 
                 yield return user.WaitSome(50);
                 new ScreenShakeRandom(user.World, 2, 150, LerpHelper.Invert(LerpHelper.Linear));
                 yield return new WaitEffect(effect);
-                new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), target.VisualTarget, 60, 150, 80, 50);
-                new EnderNuke(user.World, SpriteLoader.Instance.AddSprite("content/nuke_ender"), target.VisualTarget, 0.6f, 80);
+                new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), targetCreature.VisualTarget, 60, 150, 80, 50);
+                new EnderNuke(user.World, SpriteLoader.Instance.AddSprite("content/nuke_ender"), targetCreature.VisualTarget, 0.6f, 80);
                 new ScreenShakeRandom(user.World, 8, 80, LerpHelper.QuarticIn);
                 //new BigExplosion(user.World, () => target.VisualTarget, (pos, time) => new EnderExplosion(user.World, pos, Vector2.Zero, time));
                 yield return user.WaitSome(10);
-                user.Attack(target, 0, 0, FlareAttack);
-                yield return target.CurrentAction;
+                user.Attack(targetCreature, 0, 0, FlareAttack);
+                yield return targetCreature.CurrentAction;
                 yield return user.WaitSome(20);
             }
         }
@@ -154,6 +165,7 @@ namespace RoguelikeEngine.Skills
 
         public SkillEnderBlast() : base("Ender Blast", "Frees Ender Erebizo from rock.", 0, 0, float.PositiveInfinity)
         {
+            Priority = 10;
         }
 
         public override bool CanUse(Creature user)
@@ -166,25 +178,27 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            yield return user.WaitSome(50);
+            var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 1).Shuffle();
+            List<Wait> quakes = new List<Wait>();
+            HashSet<Tile> tiles = new HashSet<Tile>();
+            PopupManager.StartCollect();
+            foreach (Tile tile in tileSet.Take(5))
             {
-                Consume();
-                yield return user.WaitSome(50);
-                var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 1).Shuffle();
-                List<Wait> quakes = new List<Wait>();
-                HashSet<Tile> tiles = new HashSet<Tile>();
-                PopupManager.StartCollect();
-                foreach (Tile tile in tileSet.Take(5))
-                {
-                    quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 2, tiles)));
-                }
-                new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
-                yield return new WaitAll(quakes);
-                PopupManager.FinishCollect();
-                yield return user.WaitSome(20);
+                quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 2, tiles)));
             }
+            new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
+            yield return new WaitAll(quakes);
+            PopupManager.FinishCollect();
+            yield return user.WaitSome(20);
         }
 
         private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
@@ -258,33 +272,35 @@ namespace RoguelikeEngine.Skills
             return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
         }
 
-        public override IEnumerable<Wait> RoutineUse(Creature user)
+        public override object GetEnemyTarget(Enemy user)
         {
-            if (user is Enemy enemy)
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            //TODO: roar?
+            //TODO: jump visual, screenshake, screen distort
+            yield return user.WaitSome(50);
+            user.VisualPosition = user.SlideJump(user.VisualPosition(), new Vector2(user.X, user.Y) * 16, 16, LerpHelper.Linear, 20);
+            yield return user.WaitSome(20);
+            new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
+            new SeismArea(user.World, user.Tiles, 10);
+            var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle();
+            List<Wait> quakes = new List<Wait>();
+            HashSet<Tile> tiles = new HashSet<Tile>();
+            PopupManager.StartCollect();
+            foreach (Tile tile in tileSet.Take(8))
             {
-                Consume();
-                ShowSkill(user);
-                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
-                //TODO: roar?
-                //TODO: jump visual, screenshake, screen distort
-                yield return user.WaitSome(50);
-                user.VisualPosition = user.SlideJump(user.VisualPosition(), new Vector2(user.X, user.Y) * 16, 16, LerpHelper.Linear, 20);
-                yield return user.WaitSome(20);
-                new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
-                new SeismArea(user.World, user.Tiles, 10);
-                var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle();
-                List<Wait> quakes = new List<Wait>();
-                HashSet<Tile> tiles = new HashSet<Tile>();
-                PopupManager.StartCollect();
-                foreach (Tile tile in tileSet.Take(8))
-                {
-                    quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3, tiles)));
-                }
-                new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
-                yield return new WaitAll(quakes);
-                PopupManager.FinishCollect();
-                yield return user.WaitSome(20);
+                quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3, tiles)));
             }
+            new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
+            yield return new WaitAll(quakes);
+            PopupManager.FinishCollect();
+            yield return user.WaitSome(20);
         }
 
         private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)

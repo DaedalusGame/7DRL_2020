@@ -219,6 +219,17 @@ namespace RoguelikeEngine
             return color;
         }
 
+        internal static ColorMatrix Chaos()
+        {
+            ColorMatrix chaos = new ColorMatrix(new Matrix(
+                    1, 0, 0, 0,
+                    1, 1, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 0, 1),
+                    new Vector4(1, 0, 0, 0));
+            return chaos;
+        }
+
         internal static ColorMatrix Sun()
         {
             var color = ColorMatrix.Greyscale();
