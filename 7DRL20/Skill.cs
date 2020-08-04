@@ -94,12 +94,12 @@ namespace RoguelikeEngine
             user.World.CurrentSkill = null;
         }
 
-        protected bool InMeleeRange(Creature user)
+        protected bool InMeleeRange(Creature user, Func<Creature, bool> filter)
         {
             Point offset = user.Facing.ToOffset();
             foreach (var frontier in user.Mask.GetFrontier(offset.X, offset.Y).Select(p => user.Tile.GetNeighbor(p.X, p.Y)))
             {
-                if (frontier.Creatures.Any(x => !(x is Enemy)))
+                if (frontier.Creatures.Any(filter))
                     return true;
             }
             return false;
@@ -141,6 +141,9 @@ namespace RoguelikeEngine
         
         protected bool InRange(Creature user, Creature target, int distance)
         {
+            if (target.Tile == null)
+                return false;
+
             Rectangle userRect = user.Mask.GetRectangle(user.X, user.Y);
             Rectangle targetRect = target.Mask.GetRectangle(target.X, target.Y);
 

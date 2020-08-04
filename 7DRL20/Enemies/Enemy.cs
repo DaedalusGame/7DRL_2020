@@ -31,7 +31,7 @@ namespace RoguelikeEngine.Enemies
 
         public override bool IsHostile(Creature other)
         {
-            return other == AggroTarget;
+            return other != this;
         }
 
         private Skill GetUsableSkill()
@@ -62,7 +62,8 @@ namespace RoguelikeEngine.Enemies
 
         private void FaceTowards(Creature target)
         {
-            FaceTowards(target.Mask.GetRectangle(target.X,target.Y));
+            if(target.Tile != null)
+                FaceTowards(target.Mask.GetRectangle(target.X,target.Y));
         }
 
         public override Wait TakeTurn(Turn turn)
@@ -70,7 +71,9 @@ namespace RoguelikeEngine.Enemies
             Wait wait = Wait.NoWait;
             if (Dead)
                 return wait;
-            FaceTowards(AggroTarget);
+            FindAggroTarget();
+            if(AggroTarget != null)
+                FaceTowards(AggroTarget);
             Skill usableSkill = GetUsableSkill();
             foreach (Skill skill in Skills)
                 skill.Update(this);
@@ -87,6 +90,21 @@ namespace RoguelikeEngine.Enemies
                 //wait = CurrentAction;
             }
             return wait;
+        }
+
+        private void FindAggroTarget()
+        {
+            List<Creature> possibleTargets = new List<Creature>();
+            foreach(var tile in Mask.GetFrontier().Select(o => Tile.GetNeighbor(o.X, o.Y)))
+            {
+                possibleTargets.AddRange(tile.Creatures.Where(target => !target.Dead && IsHostile(target)));
+            }
+            if (possibleTargets.Empty())
+            {
+                possibleTargets.AddRange(Tile.GetNearby(Mask.GetRectangle(X, Y), 8).SelectMany(tile => tile.Creatures).Where(target => !target.Dead && IsHostile(target)));
+            }
+            if(possibleTargets.Any())
+                AggroTarget = possibleTargets.Pick(Random);
         }
 
         private IEnumerable<Wait> RoutineUseSkill(Skill skill, object target)
@@ -567,8 +585,8 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 10));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.Apply(new EffectStat(this, Stat.HP, 3000));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 160));
 
             Skills.Add(new SkillEnderBlast());
             Skills.Add(new SkillEnderRam());

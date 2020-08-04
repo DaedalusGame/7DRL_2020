@@ -140,7 +140,7 @@ namespace RoguelikeEngine
             {
                 TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineMove(dx, dy)), false);
             }
-            else if (frontier.Any(front => front is IMineable))
+            else if (frontier.Any(front => front is IMineable) && player.GetStat(Stat.MiningLevel) > 0)
             {
                 TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineAttack(dx, dy, Creature.MeleeAttack)), true);
             }

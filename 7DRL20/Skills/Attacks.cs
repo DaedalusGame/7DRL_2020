@@ -18,7 +18,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && InMeleeRange(user);
+            return base.CanEnemyUse(user) && InMeleeRange(user, user.IsHostile);
         }
 
         public override object GetEnemyTarget(Enemy user)
