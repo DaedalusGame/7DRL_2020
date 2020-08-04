@@ -114,11 +114,12 @@ namespace RoguelikeEngine.Skills
         {
             Attack attack = new Attack(attacker, defender);
             attack.Elements.Add(Element.Bludgeon, 0.5);
-            attack.StatusEffects.Add(new Slimed(attacker)
-            {
-                Buildup = 0.4,
-                Duration = new Slider(15)
-            });
+            if(!defender.HasFamily(Family.Slime))
+                attack.StatusEffects.Add(new Slimed(attacker)
+                {
+                    Buildup = 0.4,
+                    Duration = new Slider(15)
+                });
             return attack;
         }
     }

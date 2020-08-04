@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -284,7 +285,8 @@ namespace RoguelikeEngine.Traits
         {
             int traitLvl = attack.Attacker.GetTrait(this);
 
-            attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 + (traitLvl - 1) * 0.1 });
+            if (!attack.Defender.HasFamily(Family.Slime))
+                attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 + (traitLvl - 1) * 0.1 });
 
             yield return Wait.NoWait;
         }

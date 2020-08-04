@@ -24,7 +24,9 @@ namespace RoguelikeEngine.Enemies
             AllFamilies.Add(this);
         }
 
+        public static Family Dragon = new Family("Dragon");
         public static Family Slime = new Family("Slime");
+
         public static Family GreenSlime = new Family("Green Slime");
     }
 
@@ -808,6 +810,8 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 25));
             Effect.Apply(new EffectStatMultiply(this, Element.Thunder.DamageRate, -1));
 
+            Effect.Apply(new EffectFamily(this, Family.Dragon));
+
             Skills.Add(new SkillLightning());
             Skills.Add(new SkillAttack());
         }
@@ -828,6 +832,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectStat(this, Stat.HP, 560));
             Effect.Apply(new EffectStat(this, Stat.Attack, 5));
+
+            Effect.Apply(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillAcidTouch());
@@ -852,6 +858,8 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, 1700));
             Effect.Apply(new EffectStat(this, Stat.Attack, 35));
 
+            Effect.Apply(new EffectFamily(this, Family.Dragon));
+
             Skills.Add(new SkillForcefield());
             Skills.Add(new SkillAgeOfDragons());
             Skills.Add(new SkillOblivion());
@@ -874,6 +882,8 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, 120));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
 
+            Effect.Apply(new EffectFamily(this, Family.Slime));
+
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillAttack());
         }
@@ -894,6 +904,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectStat(this, Stat.HP, 120));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
+
+            Effect.Apply(new EffectFamily(this, Family.Slime));
 
             Skills.Add(new SkillPoisonTouch());
             Skills.Add(new SkillAttack());
@@ -918,6 +930,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
+            Effect.Apply(new EffectFamily(this, Family.Slime));
             Effect.Apply(new EffectFamily(this, Family.GreenSlime));
 
             Skills.Add(new SkillSlimeTouch());
@@ -971,6 +984,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
 
+            Effect.Apply(new EffectFamily(this, Family.Slime));
             Effect.Apply(new EffectFamily(this, Family.GreenSlime));
 
             Skills.Add(new SkillSlimeTouch());
