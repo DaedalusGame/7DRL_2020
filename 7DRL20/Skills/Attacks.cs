@@ -358,7 +358,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && (!CheckTarget || InLineOfSight(user, user.AggroTarget, MaxDistance));
+            return base.CanEnemyUse(user) && user.AggroTarget != null && (!CheckTarget || InLineOfSight(user, user.AggroTarget, MaxDistance));
         }
 
         public override object GetEnemyTarget(Enemy user)
@@ -810,6 +810,9 @@ namespace RoguelikeEngine.Skills
 
         protected override IEnumerable<TileDirection> GetPossibleTiles(Creature user, Creature target)
         {
+            if (target == null || target.Tile == null)
+                return Enumerable.Empty<TileDirection>();
+
             Rectangle userRectangle = user.Mask.GetRectangle();
             Rectangle targetRectangle = target.Mask.GetRectangle();
 

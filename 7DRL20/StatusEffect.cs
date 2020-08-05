@@ -400,7 +400,7 @@ namespace RoguelikeEngine
             {
                 var slime = new GreenBlob(world, slimeHP);
                 slime.MoveTo(tile, 0);
-                slime.MakeAggressive(world.Player);
+                //slime.MakeAggressive(world.Player);
                 slime.AddControlTurn();
                 var neighbors = tile.GetAdjacentNeighbors().Shuffle();
                 var pick = neighbors.Where(x => !x.Solid && x.Creatures.Empty()).FirstOrDefault();

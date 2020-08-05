@@ -44,6 +44,8 @@ namespace RoguelikeEngine.Traits
         public static Trait Stiff = new TraitStiff();
         public static Trait Fuming = new TraitFuming();
         public static Trait Poxic = new TraitPoxic();
+        public static Trait SlimeEater = new TraitSlimeEater();
+        public static Trait SludgeArmor = new TraitSludgeArmor();
         public static Trait Slaughtering = new TraitSlaughtering();
         public static Trait LifeSteal = new TraitLifeSteal();
     }
@@ -99,9 +101,10 @@ namespace RoguelikeEngine.Traits
         public IEnumerable<Wait> ExplodeAttack(Attack attack)
         {
             var attacker = attack.Attacker;
-            if (Random.NextDouble() < 0.3 && attack.Defender is Creature defender)
+            int traitLvl = attacker.GetTrait(this);
+            if (Random.NextDouble() < traitLvl * 0.3 && attack.Defender is Creature defender)
             {
-                new FireExplosion(defender.World, new Vector2(defender.X * 16 + 8, defender.Y * 18 + 8), Vector2.Zero, 0, 15);
+                new FireExplosion(defender.World, defender.VisualTarget, Vector2.Zero, 0, 15);
                 //attacker.TakeDamage(5, Element.Fire);
                 //defender.TakeDamage(5, Element.Fire);
             }
@@ -287,6 +290,57 @@ namespace RoguelikeEngine.Traits
 
             if (!attack.Defender.HasFamily(Family.Slime))
                 attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 + (traitLvl - 1) * 0.1 });
+
+            yield return Wait.NoWait;
+        }
+    }
+
+    class TraitSlimeEater : Trait
+    {
+        public TraitSlimeEater() : base("Slime Eater", "Devour slime for health.")
+        {
+            Effect.Apply(new OnAttack(this, Devour));
+        }
+
+        public IEnumerable<Wait> Devour(Attack attack)
+        {
+            Creature attacker = attack.Attacker;
+            IEffectHolder defender = attack.Defender;
+
+            int traitLvl = attacker.GetTrait(this);
+
+            if (defender is Creature targetCreature && defender.HasFamily(Family.Slime) && targetCreature.CurrentHP / targetCreature.GetStat(Stat.HP) <= traitLvl * 0.2)
+            {
+                attacker.Heal(20 * traitLvl);
+                targetCreature.TakeDamage(targetCreature.GetStat(Stat.HP), Element.Healing, true);
+            }
+
+            yield return Wait.NoWait;
+        }
+    }
+
+    class TraitSludgeArmor : Trait
+    {
+        public TraitSludgeArmor() : base("Sludge Armor", "When hit by slime, reduce status buildup.")
+        {
+            Effect.Apply(new OnStartDefend(this, Armor));
+        }
+
+        public IEnumerable<Wait> Armor(Attack attack)
+        {
+            Creature attacker = attack.Attacker;
+            IEffectHolder defender = attack.Defender;
+
+            int traitLvl = defender.GetTrait(this);
+
+            if (attacker.HasFamily(Family.Slime))
+            {
+                foreach(var status in attack.StatusEffects)
+                {
+                    status.Buildup -= 0.3 * traitLvl;
+                }
+                attack.StatusEffects.RemoveAll(x => x.Buildup <= 0);
+            }
 
             yield return Wait.NoWait;
         }

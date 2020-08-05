@@ -447,7 +447,9 @@ namespace RoguelikeEngine
             AddFullEffect(new EffectStat(this, Element.Pierce.Resistance, 5));
             AddFullEffect(new EffectStatPercent(this, Element.Poison.DamageRate, -0.3));
 
-            AddOffensiveToolEffect(new EffectTrait(this, Trait.Poxic));
+            AddBladeEffect(new EffectTrait(this, Trait.Poxic));
+            AddAdzeEffect(new EffectTrait(this, Trait.SlimeEater));
+            AddPlateEffect(new EffectTrait(this, Trait.SludgeArmor));
         }
     }
 

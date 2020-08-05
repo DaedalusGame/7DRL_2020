@@ -268,9 +268,10 @@ namespace RoguelikeEngine
             return statBlock;
         }
 
-        public static void TakeDamage(this IEffectHolder holder, double damage, Element element)
+        public static void TakeDamage(this IEffectHolder holder, double damage, Element element, bool hidden = false)
         {
-            PopupManager.Add(new MessageDamage(holder, damage, element));
+            if(!hidden)
+                PopupManager.Add(new MessageDamage(holder, damage, element));
             Effect.Apply(new EffectDamage(holder, damage, element));
         }
 

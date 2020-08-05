@@ -112,6 +112,9 @@ namespace RoguelikeEngine
 
         protected bool InLineOfSight(Creature user, Creature target, Facing facing, int distance)
         {
+            if (target == null || target.Tile == null)
+                return false;
+
             Rectangle userRect = user.Mask.GetRectangle(user.X, user.Y);
             Rectangle targetRect = target.Mask.GetRectangle(target.X, target.Y);
 
@@ -141,7 +144,7 @@ namespace RoguelikeEngine
         
         protected bool InRange(Creature user, Creature target, int distance)
         {
-            if (target.Tile == null)
+            if (target == null || target.Tile == null)
                 return false;
 
             Rectangle userRect = user.Mask.GetRectangle(user.X, user.Y);

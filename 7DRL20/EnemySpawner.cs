@@ -63,7 +63,7 @@ namespace RoguelikeEngine
             {
                 var boss = new EnderErebizo(World);
                 boss.MoveTo(tile, 0);
-                boss.MakeAggressive(World.Player);
+                //boss.MakeAggressive(World.Player);
                 boss.AddControlTurn();
                 return new[] { boss };
             })
@@ -82,7 +82,7 @@ namespace RoguelikeEngine
                 new TileExplosion(World, tileSet);
                 var boss = new Wallhach(World);
                 boss.MoveTo(tile, 0);
-                boss.MakeAggressive(World.Player);
+                //boss.MakeAggressive(World.Player);
                 boss.AddControlTurn();
                 return new[] { boss };
             })
@@ -119,12 +119,12 @@ namespace RoguelikeEngine
 
         private void SpawnEnemies()
         {
-            if (Encounter.Done && Enemies.Count <= 1)
+            if (Encounter.Done && Enemies.Count <= 50)
             {
                 var baseTile = World.Player.Tile;
-                int spawnAmount = 16;
+                int spawnAmount = 4;
 
-                foreach (var spawnTile in baseTile.GetNearby(4).Where(tile => !tile.Solid && !tile.Creatures.Any()).Shuffle().Take(spawnAmount))
+                foreach (var spawnTile in GetValidSpawnLocations(baseTile, tile => !tile.Solid && !tile.Creatures.Any(), 6).Take(spawnAmount))
                 {
                     if (spawnTile.Group.Spawns.Empty())
                         continue;
@@ -132,7 +132,7 @@ namespace RoguelikeEngine
                     foreach (var enemy in spawn.Spawn(World,spawnTile))
                     {
                         Enemies.Add(enemy);
-                        enemy.MakeAggressive(World.Player);
+                        //enemy.MakeAggressive(World.Player);
                         enemy.AddControlTurn();
                         new Smoke(World, enemy.VisualTarget, Vector2.Zero, 0, 15);
                     }

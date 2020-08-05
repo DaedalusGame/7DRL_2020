@@ -49,6 +49,11 @@ namespace RoguelikeEngine.Enemies
             AggroTarget = target;
         }
 
+        public bool IsSameTeam(Creature other)
+        {
+            return !IsHostile(other) && !other.IsHostile(this);
+        }
+
         public override bool IsHostile(Creature other)
         {
             return !(other is Enemy);
@@ -115,6 +120,8 @@ namespace RoguelikeEngine.Enemies
         private void FindAggroTarget()
         {
             List<Creature> possibleTargets = new List<Creature>();
+            if (AggroTarget != null && AggroTarget.Map != Map)
+                AggroTarget = null;
             foreach(var tile in Mask.GetFrontier().Select(o => Tile.GetNeighbor(o.X, o.Y)))
             {
                 possibleTargets.AddRange(tile.Creatures.Where(target => !target.Dead && IsHostile(target)));
@@ -956,7 +963,7 @@ namespace RoguelikeEngine.Enemies
         {
             var slime = new GreenAmoeba(World, 10);
             slime.MoveTo(Tile, 0);
-            slime.MakeAggressive(World.Player);
+            //slime.MakeAggressive(World.Player);
             slime.AddControlTurn();
             slime.MoveTo(neighbor, 20);
             yield return slime.WaitSome(20);

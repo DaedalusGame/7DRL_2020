@@ -7,6 +7,24 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class LevelFeeling
+    {
+        public static List<LevelFeeling> AllFeelings = new List<LevelFeeling>();
+
+        int ID;
+        string Name;
+
+        public LevelFeeling(string name)
+        {
+            ID = AllFeelings.Count;
+            Name = name;
+            AllFeelings.Add(this);
+        }
+
+        public static LevelFeeling Acid = new LevelFeeling("Acid");
+        public static LevelFeeling Fire = new LevelFeeling("Fire");
+    }
+
     class Map
     {
         public SceneGame World;
@@ -14,6 +32,8 @@ namespace RoguelikeEngine
         public int Height;
         MapTile[,] Tiles;
         public MapTile Outside;
+
+        public Dictionary<LevelFeeling, double> Feelings = new Dictionary<LevelFeeling, double>();
 
         public Map(SceneGame world, int width, int height)
         {
