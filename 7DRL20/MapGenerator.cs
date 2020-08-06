@@ -371,8 +371,9 @@ namespace RoguelikeEngine
         public int PointCount = 50;
         public int PointDeviation = 10;
         public GroupSet GroupGenerator;
+        public LevelFeelingSet Feelings;
 
-        public MapGenerator(int width, int height, int seed, GroupSet groupGenerator)
+        public MapGenerator(int width, int height, int seed, GroupSet groupGenerator, LevelFeelingSet feelings)
         {
             Random = new Random(seed);
             Cells = new GeneratorCell[width, height];
@@ -385,6 +386,7 @@ namespace RoguelikeEngine
                 }
             }
             GroupGenerator = groupGenerator;
+            Feelings = feelings;
         }
 
         public void AddCollapse(CollapseTile cell)

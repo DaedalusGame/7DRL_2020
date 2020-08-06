@@ -7,6 +7,54 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class LevelFeelingSet
+    {
+        public Dictionary<LevelFeeling, double> Feelings = new Dictionary<LevelFeeling, double>();
+
+        public double this[LevelFeeling feeling]
+        {
+            get
+            {
+                return Feelings.GetOrDefault(feeling, 0);
+            }
+            set
+            {
+                Feelings[feeling] = value;
+            }
+        }
+
+        public LevelFeelingSet()
+        {
+
+        }
+
+        public LevelFeelingSet(IDictionary<LevelFeeling, double> feelings)
+        {
+            foreach (var pair in feelings)
+                Feelings.Add(pair.Key, pair.Value);
+        }
+
+        public void Set(LevelFeeling feeling, double n)
+        {
+            Feelings[feeling] = n;
+        }
+
+        public void Add(LevelFeeling feeling, double n)
+        {
+            Feelings[feeling] = Feelings.GetOrDefault(feeling, 0) + n;
+        }
+
+        public void Multiply(LevelFeeling feeling, double n)
+        {
+            Feelings[feeling] = Feelings.GetOrDefault(feeling, 0) * n;
+        }
+
+        public LevelFeelingSet Copy()
+        {
+            return new LevelFeelingSet(Feelings);
+        }
+    }
+
     class LevelFeeling
     {
         public static List<LevelFeeling> AllFeelings = new List<LevelFeeling>();
@@ -21,8 +69,15 @@ namespace RoguelikeEngine
             AllFeelings.Add(this);
         }
 
+        public static LevelFeeling Difficulty = new LevelFeeling("Difficulty");
         public static LevelFeeling Acid = new LevelFeeling("Acid");
         public static LevelFeeling Fire = new LevelFeeling("Fire");
+        public static LevelFeeling Hell = new LevelFeeling("Hell");
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     class Map
@@ -33,7 +88,7 @@ namespace RoguelikeEngine
         MapTile[,] Tiles;
         public MapTile Outside;
 
-        public Dictionary<LevelFeeling, double> Feelings = new Dictionary<LevelFeeling, double>();
+        public LevelFeelingSet Feelings = new LevelFeelingSet();
 
         public Map(SceneGame world, int width, int height)
         {

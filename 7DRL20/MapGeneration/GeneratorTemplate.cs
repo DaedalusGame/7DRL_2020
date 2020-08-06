@@ -12,8 +12,14 @@ namespace RoguelikeEngine.MapGeneration
         protected Random Random;
         public Map Map;
         public List<IGrouping<RoomGroup, Tile>> Rooms;
+        public LevelFeelingSet Feelings = new LevelFeelingSet();
 
         public abstract void Build(SceneGame world);
+
+        public void SetFeelings(LevelFeelingSet feelings)
+        {
+            Feelings = feelings.Copy();
+        }
 
         public Tile BuildStairRoom()
         {
@@ -45,7 +51,7 @@ namespace RoguelikeEngine.MapGeneration
 
     class TemplateRandomLevel : GeneratorTemplate
     {
-        GroupSet GroupGenerator;
+        public GroupSet GroupGenerator;
         int Seed;
 
         public TemplateRandomLevel(GroupSet groupGenerator, int seed)
@@ -61,7 +67,7 @@ namespace RoguelikeEngine.MapGeneration
 
             Map = world.CreateMap(100, 100);
 
-            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Seed, GroupGenerator);
+            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Seed, GroupGenerator, Feelings);
             generator.Generate();
             generator.Print(Map);
 
@@ -74,10 +80,12 @@ namespace RoguelikeEngine.MapGeneration
             {
                 var nextStair = BuildStairRoom();
                 var group = nextStair.Group;
-                nextStair.Replace(new StairDown()
+                StairDown stairTile = new StairDown()
                 {
                     Template = new TemplateRandomLevel(new GroupRandom(group.Template), Random.Next())
-                });
+                };
+                stairTile.InitBonuses();
+                nextStair.Replace(stairTile);
             }
         }
     }
@@ -93,7 +101,7 @@ namespace RoguelikeEngine.MapGeneration
 
             Map = world.CreateMap(100, 100);
 
-            MapGenerator generatorHome = new MapGenerator(Map.Width, Map.Height, Seed, new GroupSet(GroupGenerator.Home))
+            MapGenerator generatorHome = new MapGenerator(Map.Width, Map.Height, Seed, new GroupSet(GroupGenerator.Home), new LevelFeelingSet())
             {
                 PointCount = 7,
                 PointDeviation = 35,

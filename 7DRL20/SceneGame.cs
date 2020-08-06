@@ -267,22 +267,16 @@ namespace RoguelikeEngine
             Tile startTile = template.GetStartRoom();
             Tile stairDown = template.BuildStairRoom();
 
-            stairDown.Replace(new StairDown()
+            StairDown stairTile = new StairDown()
             {
                 Template = new TemplateRandomLevel(new GroupRandom(), 0)
-            });
+            };
+            stairTile.InitBonuses();
+            stairDown.Replace(stairTile);
 
             Player = new Hero(this);
             Player.MoveTo(startTile, 1);
             Player.AddControlTurn();
-            /*Enemy testEnemy = new Wallhach(this);
-            testEnemy.MoveTo(startTile.GetNeighbor(-2, 0),0);
-            testEnemy.MakeAggressive(Player);
-            ActionQueue.Add(testEnemy);*/
-            /*testEnemy = new EnderErebizo(this);
-            testEnemy.MoveTo(startTile.GetNeighbor(2,0),0);
-            testEnemy.MakeAggressive(Player);
-            ActionQueue.Add(testEnemy);*/
 
             CameraMap = MapHome;
             CameraFocus = new CameraFocus(Player);

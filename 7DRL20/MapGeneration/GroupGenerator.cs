@@ -7,6 +7,29 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.MapGeneration
 {
+    struct FeelingRequirement {
+        public LevelFeeling Feeling;
+        public double Min;
+        public double Max;
+
+        public FeelingRequirement(LevelFeeling feeling, double min, double max)
+        {
+            Feeling = feeling;
+            Min = min;
+            Max = max;
+        }
+
+        public bool Fits(double value)
+        {
+            return value >= Min && value <= Max;
+        }
+
+        public override string ToString()
+        {
+            return $"Requires {Feeling} ({Min}-{Max})";
+        }
+    }
+
     class GroupGenerator
     {
         public delegate GeneratorGroup GroupDelegate(MapGenerator generator);
@@ -14,10 +37,8 @@ namespace RoguelikeEngine.MapGeneration
         public static List<GroupGenerator> Generators = new List<GroupGenerator>();
 
         public GroupDelegate Generate;
-        public Type GroupType;
         public int Weight = 1;
-        public int DifficultyLower = int.MinValue;
-        public int DifficultyUpper = int.MaxValue;
+        public List<FeelingRequirement> Requirements = new List<FeelingRequirement>();
 
         public GroupGenerator(GroupDelegate generate)
         {
@@ -25,49 +46,61 @@ namespace RoguelikeEngine.MapGeneration
             Generators.Add(this);
         }
 
+        public bool FitsRequirements(LevelFeelingSet feelings)
+        {
+            foreach(var requirement in Requirements)
+            {
+                var value = feelings[requirement.Feeling];
+                if (!requirement.Fits(value))
+                    return false;
+            }
+
+            return true;
+        }
+
         public static GroupGenerator Home = new GroupGenerator(MakeHome)
         {
             Weight = 0,
         };
+        public static GroupGenerator DirtCave = new GroupGenerator(MakeDirtCave)
+        {
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
+        };
         public static GroupGenerator FireCave = new GroupGenerator(MakeFireCave)
         {
-            DifficultyLower = 0,
-            DifficultyUpper = 20,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
         };
         public static GroupGenerator AdamantCave = new GroupGenerator(MakeAdamantCave)
         {
-            DifficultyLower = 0,
-            DifficultyUpper = 20,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
         };
         public static GroupGenerator AcidCave = new GroupGenerator(MakeAcidCave)
         {
-            DifficultyLower = 5,
-            DifficultyUpper = 25,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 5, 25) },
         };
         public static GroupGenerator SeaOfDirac = new GroupGenerator(MakeSeaOfDirac)
         {
-            DifficultyLower = 5,
-            DifficultyUpper = 15,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 5, 15) },
         };
         public static GroupGenerator MagmaMine = new GroupGenerator(MakeMagmaMine)
         {
-            DifficultyLower = 10,
-            DifficultyUpper = 40,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 10, 40) },
         };
         public static GroupGenerator Dungeon = new GroupGenerator(MakeDungeon)
         {
-            DifficultyLower = 10,
-            DifficultyUpper = 80,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 10, 80) },
         };
         public static GroupGenerator IvoryTower = new GroupGenerator(MakeIvoryTower)
         {
-            DifficultyLower = 40,
-            DifficultyUpper = 100,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 40, 100) },
+        };
+        public static GroupGenerator EbonyTower = new GroupGenerator(MakeEbonyTower)
+        {
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 40, 100) },
         };
         public static GroupGenerator DarkCastle = new GroupGenerator(MakeDarkCastle)
         {
-            DifficultyLower = 60,
-            DifficultyUpper = 200,
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 60, 200) },
         };
 
         public static GeneratorGroup MakeHome(MapGenerator generator)
@@ -78,6 +111,17 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(129, 64, 41), new Color(224, 175, 158)),
                 WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 Spawns = { },
+            };
+        }
+        public static GeneratorGroup MakeDirtCave(MapGenerator generator)
+        {
+            return new Cave(generator) //Dirt Cave
+            {
+                CaveColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
+                BrickColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
+                WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
+                Spawns = { EnemySpawn.Skeleton },
+                Template = DirtCave,
             };
         }
         public static GeneratorGroup MakeFireCave(MapGenerator generator)
@@ -159,6 +203,17 @@ namespace RoguelikeEngine.MapGeneration
                 Template = IvoryTower
             };
         }
+        public static GeneratorGroup MakeEbonyTower(MapGenerator generator)
+        {
+            return new Tower(generator) //Ivory Tower
+            {
+                CaveColor = new TileColor(new Color(10, 7, 10), new Color(77, 77, 77)),
+                BrickColor = new TileColor(new Color(50, 15, 50), new Color(90, 90, 90)),
+                WoodColor = new TileColor(new Color(50, 15, 50), new Color(90, 90, 90)),
+                Spawns = { EnemySpawn.Skeleton, EnemySpawn.DeathKnight, EnemySpawn.BlueDragon },
+                Template = EbonyTower
+            };
+        }
         public static GeneratorGroup MakeDarkCastle(MapGenerator generator)
         {
             return new CastleDark(generator) //Dark Castle
@@ -175,7 +230,7 @@ namespace RoguelikeEngine.MapGeneration
 
     class GroupSet
     {
-        protected List<GroupGenerator> Groups = new List<GroupGenerator>();
+        public List<GroupGenerator> Groups = new List<GroupGenerator>();
 
         public GroupSet(IEnumerable<GroupGenerator> groups)
         {
@@ -218,7 +273,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             Random random = generator.Random;
             double x = random.NextDouble();
-            var selection = GroupGenerator.Generators.Where(gen => gen.Weight > 0).ToList();
+            var selection = GroupGenerator.Generators.Where(gen => gen.Weight > 0 && gen.FitsRequirements(generator.Feelings)).ToList();
 
             bool canStripe = true;
 

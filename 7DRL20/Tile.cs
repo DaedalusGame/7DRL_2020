@@ -397,10 +397,55 @@ namespace RoguelikeEngine
         }
     }
 
+    class StairBonus
+    {
+        public static List<StairBonus> AllStairBonuses = new List<StairBonus>();
+
+        public int ID;
+        public string Name;
+        Action<GeneratorTemplate> Function;
+
+        public StairBonus(string name, Action<GeneratorTemplate> function)
+        {
+            ID = AllStairBonuses.Count;
+            Name = name;
+            Function = function;
+            AllStairBonuses.Add(this);
+        }
+
+        public static StairBonus NoBonus = new StairBonus("No Bonus", feelings => { });
+
+        public static StairBonus Difficult = new StairBonus("Difficult Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, +30); });
+        public static StairBonus Easy = new StairBonus("Easy Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, -30); });
+
+        public static StairBonus Hell = new StairBonus("Hellish Environment", template => {
+            template.Feelings.Add(LevelFeeling.Fire, +30);
+            template.Feelings.Add(LevelFeeling.Hell, +50);
+            template.Feelings.Add(LevelFeeling.Difficulty, +10);
+        });
+
+        public static StairBonus Dungeon = new StairBonus("Dungeon", template =>
+        {
+            if (template is TemplateRandomLevel level)
+                level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.Dungeon }));
+        });
+        public static StairBonus SeaOfDirac = new StairBonus("Sea of Dirac", template =>
+        {
+            if (template is TemplateRandomLevel level)
+                level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.SeaOfDirac }));
+        });
+
+        public void Apply(GeneratorTemplate template)
+        {
+            Function(template);
+        }
+    }
+
     abstract class Stair : Tile
     {
         public GeneratorTemplate Template;
         MapTile TargetTile;
+        public List<StairBonus> Bonuses = new List<StairBonus>();
 
         public Tile Target
         {
@@ -421,25 +466,53 @@ namespace RoguelikeEngine
         {
         }
 
+        public void InitBonuses()
+        {
+            List<StairBonus> validBonuses = new List<StairBonus>(StairBonus.AllStairBonuses);
+            int amount = Random.Next(3) + 2;
+            for(int i = 0; i < amount && validBonuses.Any(); i++)
+            {
+                Bonuses.Add(validBonuses.PickAndRemove(Random));
+            }
+            Bonuses.Sort((x, y) => x.ID.CompareTo(y.ID));
+        }
+
         public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
             base.AddActions(ui, player, selection);
             if (player.Tiles.Contains(this))
             {
-                selection.Add(new ActAction("Take the Stairs", "", () =>
+                if (Bonuses.Any())
                 {
-                    ui.TakeAction(Scheduler.Instance.RunAndWait(RoutineTakeStairs(player)), true);
-                    selection.Close();
-                }, () => CanUseStairs(player)));
+                    foreach (var bonus in Bonuses)
+                    {
+                        selection.Add(new ActAction($"Stairs ({bonus.Name})", "", () =>
+                        {
+                            ui.TakeAction(Scheduler.Instance.RunAndWait(RoutineTakeStairs(player, bonus)), true);
+                            selection.Close();
+                            Bonuses.Clear();
+                        }, () => CanUseStairs(player)));
+                    }
+                }
+                else
+                {
+                    selection.Add(new ActAction("Take the Stairs", "", () =>
+                    {
+                        ui.TakeAction(Scheduler.Instance.RunAndWait(RoutineTakeStairs(player, StairBonus.NoBonus)), true);
+                        selection.Close();
+                    }, () => CanUseStairs(player)));
+                }
             }
         }
 
-        private IEnumerable<Wait> RoutineTakeStairs(Creature player)
+        private IEnumerable<Wait> RoutineTakeStairs(Creature player, StairBonus bonus)
         {
             var fadeOut = new ScreenFade(player.World, () => ColorMatrix.Tint(Color.Black), LerpHelper.Linear, false, 20);
             yield return new WaitTime(20);
             if (Target == null)
             {
+                Template.SetFeelings(Map.Feelings);
+                bonus.Apply(Template);
                 Template.Build(World);
                 var stair = Template.BuildStairRoom(Group.GetType());
                 BuildTarget(stair);
