@@ -19,12 +19,14 @@ namespace RoguelikeEngine.Traits
 
         public string Name;
         public string Description;
+        public Color Color;
 
-        public Trait(string name, string description)
+        public Trait(string name, string description, Color color)
         {
             ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
+            Color = color;
         }
 
         public IEnumerable<T> GetEffects<T>() where T : Effect
@@ -34,6 +36,7 @@ namespace RoguelikeEngine.Traits
 
         public static Trait Splintering = new TraitSplintering();
         public static Trait Holy = new TraitHoly();
+        public static Trait Spotlight = new TraitSpotlight();
         public static Trait Unstable = new TraitUnstable();
         public static Trait Softy = new TraitSofty();
         public static Trait Fragile = new TraitFragile();
@@ -53,7 +56,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSplintering : Trait
     {
-        public TraitSplintering() : base("Splintering", "Deals some damage to surrounding enemies.")
+        public TraitSplintering() : base("Splintering", "Deals some damage to surrounding enemies.", new Color(235, 235, 207))
         {
             Effect.Apply(new OnStartAttack(this, UndeadKiller));
         }
@@ -72,17 +75,38 @@ namespace RoguelikeEngine.Traits
 
     class TraitHoly : Trait
     {
-        public TraitHoly() : base("Holy", "Extra damage to undead.")
+        public TraitHoly() : base("Holy", "Extra damage to undead.", new Color(255, 250, 155))
         {
             Effect.Apply(new OnStartAttack(this, UndeadKiller));
         }
 
         public IEnumerable<Wait> UndeadKiller(Attack attack)
         {
+            int traitLvl = attack.Attacker.GetTrait(this);
             var isUndead = attack.Defender.HasStatusEffect(x => x is Undead);
             if (isUndead)
             {
-                attack.Damage *= 1.5f;
+                attack.Damage *= 1 + traitLvl * 0.5f;
+            }
+
+            yield return Wait.NoWait;
+        }
+    }
+
+    class TraitSpotlight : Trait
+    {
+        public TraitSpotlight() : base("Spotlight", "Attacking undead take holy damage.", new Color(155, 255, 242))
+        {
+            Effect.Apply(new OnDefend(this, OnDefend));
+        }
+
+        public IEnumerable<Wait> OnDefend(Attack attack)
+        {
+            int traitLvl = attack.Defender.GetTrait(this);
+
+            if(attack.Attacker.HasStatusEffect(x => x is Undead))
+            {
+                attack.Attacker.TakeDamage(10 * traitLvl, Element.Holy);
             }
 
             yield return Wait.NoWait;
@@ -93,7 +117,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitUnstable() : base("Unstable", "Causes random explosions.")
+        public TraitUnstable() : base("Unstable", "Causes random explosions.", new Color(255, 64, 16))
         {
             Effect.Apply(new OnAttack(this, ExplodeAttack));
             Effect.Apply(new OnMine(this, ExplodeMine));
@@ -128,7 +152,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSofty : Trait
     {
-        public TraitSofty() : base("Softy", "Breaking rock restores some HP.")
+        public TraitSofty() : base("Softy", "Breaking rock restores some HP.", new Color(207, 179, 160))
         {
             Effect.Apply(new OnMine(this, SoftyHeal));
         }
@@ -148,7 +172,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitFragile : Trait
     {
-        public TraitFragile() : base("Fragile", "Cracks nearby rock.")
+        public TraitFragile() : base("Fragile", "Cracks nearby rock.", new Color(181, 230, 193))
         {
             Effect.Apply(new OnMine(this, Fracture));
         }
@@ -181,7 +205,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitCrumbling : Trait
     {
-        public TraitCrumbling() : base("Crumbling", "Destroys lower level rock faster.")
+        public TraitCrumbling() : base("Crumbling", "Destroys lower level rock faster.", new Color(171, 184, 194))
         {
             Effect.Apply(new OnStartMine(this, Crumble));
         }
@@ -200,7 +224,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitPulverizing : Trait
     {
-        public TraitPulverizing() : base("Pulverizing", "No mining drops.")
+        public TraitPulverizing() : base("Pulverizing", "No mining drops.", new Color(194, 172, 172))
         {
             Effect.Apply(new OnStartMine(this, Pulverize));
         }
@@ -217,7 +241,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitAlien : Trait
     {
-        public TraitAlien() : base("Alien", "Randomize stats.")
+        public TraitAlien() : base("Alien", "Randomize stats.", new Color(204, 91, 182))
         {
             Effect.Apply(new EffectStat.Randomized(this, Stat.Attack, -5, 20));
             Effect.Apply(new EffectStatPercent.Randomized(this, Stat.MiningSpeed, -0.5, 2.0));
@@ -226,7 +250,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSharp : Trait
     {
-        public TraitSharp() : base("Sharp", "Causes bleeding.")
+        public TraitSharp() : base("Sharp", "Causes bleeding.", new Color(128, 0, 0))
         {
             Effect.Apply(new OnStartAttack(this, Bleed));
         }
@@ -244,7 +268,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitStiff : Trait
     {
-        public TraitStiff() : base("Stiff", "Reduce damage taken.")
+        public TraitStiff() : base("Stiff", "Reduce damage taken.", new Color(192, 192, 192))
         {
             Effect.Apply(new OnStartDefend(this, Stiff));
         }
@@ -261,7 +285,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitBloodShield : Trait
     {
-        public TraitBloodShield() : base("Blood Shield", "Attackers take pierce damage and start bleeding.")
+        public TraitBloodShield() : base("Blood Shield", "Attackers take pierce damage and start bleeding.", new Color(128, 0, 0))
         {
             Effect.Apply(new OnStartDefend(this, Stiff));
         }
@@ -282,7 +306,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitFuming() : base("Fuming", "Sometimes produces smoke cloud.")
+        public TraitFuming() : base("Fuming", "Sometimes produces smoke cloud.", new Color(255,255,255))
         {
             Effect.Apply(new OnAttack(this, EmitSmoke));
         }
@@ -299,7 +323,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitPoxic : Trait
     {
-        public TraitPoxic() : base("Poxic", "Sometimes turns enemies into slime.")
+        public TraitPoxic() : base("Poxic", "Sometimes turns enemies into slime.", new Color(206, 221, 159))
         {
             Effect.Apply(new OnStartAttack(this, Slime));
         }
@@ -317,7 +341,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSlimeEater : Trait
     {
-        public TraitSlimeEater() : base("Slime Eater", "Devour slime for health.")
+        public TraitSlimeEater() : base("Slime Eater", "Devour slime for health.", new Color(206, 221, 159))
         {
             Effect.Apply(new OnAttack(this, Devour));
         }
@@ -341,7 +365,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSludgeArmor : Trait
     {
-        public TraitSludgeArmor() : base("Sludge Armor", "When hit by slime, reduce status buildup.")
+        public TraitSludgeArmor() : base("Sludge Armor", "When hit by slime, reduce status buildup.", new Color(206, 221, 159))
         {
             Effect.Apply(new OnStartDefend(this, Armor));
         }
@@ -369,7 +393,7 @@ namespace RoguelikeEngine.Traits
     class TraitSlaughtering : Trait
     {
 
-        public TraitSlaughtering() : base("Slaughtering", "More drops, but no experience.")
+        public TraitSlaughtering() : base("Slaughtering", "More drops, but no experience.", new Color(128, 0, 0))
         {
             //TODO
         }
@@ -379,7 +403,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitLifeSteal() : base("Life Steal", "Sometimes steal life on attack.")
+        public TraitLifeSteal() : base("Life Steal", "Sometimes steal life on attack.", new Color(128, 0, 0))
         {
             Effect.Apply(new OnAttack(this, LifeSteal));
         }

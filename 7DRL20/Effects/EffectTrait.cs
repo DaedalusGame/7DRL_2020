@@ -1,4 +1,5 @@
-﻿using RoguelikeEngine.Traits;
+﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace RoguelikeEngine.Effects
 
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
-            statBlock += $"{Game.FORMAT_BOLD}{Trait.Name}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
+            statBlock += $"{Game.FORMAT_BOLD}{Game.FormatColor(Trait.Color)}{Trait.Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
             statBlock += $"- {Trait.Description}\n";
         }
 

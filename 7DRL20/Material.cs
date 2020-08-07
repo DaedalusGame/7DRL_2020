@@ -300,8 +300,14 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
+            //Weapons
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddOffensiveToolEffect(new EffectTrait(this, Trait.Holy));
+
+            //Plate
+            AddPlateEffect(new EffectStatPercent(this, Element.Holy.DamageRate, -0.10));
+            AddPlateEffect(new EffectStat(this, Stat.Defense, 3));
+            AddShieldEffect(new EffectTrait(this, Trait.Spotlight));
         }
     }
 
@@ -323,7 +329,9 @@ namespace RoguelikeEngine
 
             AddHandleEffect(new EffectStatPercent(this, Element.Thunder.DamageRate, -0.20));
 
-            Random random = new Random();
+            AddPlateEffect(new EffectStatPercent(this, Element.Thunder.DamageRate, -0.20));
+            AddPlateEffect(new EffectStatPercent(this, Element.Fire.DamageRate, +0.40));
+
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 20));
             AddFullEffect(new EffectTrait(this, Trait.Unstable));
         }

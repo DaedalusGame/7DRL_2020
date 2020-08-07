@@ -7,6 +7,41 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    abstract class AttackSpecial
+    {
+        public abstract Wait Start(Attack attack);
+
+        public abstract Wait End(Attack attack);
+    }
+
+    class AttackDrain : AttackSpecial
+    {
+        double Rate;
+
+        public AttackDrain(double rate)
+        {
+            Rate = rate;
+        }
+
+        public override Wait End(Attack attack)
+        {
+            foreach (var damage in attack.FinalDamage)
+            {
+                if (damage.Value > 0)
+                    attack.Attacker.Heal(damage.Value * Rate);
+                else if (damage.Value < 0)
+                    attack.Attacker.TakeDamage(-damage.Value * Rate, damage.Key);
+            }
+
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
     class Attack
     {
         public Creature Attacker;
@@ -14,6 +49,7 @@ namespace RoguelikeEngine
 
         public Dictionary<Element, double> Elements = new Dictionary<Element, double>();
         public List<StatusEffect> StatusEffects = new List<StatusEffect>();
+        public List<AttackSpecial> ExtraEffects = new List<AttackSpecial>();
 
         public int ReactionLevel;
         public double Damage;
@@ -34,6 +70,13 @@ namespace RoguelikeEngine
             yield return Attacker.OnStartAttack(this);
             yield return Defender.OnStartDefend(this);
 
+            List<Wait> waits = new List<Wait>();
+            foreach(var effect in ExtraEffects)
+            {
+                waits.Add(effect.Start(this));
+            }
+            yield return new WaitAll(waits);
+
             FinalDamage = Elements.ToDictionary(pair => pair.Key, pair => CalculateSplitElement(pair.Key, pair.Value * Damage));
 
             foreach (var damage in FinalDamage)
@@ -47,6 +90,13 @@ namespace RoguelikeEngine
                 Defender.AddStatusEffect(statusEffect);
             double total = FinalDamage.Sum(x => Math.Abs(x.Value));
             Effect.Apply(new EffectLastHit(Defender, Attacker, total));
+
+            waits.Clear();
+            foreach (var effect in ExtraEffects)
+            {
+                waits.Add(effect.End(this));
+            }
+            yield return new WaitAll(waits);
 
             yield return Attacker.OnAttack(this);
             yield return Defender.OnDefend(this);
@@ -106,30 +156,6 @@ namespace RoguelikeEngine
             double damageRate = Defender.GetStat(element.DamageRate);
             double resistance = Defender.GetStat(element.Resistance);
             return Math.Max(0, damage - resistance) * damageRate;
-        }
-    }
-
-    class AttackDrain : Attack
-    {
-        double Rate;
-
-        public AttackDrain(Creature attacker, IEffectHolder defender, double rate) : base(attacker, defender)
-        {
-            Rate = rate;
-        }
-
-        public override IEnumerable<Wait> RoutineStart()
-        {
-            foreach (var wait in base.RoutineStart())
-                yield return wait;
-
-            foreach (var damage in FinalDamage)
-            {
-                if (damage.Value > 0)
-                    Attacker.Heal(damage.Value * Rate);
-                else if(damage.Value < 0)
-                    Attacker.TakeDamage(-damage.Value * Rate, damage.Key);
-            }
         }
     }
 }

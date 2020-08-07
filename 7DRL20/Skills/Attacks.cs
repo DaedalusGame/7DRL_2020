@@ -60,7 +60,8 @@ namespace RoguelikeEngine.Skills
 
         protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
-            Attack attack = new AttackDrain(attacker, defender, 0.6);
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackDrain(0.6));
             attack.Elements.Add(Element.Pierce, 2.0);
             return attack;
         }
@@ -228,7 +229,8 @@ namespace RoguelikeEngine.Skills
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
         {
-            Attack attack = new AttackDrain(attacker, defender, 1.0);
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackDrain(1.0));
             attack.Elements.Add(Element.Slash, 1.0);
             return attack;
         }
