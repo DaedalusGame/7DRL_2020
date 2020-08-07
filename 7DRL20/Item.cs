@@ -96,7 +96,7 @@ namespace RoguelikeEngine
 
         public virtual IEnumerable<Effect> GetEquipEffects(EquipSlot slot)
         {
-            return GetEquipEffects();
+            return Enumerable.Empty<Effect>();
         }
 
         public virtual IEnumerable<T> GetEffects<T>() where T : Effect

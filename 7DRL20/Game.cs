@@ -36,6 +36,9 @@ namespace RoguelikeEngine
         public Game()
         {
             Graphics = new GraphicsDeviceManager(this);
+            Graphics.PreferredBackBufferWidth = 800;
+            Graphics.PreferredBackBufferHeight = 600;
+            Graphics.ApplyChanges();
             Content.RootDirectory = "Content";
         }
 

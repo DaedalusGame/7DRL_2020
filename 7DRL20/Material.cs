@@ -165,6 +165,13 @@ namespace RoguelikeEngine
         public void AddOffensiveEffect(Effect effect)
         {
             effect.Apply();
+            AddEffects(ToolBlade.Parts, effect);
+            AddEffects(ToolAdze.Parts, effect);
+        }
+
+        public void AddOffensiveHeadEffect(Effect effect)
+        {
+            effect.Apply();
             Parts[ToolBlade.Blade].AddEffect(effect);
             Parts[ToolAdze.Head].AddEffect(effect);
         }
@@ -450,8 +457,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.7));
 
-            AddFullEffect(new EffectStat(this, Stat.Attack, 10));
-            AddHandleEffect(new EffectStatPercent(this, Stat.Attack, 0.2));
+            AddOffensiveEffect(new EffectStat(this, Stat.Attack, 10));
+            AddOffensiveEffect(new EffectStatPercent(this, Stat.Attack, 0.2));
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, -0.4));
 
             AddPlateEffect(new EffectStat(this, Stat.Defense, 10));

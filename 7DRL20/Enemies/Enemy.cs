@@ -800,6 +800,30 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class RedDragon : Enemy
+    {
+        public RedDragon(SceneGame world) : base(world)
+        {
+            Name = "Crimson Dragon";
+            Description = "Ignition";
+
+            Render = new CreatureDragonRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/dragon_red")
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 440));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 25));
+            Effect.Apply(new EffectStatMultiply(this, Element.Fire.DamageRate, -1));
+
+            Effect.Apply(new EffectFamily(this, Family.Dragon));
+
+            Skills.Add(new SkillFireBreath());
+            Skills.Add(new SkillAttack());
+        }
+    }
+
     class BlueDragon : Enemy
     {
         public BlueDragon(SceneGame world) : base(world)

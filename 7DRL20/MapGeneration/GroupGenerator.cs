@@ -177,7 +177,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(247, 211, 70), new Color(160, 35, 35)),
                 BrickColor = new TileColor(new Color(160, 35, 35), new Color(247, 211, 70)),
                 WoodColor = new TileColor(new Color(160, 35, 35), new Color(247, 211, 70)),
-                Spawns = { EnemySpawn.BlastCannon, EnemySpawn.AcidBlob, EnemySpawn.Skeleton },
+                Spawns = { EnemySpawn.BlastCannon, EnemySpawn.AcidBlob, EnemySpawn.Skeleton, EnemySpawn.RedDragon },
                 Template = MagmaMine
             };
         }

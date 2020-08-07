@@ -22,6 +22,7 @@ namespace RoguelikeEngine.MapGeneration
 
         public static EnemySpawn BlueDragon = new SingleSpawn((world) => new BlueDragon(world));
         public static EnemySpawn YellowDragon = new SingleSpawn((world) => new YellowDragon(world));
+        public static EnemySpawn RedDragon = new SingleSpawn((world) => new RedDragon(world));
 
         public static EnemySpawn PoisonBlob = new SingleSpawn((world) => new PoisonBlob(world));
         public static EnemySpawn AcidBlob = new SingleSpawn((world) => new AcidBlob(world));

@@ -57,7 +57,9 @@
     <Compile Include="MapGeneration\Groups.cs" />
     <Compile Include="MapGeneration\Spawns.cs" />
     <Compile Include="MapGeneration\Spreads.cs" />
+    <Compile Include="Skills\Breath.cs" />
     <Compile Include="Skills\Erebizo.cs" />
+    <Compile Include="Skills\Movements.cs" />
     <Compile Include="Skills\Wallhach.cs" />
     <Compile Include="BossData.cs" />
     <Compile Include="ColorMatrix.cs" />
