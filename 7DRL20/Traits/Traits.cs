@@ -42,6 +42,7 @@ namespace RoguelikeEngine.Traits
         public static Trait Alien = new TraitAlien();
         public static Trait Sharp = new TraitSharp();
         public static Trait Stiff = new TraitStiff();
+        public static Trait BloodShield = new TraitBloodShield();
         public static Trait Fuming = new TraitFuming();
         public static Trait Poxic = new TraitPoxic();
         public static Trait SlimeEater = new TraitSlimeEater();
@@ -253,6 +254,25 @@ namespace RoguelikeEngine.Traits
             int traitLvl = attack.Defender.GetTrait(this);
 
             attack.Defender.AddStatusEffect(new DefenseUp() { Buildup = traitLvl * 0.4, Duration = new Slider(10) });
+
+            yield return Wait.NoWait;
+        }
+    }
+
+    class TraitBloodShield : Trait
+    {
+        public TraitBloodShield() : base("Blood Shield", "Attackers take pierce damage and start bleeding.")
+        {
+            Effect.Apply(new OnStartDefend(this, Stiff));
+        }
+
+        public IEnumerable<Wait> Stiff(Attack attack)
+        {
+            int traitLvl = attack.Defender.GetTrait(this);
+
+            attack.Attacker.TakeDamage(5 * traitLvl, Element.Pierce);
+            attack.Attacker.AddStatusEffect(new BleedLesser() { Buildup = traitLvl * 0.4, Duration = new Slider(30) });
+            attack.Attacker.AddStatusEffect(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(20) });
 
             yield return Wait.NoWait;
         }

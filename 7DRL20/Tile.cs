@@ -424,13 +424,11 @@ namespace RoguelikeEngine
             template.Feelings.Add(LevelFeeling.Difficulty, +10);
         });
 
-        public static StairBonus Dungeon = new StairBonus("Dungeon", template =>
-        {
+        public static StairBonus Dungeon = new StairBonus("Dungeon", template => {
             if (template is TemplateRandomLevel level)
                 level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.Dungeon }));
         });
-        public static StairBonus SeaOfDirac = new StairBonus("Sea of Dirac", template =>
-        {
+        public static StairBonus SeaOfDirac = new StairBonus("Sea of Dirac", template => {
             if (template is TemplateRandomLevel level)
                 level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.SeaOfDirac }));
         });

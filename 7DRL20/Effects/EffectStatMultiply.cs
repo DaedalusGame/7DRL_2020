@@ -40,6 +40,23 @@ namespace RoguelikeEngine.Effects
             base.Remove();
         }
 
+        public override bool StatEquals(Effect other)
+        {
+            return other is EffectStatMultiply stat && stat.Stat == Stat;
+        }
+
+        public override int GetStatHashCode()
+        {
+            return Stat.GetHashCode();
+        }
+
+        public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
+        {
+            var multiplier = equalityGroup.OfType<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
+            if (multiplier != 1)
+                statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} x{Math.Round(multiplier, 2)}\n";
+        }
+
         public override string ToString()
         {
             return $"{Stat} x{Multiplier} ({Holder})";

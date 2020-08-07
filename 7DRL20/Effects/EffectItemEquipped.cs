@@ -19,13 +19,32 @@ namespace RoguelikeEngine.Effects
         public Item Item;
         public Creature Wearer;
         public EquipSlot Slot;
-        public IEnumerable<Effect> Effects => Slot == EquipSlot.Offhand ? Enumerable.Empty<Effect>() : Item.GetEquipEffects();
+        public IEnumerable<Effect> Effects => GetEffects();
+
+        public IEnumerable<Effect> GetEffects()
+        {
+            if(Slot == EquipSlot.Offhand && !ProvidesOffhandStats()) //TODO: Should be generalized to other slots
+            {
+                return Enumerable.Empty<Effect>();
+            }
+            else
+            {
+                return Item.GetEquipEffects(Slot);
+            }
+        }
 
         public EffectItemEquipped(Item item, Creature wearer, EquipSlot slot)
         {
             Item = item;
             Wearer = wearer;
             Slot = slot;
+        }
+
+        private bool ProvidesOffhandStats()
+        {
+            if (Item is ToolPlate)
+                return true;
+            return false;
         }
 
         public override void Apply()

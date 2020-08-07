@@ -41,6 +41,26 @@ namespace RoguelikeEngine.Effects
             base.Remove();
         }
 
+        public override bool StatEquals(Effect other)
+        {
+            return other is EffectStat stat && stat.Stat == Stat;
+        }
+
+        public override int GetStatHashCode()
+        {
+            return Stat.GetHashCode();
+        }
+
+        public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
+        {
+            var baseStat = equalityGroup.OfType<EffectStat>().Where(stat => stat.Base).Sum(stat => stat.Amount);
+            if (baseStat != 0)
+                statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {baseStat.ToString("+0;-#")} Base\n";
+            var add = equalityGroup.OfType<EffectStat>().Where(stat => !stat.Base).Sum(stat => stat.Amount);
+            if (add != 0)
+                statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {add.ToString("+0;-#")}\n";
+        }
+
         public override string ToString()
         {
             return $"{Stat} {Amount:+0;-#} ({Holder})";

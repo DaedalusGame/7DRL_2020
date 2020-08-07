@@ -22,7 +22,7 @@ namespace RoguelikeEngine
         }
         public string EffectsString => string.Join(",\n", GetEffects<Effect>().Select(x => x.ToString()));
         public string StatString => string.Join(",\n", GetEffects<EffectStat>().GroupBy(stat => stat.Stat).Select(stat => $"{stat.Key} {stat.Sum(x => x.Amount)}"));
-        public string EquipEffectsString => string.Join(",\n", GetEquipEffects().Select(x => x.ToString()));
+        public string EquipEffectsString => string.Join(",\n", GetEquipEffects(EquipSlot.Body).Select(x => x.ToString()));
 
         public int X => Tile.X;
         public int Y => Tile.Y;
@@ -92,6 +92,11 @@ namespace RoguelikeEngine
         public virtual IEnumerable<Effect> GetEquipEffects()
         {
             return EquipEffects.GetAndClean(effect => effect.Removed);
+        }
+
+        public virtual IEnumerable<Effect> GetEquipEffects(EquipSlot slot)
+        {
+            return GetEquipEffects();
         }
 
         public virtual IEnumerable<T> GetEffects<T>() where T : Effect
@@ -361,9 +366,20 @@ namespace RoguelikeEngine
         {
             List<Effect> effects = new List<Effect>();
             effects.AddRange(base.GetEquipEffects());
-            for(int i = 0; i < Parts.Length; i++)
+            for (int i = 0; i < Parts.Length; i++)
             {
                 effects.AddRange(GetMaterialPart(i).GetEffects());
+            }
+            return effects;
+        }
+
+        public override IEnumerable<Effect> GetEquipEffects(EquipSlot slot)
+        {
+            List<Effect> effects = new List<Effect>();
+            effects.AddRange(base.GetEquipEffects(slot));
+            for(int i = 0; i < Parts.Length; i++)
+            {
+                effects.AddRange(GetMaterialPart(i).GetEffects(slot));
             }
             return effects;
         }
@@ -428,28 +444,33 @@ namespace RoguelikeEngine
             //for(int i = 0; i < Materials.Length; i++)
             //    statBlock += $" {Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
             statBlock += "\n";
-            var effects = GetEffects<Effect>();
-            var statGroups = effects.OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).OrderBy(group => group.Key.Priority);
+            var validSlots = ValidSlots;
+            var generalBlock = GetEquipEffects();
+            var blocks = validSlots.ToDictionary(slot => slot, slot => GetEquipEffects(slot).Where(effect => !generalBlock.Contains(effect)));
+
+            AddStatBlock(ref statBlock, generalBlock);
+            statBlock += $"\n";
+
+            foreach (var block in blocks)
+            {
+                if (!block.Value.Any())
+                    continue;
+                statBlock += $"{Game.FORMAT_BOLD}In slot {block.Key}:{Game.FORMAT_BOLD}\n";
+                AddStatBlock(ref statBlock, block.Value);
+                statBlock += $"\n";
+            }
+        }
+
+        private string AddStatBlock(ref string statBlock, IEnumerable<Effect> effects)
+        {
             var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
 
-            //This is retarded.
-            //TODO: make the stats work with the priority stuff too
-            foreach (var group in effectGroups.Where(x => x.Key.VisualPriority < 0))
+            foreach (var group in effectGroups.OrderBy(group => group.Key.VisualPriority))
             {
                 group.Key.AddStatBlock(ref statBlock, group);
             }
-            statBlock += "\n";
 
-            foreach (var stat in statGroups)
-            {
-                statBlock += stat.GetStatBonus(stat.Key);
-            }
-            statBlock += "\n";
-            
-            foreach(var group in effectGroups.Where(x => x.Key.VisualPriority >= 0))
-            {
-                group.Key.AddStatBlock(ref statBlock, group);
-            }
+            return statBlock;
         }
 
         protected void PushMaterialBatch(SceneGame scene, Material material)

@@ -40,6 +40,23 @@ namespace RoguelikeEngine.Effects
             base.Remove();
         }
 
+        public override bool StatEquals(Effect other)
+        {
+            return other is EffectStatPercent stat && stat.Stat == Stat;
+        }
+
+        public override int GetStatHashCode()
+        {
+            return Stat.GetHashCode();
+        }
+
+        public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
+        {
+            var percentage = equalityGroup.OfType<EffectStatPercent>().Sum(stat => stat.Percentage);
+            if (percentage != 0)
+                statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}%\n";
+        }
+
         public override string ToString()
         {
             return $"{Stat} {Percentage*100:+0;-#}% ({Holder})";

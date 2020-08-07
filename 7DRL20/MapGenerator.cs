@@ -34,9 +34,12 @@ namespace RoguelikeEngine
         public static GeneratorTile OreBasalt = new GeneratorTile('B', Color.White, PrintBasalt, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreMeteorite = new GeneratorTile('M', Color.DarkGray, PrintMeteorite, TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreObsidiorite = new GeneratorTile('D', Color.Purple, PrintObsidiorite, TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreCoal = new GeneratorTile('C', Color.Black, PrintOreWall(Material.Coal), TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreKarmesine = new GeneratorTile('K', Color.IndianRed, PrintOreWall(Material.Karmesine), TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreOvium = new GeneratorTile('O', Color.LightSteelBlue, PrintOreWall(Material.Ovium), TileTag.Wall, TileTag.Ore);
         public static GeneratorTile OreJauxum = new GeneratorTile('J', Color.LimeGreen, PrintOreWall(Material.Jauxum), TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreCobalt = new GeneratorTile('J', Color.Blue, PrintOreWall(Material.Cobalt), TileTag.Wall, TileTag.Ore);
+        public static GeneratorTile OreArdite = new GeneratorTile('J', Color.Orange, PrintOreWall(Material.Ardite), TileTag.Wall, TileTag.Ore);
         public static GeneratorTile AcidPool = new GeneratorTile('.', Color.GreenYellow, PrintAcid, TileTag.Liquid);
         public static GeneratorTile Coral = new GeneratorTile('.', Color.Pink, PrintCoral, TileTag.Floor);
         public static GeneratorTile AcidCoral = new GeneratorTile('.', Color.LightGoldenrodYellow, PrintAcidCoral, TileTag.Floor);
@@ -349,6 +352,30 @@ namespace RoguelikeEngine
         SoftWait,
     }
 
+    abstract class Decorator
+    {
+        public abstract void Decorate(MapGenerator generator);
+    }
+
+    class DecoratorOre : Decorator
+    {
+        GeneratorTile Tile;
+        int Size;
+        int Times;
+
+        public DecoratorOre(GeneratorTile tile, int size, int times)
+        {
+            Tile = tile;
+            Size = size;
+            Times = times;
+        }
+
+        public override void Decorate(MapGenerator generator)
+        {
+            generator.GenerateOres(Times, Size, Tile);
+        }
+    }
+
     class MapGenerator
     {
         public WaitState WaitState;
@@ -372,6 +399,7 @@ namespace RoguelikeEngine
         public int PointDeviation = 10;
         public GroupSet GroupGenerator;
         public LevelFeelingSet Feelings;
+        public List<Decorator> Decorators = new List<Decorator>();
 
         public MapGenerator(int width, int height, int seed, GroupSet groupGenerator, LevelFeelingSet feelings)
         {
@@ -480,14 +508,18 @@ namespace RoguelikeEngine
             RunGroupTechniques();
             Console.WriteLine("Finished techniques");
             Wait();
-            GenerateOres(250 / 5, 0, GeneratorTile.OreDilithium);
-            GenerateOres(30 / 5, 3, GeneratorTile.OreBasalt);
-            GenerateOres(50 / 5, 3, GeneratorTile.OreKarmesine);
-            GenerateOres(50 / 5, 3, GeneratorTile.OreOvium);
-            GenerateOres(50 / 5, 3, GeneratorTile.OreJauxum);
-            GenerateOres(10 / 5, 6, GeneratorTile.OreMeteorite);
-            GenerateOres(30 / 5, 6, GeneratorTile.OreObsidiorite);
-            GenerateOres(20 / 5, 6, GeneratorTile.OreTiberium);
+            foreach(var decorator in Decorators)
+            {
+                decorator.Decorate(this);
+            }
+            /*GenerateOres(50, 0, GeneratorTile.OreDilithium);
+            GenerateOres(6, 3, GeneratorTile.OreBasalt);
+            GenerateOres(10, 3, GeneratorTile.OreKarmesine);
+            GenerateOres(10, 3, GeneratorTile.OreOvium);
+            GenerateOres(10, 3, GeneratorTile.OreJauxum);
+            GenerateOres(2, 6, GeneratorTile.OreMeteorite);
+            GenerateOres(6, 6, GeneratorTile.OreObsidiorite);
+            GenerateOres(4, 6, GeneratorTile.OreTiberium);*/
             Expand();
             Console.WriteLine("Generated ores");
             Wait();
@@ -604,6 +636,23 @@ namespace RoguelikeEngine
         public Color GetRandomColor()
         {
             return Color.Red.RotateHue(Random.NextDouble());
+        }
+
+        public void SetupDefaultOres()
+        {
+            if (Feelings[LevelFeeling.Difficulty] < 50 || Feelings[LevelFeeling.Fire] > 10)
+                Decorators.Add(new DecoratorOre(GeneratorTile.OreCoal, 2, 10));
+            if (Feelings[LevelFeeling.Difficulty] < 50)
+                Decorators.Add(new DecoratorOre(GeneratorTile.OreKarmesine, 3, 10));
+            if (Feelings[LevelFeeling.Difficulty] < 50)
+                Decorators.Add(new DecoratorOre(GeneratorTile.OreJauxum, 3, 10));
+            if (Feelings[LevelFeeling.Difficulty] < 50)
+                Decorators.Add(new DecoratorOre(GeneratorTile.OreOvium, 3, 10));
+            if (Feelings[LevelFeeling.Hell] > 40)
+            {
+                Decorators.Add(new DecoratorOre(GeneratorTile.OreCobalt, 2, 10));
+                Decorators.Add(new DecoratorOre(GeneratorTile.OreArdite, 2, 10));
+            }
         }
 
         public void SetupPoints(int count, int deviation)

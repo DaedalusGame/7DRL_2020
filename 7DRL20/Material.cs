@@ -9,12 +9,44 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class ComboList<K, V>
+    {
+        List<V> ListAll = new List<V>();
+        List<V> ListAny = new List<V>();
+        MultiDict<K, V> Internal = new MultiDict<K, V>();
+
+        public IEnumerable<V> Values => ListAny;
+
+        public IEnumerable<V> this[K key]
+        {
+            get
+            {
+                return Internal.GetOrEmpty(key).Concat(ListAny);
+            }
+        }
+
+        public void Add(V value)
+        {
+            ListAll.Add(value);
+            ListAny.Add(value);
+        }
+
+        public void Add(IEnumerable<K> keys, V value)
+        {
+            ListAll.Add(value);
+            foreach (var key in keys)
+                Internal.Add(key, value);
+        }
+    }
+
     class Material : IEffectHolder
     {
         public class Part
         {
+            private static IEnumerable<EquipSlot> AllSlots => (EquipSlot[])Enum.GetValues(typeof(EquipSlot));
+
             public string Sprite;
-            public List<Effect> Effects = new List<Effect>();
+            public ComboList<EquipSlot, Effect> Effects = new ComboList<EquipSlot, Effect>();
 
             public Part(string sprite)
             {
@@ -23,13 +55,22 @@ namespace RoguelikeEngine
 
             public void AddEffect(Effect effect)
             {
-                effect.Apply();
                 Effects.Add(effect);
+            }
+
+            public void AddEffect(IEnumerable<EquipSlot> slots, Effect effect)
+            {
+                Effects.Add(slots, effect);
+            }
+
+            public IEnumerable<Effect> GetEffects(EquipSlot slot)
+            {
+                return Effects[slot];
             }
 
             public IEnumerable<Effect> GetEffects()
             {
-                return Effects.GetAndClean(effect => effect.Removed);
+                return Effects.Values;
             }
 
             public static implicit operator Part(string sprite) => new Part(sprite); 
@@ -80,31 +121,37 @@ namespace RoguelikeEngine
         public void AddEffect(PartType part, Effect effect)
         {
             effect.Apply();
-            Parts[part].Effects.Add(effect);
+            Parts[part].AddEffect(effect);
         }
 
         public void AddEffects(IEnumerable<PartType> parts, Effect effect)
         {
             foreach (var part in parts)
-                Parts[part].Effects.Add(effect);
+                Parts[part].AddEffect(effect);
+        }
+
+        public void AddEffects(IEnumerable<PartType> parts, Effect effect, IEnumerable<EquipSlot> slots)
+        {
+            foreach (var part in parts)
+                Parts[part].AddEffect(slots, effect);
         }
 
         public void AddHeadEffect(Effect effect)
         {
-            Parts[ToolBlade.Blade].Effects.Add(effect);
-            Parts[ToolAdze.Head].Effects.Add(effect);
-            Parts[ToolPlate.Composite].Effects.Add(effect);
-            Parts[ToolPlate.Trim].Effects.Add(effect);
+            Parts[ToolBlade.Blade].AddEffect(effect);
+            Parts[ToolAdze.Head].AddEffect(effect);
+            Parts[ToolPlate.Composite].AddEffect(effect);
+            Parts[ToolPlate.Trim].AddEffect(effect);
         }
 
         public void AddHandleEffect(Effect effect)
         {
             effect.Apply();
-            Parts[ToolBlade.Guard].Effects.Add(effect);
-            Parts[ToolBlade.Handle].Effects.Add(effect);
-            Parts[ToolAdze.Binding].Effects.Add(effect);
-            Parts[ToolAdze.Handle].Effects.Add(effect);
-            Parts[ToolPlate.Core].Effects.Add(effect);
+            Parts[ToolBlade.Guard].AddEffect(effect);
+            Parts[ToolBlade.Handle].AddEffect(effect);
+            Parts[ToolAdze.Binding].AddEffect(effect);
+            Parts[ToolAdze.Handle].AddEffect(effect);
+            Parts[ToolPlate.Core].AddEffect(effect);
         }
 
         public void AddFullEffect(Effect effect)
@@ -118,8 +165,8 @@ namespace RoguelikeEngine
         public void AddOffensiveEffect(Effect effect)
         {
             effect.Apply();
-            Parts[ToolBlade.Blade].Effects.Add(effect);
-            Parts[ToolAdze.Head].Effects.Add(effect);
+            Parts[ToolBlade.Blade].AddEffect(effect);
+            Parts[ToolAdze.Head].AddEffect(effect);
         }
 
         public void AddBladeEffect(Effect effect)
@@ -138,6 +185,18 @@ namespace RoguelikeEngine
         {
             effect.Apply();
             AddEffects(ToolPlate.Parts, effect);
+        }
+
+        public void AddArmorEffect(Effect effect)
+        {
+            effect.Apply();
+            AddEffects(ToolPlate.Parts, effect, new[] { EquipSlot.Body });
+        }
+
+        public void AddShieldEffect(Effect effect)
+        {
+            effect.Apply();
+            AddEffects(ToolPlate.Parts, effect, new[] { EquipSlot.Offhand });
         }
 
         public void AddOffensiveToolEffect(Effect effect)
@@ -395,10 +454,15 @@ namespace RoguelikeEngine
             AddHandleEffect(new EffectStatPercent(this, Stat.Attack, 0.2));
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, -0.4));
 
+            AddPlateEffect(new EffectStat(this, Stat.Defense, 10));
             AddFullEffect(new EffectStat(this, Element.Bludgeon.Resistance, 5));
 
+            AddShieldEffect(new EffectStat(this, Stat.Defense, 5));
+            AddShieldEffect(new EffectStat(this, Element.Bludgeon.Resistance, 10));
+
             AddOffensiveEffect(new EffectTrait(this, Trait.Sharp));
-            AddPlateEffect(new EffectTrait(this, Trait.Stiff));
+            AddArmorEffect(new EffectTrait(this, Trait.Stiff));
+            AddShieldEffect(new EffectTrait(this, Trait.BloodShield));
         }
     }
 
