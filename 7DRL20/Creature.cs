@@ -775,11 +775,10 @@ namespace RoguelikeEngine
 
         public virtual Wait NormalTurn(Turn turn)
         {
-            var cloud = Map.AddCloud(map => new CloudSmoke(World, map));
-            cloud.Add(Tile, 25);
+            
             foreach (var statusEffect in this.GetStatusEffects())
                 statusEffect.Update();
-            return Wait.NoWait;
+            return this.OnTurn(new TurnEvent(turn, this));
         }
 
         IEnumerable<Point> Zero = new Point[] { Point.Zero };

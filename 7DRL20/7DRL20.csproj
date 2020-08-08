@@ -49,6 +49,7 @@
     <Compile Include="Effects\EffectLastHit.cs" />
     <Compile Include="Effects\EffectStatDamage.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
+    <Compile Include="Effects\OnTurn.cs" />
     <Compile Include="Effects\OnDeath.cs" />
     <Compile Include="EventBus.cs" />
     <Compile Include="Events\CreatureEvents.cs" />
@@ -542,7 +543,13 @@
     <Content Include="Content\erebizo_strip3.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Content\explosion_acid_strip6.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Content\explosion_blood_strip6.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\explosion_steam_strip6.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\explosion_strip6.png">

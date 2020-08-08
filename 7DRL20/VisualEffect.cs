@@ -331,9 +331,23 @@ namespace RoguelikeEngine
         }
     }
 
+    class SteamExplosion : Explosion
+    {
+        public SteamExplosion(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/explosion_steam"), position, velocity, angle, time)
+        {
+        }
+    }
+
     class BloodExplosion : Explosion
     {
         public BloodExplosion(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/explosion_blood"), position, velocity, angle, time)
+        {
+        }
+    }
+
+    class AcidExplosion : Explosion
+    {
+        public AcidExplosion(SceneGame world, Vector2 position, Vector2 velocity, float angle, int time) : base(world, SpriteLoader.Instance.AddSprite("content/explosion_acid"), position, velocity, angle, time)
         {
         }
     }

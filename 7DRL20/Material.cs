@@ -357,6 +357,8 @@ namespace RoguelikeEngine
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 5));
             AddAdzeEffect(new EffectTrait(this, Trait.Softy));
+
+            AddPlateEffect(new EffectTrait(this, Trait.FrothingBlast));
         }
     }
 

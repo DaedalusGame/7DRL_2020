@@ -324,6 +324,11 @@ namespace RoguelikeEngine
             return Scheduler.Instance.RunAndWait(holder.PushEvent<DeathEvent, OnDeath>(death));
         }
 
+        public static Wait OnTurn(this IEffectHolder holder, TurnEvent turn)
+        {
+            return Scheduler.Instance.RunAndWait(holder.PushEvent<TurnEvent, OnTurn>(turn));
+        }
+
         public static IEnumerable<Wait> PushEvent<T,V>(this IEffectHolder holder, T eventParam) where V : EffectEvent<T>
         {
             foreach (var effect in holder.GetEffects<V>().Distinct())

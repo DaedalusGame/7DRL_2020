@@ -39,6 +39,7 @@ namespace RoguelikeEngine.Traits
         public static Trait Spotlight = new TraitSpotlight();
         public static Trait Unstable = new TraitUnstable();
         public static Trait Softy = new TraitSofty();
+        public static Trait FrothingBlast = new TraitFrothingBlast();
         public static Trait Fragile = new TraitFragile();
         public static Trait Crumbling = new TraitCrumbling();
         public static Trait Pulverizing = new TraitPulverizing();
@@ -62,7 +63,7 @@ namespace RoguelikeEngine.Traits
     {
         public TraitSplintering() : base("Splintering", "Deals some damage to surrounding enemies.", new Color(235, 235, 207))
         {
-            Effect.Apply(new OnStartAttack(this, UndeadKiller));
+            Effect.Apply(new OnAttack(this, UndeadKiller));
         }
 
         public IEnumerable<Wait> UndeadKiller(Attack attack)
@@ -171,6 +172,99 @@ namespace RoguelikeEngine.Traits
             {
                 if (mine.RequiredMiningLevel <= traitLvl && mine.Success)
                     mine.Miner.Heal(5 * traitLvl);
+            }
+
+            yield return Wait.NoWait;
+        }
+    }
+
+    class TraitFrothingBlast : Trait
+    {
+        Random Random = new Random();
+
+        public TraitFrothingBlast() : base("Frothing Blast", "Create acid explosion on contact with water.", new Color(164, 247, 236))
+        {
+            Effect.Apply(new OnDefend(this, FrothingAttack));
+            Effect.Apply(new OnTurn(this, FrothingTurn));
+        }
+
+        public IEnumerable<Wait> RoutineExplosion(Creature creature, int reactionLevel)
+        {
+            int n = 12;
+            new AcidExplosion(creature.World, creature.VisualTarget, Vector2.Zero, 0, 20);
+            yield return creature.WaitSome(10);
+            new ScreenShakeRandom(creature.World, 5, 20, LerpHelper.Linear);
+            for(int i = 0; i < n; i++)
+            {
+                float angle = i * MathHelper.TwoPi / n;
+                Vector2 offset = Util.AngleToVector(angle) * 24;
+
+                new SteamExplosion(creature.World, creature.VisualTarget + offset, Vector2.Zero, angle, 10 + Random.Next(5));
+            }
+            int radius = 2 * 16;
+            int dryRadius = 1 * 16;
+            HashSet<Tile> dryArea = new HashSet<Tile>(creature.Tiles);
+            List<Creature> damageTargets = new List<Creature>();
+
+            foreach(var tile in creature.Tile.GetNearby(creature.Mask.GetRectangle(creature.X, creature.Y), radius))
+            {
+                var distance = (tile.VisualTarget - creature.VisualTarget).LengthSquared();
+                if (distance <= (radius + 8) * (radius + 8))
+                {
+                    damageTargets.AddRange(tile.Creatures);
+                }
+                if (distance <= (dryRadius + 8) * (dryRadius + 8))
+                {
+                    dryArea.Add(tile);
+                }
+            }
+
+            foreach(var tile in dryArea)
+            {
+                if (tile is Water)
+                    tile.Replace(new FloorCave());
+            }
+
+            List<Wait> waitForDamage = new List<Wait>();
+            foreach(var target in damageTargets.Distinct().Shuffle(Random))
+            {
+                creature.Attack(target, 0, 0, (a,b) => ExplosionAttack(a,b,reactionLevel));
+                waitForDamage.Add(target.CurrentAction);
+            }
+            yield return new WaitAll(waitForDamage);
+        }
+
+        private static Attack ExplosionAttack(Creature user, IEffectHolder target, int reactionLevel)
+        {
+            Attack attack = new Attack(user, target);
+            attack.ReactionLevel = reactionLevel;
+            attack.Elements.Add(Element.Steam, 1.0);
+            return attack;
+        }
+
+        public IEnumerable<Wait> FrothingAttack(Attack attack)
+        {
+            int traitLvl = attack.Defender.GetTrait(this);
+            
+            if(attack.Defender is Creature creature && attack.FinalDamage.Any(x => x.Key == Element.Water))
+            {
+                yield return creature.WaitSome(10);
+                yield return Scheduler.Instance.RunAndWait(RoutineExplosion(creature, attack.ReactionLevel + 1));
+            }
+
+            yield return Wait.NoWait;
+        }
+
+        public IEnumerable<Wait> FrothingTurn(TurnEvent turn)
+        {
+            int traitLvl = turn.Creature.GetTrait(this);
+
+            Creature creature = turn.Creature;
+
+            if(creature.Tiles.Any(x => x is Water))
+            {
+                yield return creature.WaitSome(10);
+                yield return Scheduler.Instance.RunAndWait(RoutineExplosion(creature, 0));
             }
 
             yield return Wait.NoWait;
