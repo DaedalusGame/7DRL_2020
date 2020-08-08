@@ -821,6 +821,22 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillFireBreath());
             Skills.Add(new SkillAttack());
+
+            Effect.Apply(new OnDeath(this, RoutineExplode));
+        }
+
+        private IEnumerable<Wait> RoutineExplode(DeathEvent death)
+        {
+            if(this.GetDamage(Element.Slash) > 0)
+            {
+                new ScreenShakeRandom(World, 5, 15, LerpHelper.Linear);
+                new FireExplosion(World, VisualTarget, Vector2.Zero, 0, 30);
+                yield return WaitSome(4);
+                new BloodExplosion(World, VisualTarget + new Vector2(0, 16), Vector2.Zero, 0, 15);
+                new BloodExplosion(World, VisualTarget + new Vector2(0, -16), Vector2.Zero, 0, 15);
+                new BloodExplosion(World, VisualTarget + new Vector2(-16, 0), Vector2.Zero, 0, 15);
+                new BloodExplosion(World, VisualTarget + new Vector2(16, 0), Vector2.Zero, 0, 15);
+            }
         }
     }
 
