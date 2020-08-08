@@ -64,6 +64,10 @@ namespace RoguelikeEngine
         public List<StatusEffect> StatusEffects = new List<StatusEffect>();
         public List<AttackSpecial> ExtraEffects = new List<AttackSpecial>();
 
+        public double Force = 0;
+        public double AttackModifier = 1;
+        public double DefenseModifier = 1;
+
         public int ReactionLevel;
         public double Damage;
         public Dictionary<Element, double> FinalDamage = new Dictionary<Element, double>();
@@ -74,6 +78,13 @@ namespace RoguelikeEngine
         {
             Attacker = attacker;
             Defender = defender;
+        }
+
+        public void SetParameters(double force, double attackMod, double defenseMod)
+        {
+            Force = force;
+            AttackModifier = attackMod;
+            DefenseModifier = defenseMod;
         }
 
         public virtual IEnumerable<Wait> RoutineStart()
@@ -119,8 +130,8 @@ namespace RoguelikeEngine
 
         protected virtual void CalculateDamage()
         {
-            double attack = Attacker.GetStat(Stat.Attack);
-            double defense = Defender.GetStat(Stat.Defense);
+            double attack = Attacker.GetStat(Stat.Attack) * AttackModifier + Force;
+            double defense = Defender.GetStat(Stat.Defense) * DefenseModifier;
 
             Damage = Math.Max(attack - defense, 0);
         }

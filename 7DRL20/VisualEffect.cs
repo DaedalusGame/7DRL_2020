@@ -1261,6 +1261,53 @@ namespace RoguelikeEngine
         }
     }
 
+    class BulletRock : Bullet
+    {
+        protected SpriteReference Sprite;
+        protected ColorMatrix ColorMatrix;
+
+        float Angle;
+        float AngleVelocity;
+
+        float InitialScale = 1;
+        float Scale => (float)LerpHelper.QuadraticIn(InitialScale, 0, MathHelper.Clamp((Frame.Slide - 0.7f) / 0.3f, 0, 1));
+
+        public BulletRock(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix colorMatrix, float angleVelocity, int time) : base(world, positionStart, time)
+        {
+            Sprite = sprite;
+            ColorMatrix = colorMatrix;
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+            AngleVelocity = angleVelocity;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            Angle += AngleVelocity;
+
+            if (Frame.Done)
+                this.Destroy();
+
+            new Trail(World, Sprite, Position, Vector2.Zero, Angle, Color.Orange, SpriteEffects.None, 10);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            {
+                scene.SetupColorMatrix(ColorMatrix, matrix);
+            });
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+            scene.PopSpriteBatch();
+        }
+    }
+
     class BulletDelta : Bullet
     {
         protected SpriteReference Sprite;

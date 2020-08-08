@@ -43,6 +43,7 @@ namespace RoguelikeEngine.Traits
         public static Trait Fragile = new TraitFragile();
         public static Trait Crumbling = new TraitCrumbling();
         public static Trait Pulverizing = new TraitPulverizing();
+        public static Trait MeteorBash = new TraitMeteorBash();
         public static Trait Alien = new TraitAlien();
         public static Trait Sharp = new TraitSharp();
         public static Trait Stiff = new TraitStiff();
@@ -339,6 +340,40 @@ namespace RoguelikeEngine.Traits
             yield return Wait.NoWait;
         }
     }
+
+    class TraitMeteorBash : Trait
+    {
+        public TraitMeteorBash() : base("Meteor Bash", "Extra attack with shield, deals damage based on defense.", new Color(194, 172, 172))
+        {
+            Effect.Apply(new OnAttack(this, MeteorBash));
+        }
+
+        public IEnumerable<Wait> MeteorBash(Attack attack)
+        {
+            int traitLvl = attack.Attacker.GetTrait(this);
+
+            if (attack.Defender is Creature targetCreature && attack.ReactionLevel <= 0 && targetCreature.CurrentHP > 0 && attack.ExtraEffects.Any(effect => effect is AttackPhysical)) {
+                var bullet = new BulletRock(attack.Attacker.World, SpriteLoader.Instance.AddSprite("content/rock_big"), attack.Attacker.VisualTarget, Material.Meteorite.ColorTransform, 0.1f, 10);
+                bullet.Move(targetCreature.VisualTarget, 10);
+                yield return attack.Attacker.WaitSome(10);
+                new FireExplosion(targetCreature.World, targetCreature.VisualTarget, Vector2.Zero, 0, 20);
+                Point offset = attack.Attacker.Facing.ToOffset();
+                attack.Attacker.Attack(targetCreature, offset.X, offset.Y, MeteorAttack);
+                yield return targetCreature.CurrentAction;
+            }
+
+            yield return Wait.NoWait;
+        }
+
+        private static Attack MeteorAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.SetParameters(user.GetStat(Stat.Defense), 0.25, 1);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
+
 
     class TraitAlien : Trait
     {

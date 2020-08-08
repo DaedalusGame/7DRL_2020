@@ -424,6 +424,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Pulverizing));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 15));
+
+            AddShieldEffect(new EffectTrait(this, Trait.MeteorBash));
         }
     }
 
