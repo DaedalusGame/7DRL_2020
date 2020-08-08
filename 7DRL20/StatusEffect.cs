@@ -368,6 +368,7 @@ namespace RoguelikeEngine
 
         public override int MaxStacks => 1;
 
+        Random Random = new Random();
         Creature Master;
 
         public Slimed(Creature master) : base()
@@ -402,7 +403,7 @@ namespace RoguelikeEngine
                 slime.MoveTo(tile, 0);
                 //slime.MakeAggressive(world.Player);
                 slime.AddControlTurn();
-                var neighbors = tile.GetAdjacentNeighbors().Shuffle();
+                var neighbors = tile.GetAdjacentNeighbors().Shuffle(Random);
                 var pick = neighbors.Where(x => !x.Solid && x.Creatures.Empty()).FirstOrDefault();
                 if (pick == null)
                     pick = neighbors.FirstOrDefault();

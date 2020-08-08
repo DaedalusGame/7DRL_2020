@@ -542,11 +542,6 @@ namespace RoguelikeEngine
                 return $"{String.Join(seperator, first)}{finalSeperator}{last}";
         }
 
-        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> toShuffle)
-        {
-            return Shuffle(toShuffle, new Random());
-        }
-
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> toShuffle, Random random)
         {
             List<T> shuffled = new List<T>();
