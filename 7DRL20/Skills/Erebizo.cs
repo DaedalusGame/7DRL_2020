@@ -187,7 +187,7 @@ namespace RoguelikeEngine.Skills
         {
             Consume();
             yield return user.WaitSome(50);
-            var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 1).Shuffle();
+            var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 1).Shuffle(Random);
             List<Wait> quakes = new List<Wait>();
             HashSet<Tile> tiles = new HashSet<Tile>();
             PopupManager.StartCollect();
@@ -203,7 +203,7 @@ namespace RoguelikeEngine.Skills
 
         private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
         {
-            var tileSet = impactTile.GetNearby(radius).Where(tile => tile.Opaque).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle();
+            var tileSet = impactTile.GetNearby(radius).Where(tile => tile.Opaque).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
             int chargeTime = 60;
             List<Tile> damageTiles = new List<Tile>();
             foreach (Tile tile in tileSet)
@@ -289,7 +289,7 @@ namespace RoguelikeEngine.Skills
             yield return user.WaitSome(20);
             new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
             new SeismArea(user.World, user.Tiles, 10);
-            var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle();
+            var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle(Random);
             List<Wait> quakes = new List<Wait>();
             HashSet<Tile> tiles = new HashSet<Tile>();
             PopupManager.StartCollect();
@@ -305,7 +305,7 @@ namespace RoguelikeEngine.Skills
 
         private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
         {
-            var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle();
+            var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
             int chargeTime = Random.Next(10) + 60;
             List<Tile> damageTiles = new List<Tile>();
             foreach (Tile tile in tileSet)

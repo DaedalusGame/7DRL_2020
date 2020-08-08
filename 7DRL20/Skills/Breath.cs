@@ -105,7 +105,7 @@ namespace RoguelikeEngine.Skills
 
         private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
         {
-            var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle();
+            var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
             int chargeTime = Random.Next(10) + 30;
             List<Tile> damageTiles = new List<Tile>();
             foreach (Tile tile in tileSet)

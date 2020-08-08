@@ -244,7 +244,7 @@ namespace RoguelikeEngine
 
         public override IDictionary<Element, double> Split()
         {
-            var pick = Composites.Shuffle().Take(Random.Next(1, Composites.Count));
+            var pick = Composites.Shuffle(Random).Take(Random.Next(1, Composites.Count));
             var rates = pick.ToDictionary(x => x, x => Random.Next(10) + 1);
             var total = rates.Sum(x => x.Value);
             return rates.ToDictionary(x => x.Key, x => x.Value * Total / total);

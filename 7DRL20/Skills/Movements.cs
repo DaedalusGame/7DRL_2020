@@ -137,7 +137,7 @@ namespace RoguelikeEngine.Skills
                 .Where(tile => tile.Facing == left || tile.Facing == right)
                 .Where(tile => GetSquareDistance(tile.Tile, user.Tile) < JumpDistance * JumpDistance)
                 .Where(tile => CanLand(user, tile.Tile))
-                .Shuffle();
+                .Shuffle(Random);
         }
 
         protected override void Land(Creature user)

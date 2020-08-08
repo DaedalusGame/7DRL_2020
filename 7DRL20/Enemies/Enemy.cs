@@ -61,7 +61,7 @@ namespace RoguelikeEngine.Enemies
 
         private Skill GetUsableSkill()
         {
-            IEnumerable<Skill> skills = Skills.Shuffle().OrderByDescending(skill => skill.Priority);
+            IEnumerable<Skill> skills = Skills.Shuffle(Random).OrderByDescending(skill => skill.Priority);
             foreach (Skill skill in skills)
             {
                 if (skill.CanEnemyUse(this))
@@ -992,7 +992,7 @@ namespace RoguelikeEngine.Enemies
         private IEnumerable<Wait> RoutineSplit(DeathEvent death)
         {
             List<Wait> waits = new List<Wait>();
-            foreach (var neighbor in Tile.GetAdjacentNeighbors().Shuffle())
+            foreach (var neighbor in Tile.GetAdjacentNeighbors().Shuffle(Random))
             {
                 waits.Add(Scheduler.Instance.RunAndWait(RoutineSplitBranch(neighbor)));
             }

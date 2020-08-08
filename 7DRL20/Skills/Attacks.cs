@@ -508,7 +508,7 @@ namespace RoguelikeEngine.Skills
             yield return user.WaitSome(50);
 
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
-            var nearbyTiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X,user.Y),6).Where(tile => tile != user.Tile).Shuffle();
+            var nearbyTiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X,user.Y),6).Where(tile => tile != user.Tile).Shuffle(Random);
             Tile shootTile = null;
             var trigger = Random.NextDouble();
             var nearbyTarget = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => user.IsHostile(c)));
