@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Events;
+using RoguelikeEngine.Traits;
 
 namespace RoguelikeEngine
 {
@@ -364,7 +365,7 @@ namespace RoguelikeEngine
     class Slimed : StatusEffect
     {
         public override string Name => $"Slimed";
-        public override string Description => $"Slime sometimes restores health of the user.";
+        public override string Description => $"On buildup, enemy health turns into green slime.";
 
         public override int MaxStacks => 1;
 
@@ -438,7 +439,7 @@ namespace RoguelikeEngine
         public Undead() : base()
         {
             Hidden = true;
-            Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
         }
 
         public override bool CanCombine(StatusEffect other)

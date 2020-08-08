@@ -1019,6 +1019,7 @@ namespace RoguelikeEngine
         public virtual void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FORMAT_BOLD}{Game.FormatColor(Color.Yellow)}{Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}\n";
+            tooltip += $"{String.Join(", ", this.GetFamilies().Select(family => family.Name))}\n";
             tooltip += $"{Description}\n";
             tooltip += $"HP {CurrentHP}/{this.GetStat(Stat.HP)}\n";
             foreach(StatusEffect statusEffect in this.GetStatusEffects())

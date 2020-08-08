@@ -421,6 +421,12 @@ namespace RoguelikeEngine
             return false;
         }
 
+        public static IEnumerable<Family> GetFamilies(this IEffectHolder holder)
+        {
+            var effectGroups = holder.GetEffects<EffectFamily>().GroupBy(effect => effect.Family);
+            return effectGroups.Select(group => group.WithMax(effect => effect.Priority)).Where(effect => effect.Value).Select(effect => effect.Family);
+        }
+
         public static void ClearPosition(this IEffectHolder subject)
         {
             foreach (var position in subject.GetEffects<Effect>().Where(x => x is IPosition position && position.Subject == subject))

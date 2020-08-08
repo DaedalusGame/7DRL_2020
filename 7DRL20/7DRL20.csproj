@@ -127,6 +127,7 @@
     <Compile Include="SpriteLoader.cs" />
     <Compile Include="StatusEffect.cs" />
     <Compile Include="Tile.cs" />
+    <Compile Include="Traits\EnemyTraits.cs" />
     <Compile Include="Traits\Traits.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="VisualEffect.cs" />

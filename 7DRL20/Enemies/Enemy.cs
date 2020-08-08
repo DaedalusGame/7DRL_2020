@@ -2,6 +2,7 @@
 using RoguelikeEngine.Attacks;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Skills;
+using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace RoguelikeEngine.Enemies
         public static List<Family> AllFamilies = new List<Family>();
 
         int ID;
-        string Name;
+        public string Name;
 
         public Family(string name)
         {
@@ -24,6 +25,7 @@ namespace RoguelikeEngine.Enemies
             AllFamilies.Add(this);
         }
 
+        public static Family Undead = new Family("Undead");
         public static Family Dragon = new Family("Dragon");
         public static Family Slime = new Family("Slime");
 
@@ -703,7 +705,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectStat(this, Stat.HP, 1200));
             Effect.Apply(new EffectStat(this, Stat.Attack, 40));
-            this.AddStatusEffect(new Undead());
+
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDrainTouch());
@@ -731,7 +734,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectStat(this, Stat.HP, 50));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
-            this.AddStatusEffect(new Undead());
+
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
 
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillDrainTouch());
@@ -756,7 +760,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectStat(this, Stat.HP, 50));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
-            this.AddStatusEffect(new Undead());
+
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
 
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillDrainTouch());
@@ -822,22 +827,8 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillFireBreath());
             Skills.Add(new SkillAttack());
 
-            Effect.Apply(new OnDeath(this, RoutineExplode));
-        }
-
-        private IEnumerable<Wait> RoutineExplode(DeathEvent death)
-        {
-            if(this.GetDamage(Element.Slash) > 0)
-            {
-                new ScreenShakeRandom(World, 5, 15, LerpHelper.Linear);
-                new FireExplosion(World, VisualTarget, Vector2.Zero, 0, 30);
-                yield return WaitSome(4);
-                new BloodExplosion(World, VisualTarget + new Vector2(0, 16), Vector2.Zero, 0, 15);
-                new BloodExplosion(World, VisualTarget + new Vector2(0, -16), Vector2.Zero, 0, 15);
-                new BloodExplosion(World, VisualTarget + new Vector2(-16, 0), Vector2.Zero, 0, 15);
-                new BloodExplosion(World, VisualTarget + new Vector2(16, 0), Vector2.Zero, 0, 15);
-            }
-        }
+            Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
+        }       
     }
 
     class BlueDragon : Enemy
@@ -906,6 +897,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 35));
 
             Effect.Apply(new EffectFamily(this, Family.Dragon));
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
 
             Skills.Add(new SkillForcefield());
             Skills.Add(new SkillAgeOfDragons());
@@ -972,13 +964,13 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new OnDeath(this, RoutineSplit));
-
             Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
             Effect.Apply(new EffectFamily(this, Family.Slime));
             Effect.Apply(new EffectFamily(this, Family.GreenSlime));
+
+            Effect.Apply(new EffectTrait(this, Trait.SplitGreenSlime));
 
             Skills.Add(new SkillSlimeTouch());
             Skills.Add(new SkillAttack());
@@ -987,31 +979,6 @@ namespace RoguelikeEngine.Enemies
         public override bool IsHostile(Creature other)
         {
             return !other.HasFamily(Family.GreenSlime);
-        }
-
-        private IEnumerable<Wait> RoutineSplit(DeathEvent death)
-        {
-            List<Wait> waits = new List<Wait>();
-            foreach (var neighbor in Tile.GetAdjacentNeighbors().Shuffle(Random))
-            {
-                waits.Add(Scheduler.Instance.RunAndWait(RoutineSplitBranch(neighbor)));
-            }
-            yield return new WaitAll(waits);
-        }
-
-        private IEnumerable<Wait> RoutineSplitBranch(Tile neighbor)
-        {
-            var slime = new GreenAmoeba(World, 10);
-            slime.MoveTo(Tile, 0);
-            //slime.MakeAggressive(World.Player);
-            slime.AddControlTurn();
-            slime.MoveTo(neighbor, 20);
-            yield return slime.WaitSome(20);
-            if (neighbor.Solid || neighbor.Creatures.Any(x => x != slime))
-            {
-                new GreenBlobPop(slime.World, slime.VisualTarget, Vector2.Zero, 0, 10);
-                slime.Destroy();
-            }
         }
     }
 

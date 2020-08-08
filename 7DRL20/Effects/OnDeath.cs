@@ -15,7 +15,7 @@ namespace RoguelikeEngine.Effects
 
     class DeathEvent
     {
-        Creature Creature;
+        public Creature Creature;
 
         public DeathEvent(Creature creature)
         {

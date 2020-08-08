@@ -52,6 +52,10 @@ namespace RoguelikeEngine.Traits
         public static Trait SludgeArmor = new TraitSludgeArmor();
         public static Trait Slaughtering = new TraitSlaughtering();
         public static Trait LifeSteal = new TraitLifeSteal();
+
+        public static Trait Undead = new TraitUndead();
+        public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
+        public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
     }
 
     class TraitSplintering : Trait
@@ -63,7 +67,7 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> UndeadKiller(Attack attack)
         {
-            var isUndead = attack.Defender.HasStatusEffect(x => x is Undead);
+            var isUndead = attack.Defender.HasFamily(Family.Undead);
             if (isUndead)
             {
                 attack.Damage *= 1.5f;
@@ -83,7 +87,7 @@ namespace RoguelikeEngine.Traits
         public IEnumerable<Wait> UndeadKiller(Attack attack)
         {
             int traitLvl = attack.Attacker.GetTrait(this);
-            var isUndead = attack.Defender.HasStatusEffect(x => x is Undead);
+            var isUndead = attack.Defender.HasFamily(Family.Undead);
             if (isUndead)
             {
                 attack.Damage *= 1 + traitLvl * 0.5f;
@@ -104,7 +108,7 @@ namespace RoguelikeEngine.Traits
         {
             int traitLvl = attack.Defender.GetTrait(this);
 
-            if(attack.Attacker.HasStatusEffect(x => x is Undead))
+            if(attack.Attacker.HasFamily(Family.Undead))
             {
                 attack.Attacker.TakeDamage(10 * traitLvl, Element.Holy);
             }
@@ -250,7 +254,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSharp : Trait
     {
-        public TraitSharp() : base("Sharp", "Causes bleeding.", new Color(128, 0, 0))
+        public TraitSharp() : base("Sharp", "Causes bleeding.", new Color(192, 0, 0))
         {
             Effect.Apply(new OnStartAttack(this, Bleed));
         }
@@ -285,7 +289,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitBloodShield : Trait
     {
-        public TraitBloodShield() : base("Blood Shield", "Attackers take pierce damage and start bleeding.", new Color(128, 0, 0))
+        public TraitBloodShield() : base("Blood Shield", "Attackers take pierce damage and start bleeding.", new Color(192, 0, 0))
         {
             Effect.Apply(new OnStartDefend(this, Stiff));
         }
@@ -417,6 +421,17 @@ namespace RoguelikeEngine.Traits
             }
 
             yield return Wait.NoWait;
+        }
+    }
+
+    class TraitUndead : Trait
+    {
+        Random Random = new Random();
+
+        public TraitUndead() : base("Undead", "Healing causes damage.", new Color(128, 112, 128))
+        {
+            Effect.Apply(new EffectFamily(this, Family.Undead));
+            Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
         }
     }
 }
