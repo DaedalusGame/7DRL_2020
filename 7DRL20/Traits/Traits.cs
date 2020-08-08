@@ -189,7 +189,7 @@ namespace RoguelikeEngine.Traits
             Effect.Apply(new OnTurn(this, FrothingTurn));
         }
 
-        public IEnumerable<Wait> RoutineExplosion(Creature creature, int reactionLevel)
+        public IEnumerable<Wait> RoutineExplosion(Creature creature, double force, int reactionLevel)
         {
             int n = 12;
             new AcidExplosion(creature.World, creature.VisualTarget, Vector2.Zero, 0, 20);
@@ -229,15 +229,16 @@ namespace RoguelikeEngine.Traits
             List<Wait> waitForDamage = new List<Wait>();
             foreach(var target in damageTargets.Distinct().Shuffle(Random))
             {
-                creature.Attack(target, 0, 0, (a,b) => ExplosionAttack(a,b,reactionLevel));
+                creature.Attack(target, 0, 0, (a,b) => ExplosionAttack(a,b,force,reactionLevel));
                 waitForDamage.Add(target.CurrentAction);
             }
             yield return new WaitAll(waitForDamage);
         }
 
-        private static Attack ExplosionAttack(Creature user, IEffectHolder target, int reactionLevel)
+        private static Attack ExplosionAttack(Creature user, IEffectHolder target, double force, int reactionLevel)
         {
             Attack attack = new Attack(user, target);
+            attack.SetParameters(force, 0, 1);
             attack.ReactionLevel = reactionLevel;
             attack.Elements.Add(Element.Steam, 1.0);
             return attack;
@@ -250,7 +251,7 @@ namespace RoguelikeEngine.Traits
             if(attack.Defender is Creature creature && attack.FinalDamage.Any(x => x.Key == Element.Water))
             {
                 yield return creature.WaitSome(10);
-                yield return Scheduler.Instance.RunAndWait(RoutineExplosion(creature, attack.ReactionLevel + 1));
+                yield return Scheduler.Instance.RunAndWait(RoutineExplosion(creature, 50 * Math.Pow(2, traitLvl-1), attack.ReactionLevel + 1));
             }
 
             yield return Wait.NoWait;
@@ -265,7 +266,7 @@ namespace RoguelikeEngine.Traits
             if(creature.Tiles.Any(x => x is Water))
             {
                 yield return creature.WaitSome(10);
-                yield return Scheduler.Instance.RunAndWait(RoutineExplosion(creature, 0));
+                yield return Scheduler.Instance.RunAndWait(RoutineExplosion(creature, 50 * Math.Pow(2, traitLvl-1), 0));
             }
 
             yield return Wait.NoWait;
