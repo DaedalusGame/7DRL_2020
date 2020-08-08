@@ -620,7 +620,7 @@ namespace RoguelikeEngine
                     WaitSoft();
                 }
                 var tile = ToSpread.Dequeue();
-                tile.Spread();
+                tile.Spread(Random);
             }
         }
 
@@ -844,7 +844,7 @@ namespace RoguelikeEngine
 
         public IEnumerable<Point> GetRandomNeighbors(Point point, double chance)
         {
-            var neighbors = GetNeighbors(point).Shuffle();
+            var neighbors = GetNeighbors(point).Shuffle(Random);
             yield return neighbors.First();
             foreach (var neighbor in neighbors.Skip(1))
                 if (Random.NextDouble() < chance)

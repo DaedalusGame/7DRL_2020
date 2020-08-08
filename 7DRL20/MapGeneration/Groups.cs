@@ -14,6 +14,8 @@ namespace RoguelikeEngine.MapGeneration
         protected HashSet<GeneratorCell> Cells = new HashSet<GeneratorCell>();
         protected IEnumerable<RoomGroup> Rooms => GetCells().Where(cell => cell.Room != null).Select(cell => cell.Room).Distinct();
 
+        public Random Random => Generator.Random;
+
         public Color Color;
         public TileColor CaveColor;
         public TileColor BrickColor;
@@ -93,7 +95,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.Wall));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.Lava));
@@ -109,7 +111,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Lava);
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadDeepLake(null, 10, 0.8f, GeneratorTile.SuperLava));
@@ -121,7 +123,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.SuperLava);
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadDeepLake(null, 5, 0.8f, GeneratorTile.HyperLava));
@@ -133,7 +135,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile.HasTag(TileTag.Floor) && cell.Tile.HasTag(TileTag.Artificial)).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.Floor));
@@ -148,7 +150,7 @@ namespace RoguelikeEngine.MapGeneration
         protected void MakeCarpets(int count, int size, GeneratorTile carpet, Func<GeneratorCell,bool> predicate)
         {
             var validArea = GetCells().Where(predicate);
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(count))
             {
                 cell.AddSpread(new SpreadCarpet(null, size, carpet));
@@ -188,7 +190,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile.HasTag(TileTag.Floor)).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Wall)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.DarkLava));
@@ -204,7 +206,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.Wall));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.AcidPool));
@@ -220,7 +222,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Wall)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.Water));
@@ -236,7 +238,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile == GeneratorTile.Water));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadLake(null, 10, 0.8f, GeneratorTile.WaterShallow));
@@ -252,7 +254,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms / 3))
             {
                 cell.AddSpread(new SpreadPlant(null, 5, 0.0f, coral));
@@ -314,7 +316,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms * 3))
             {
                 cell.AddSpread(new SpreadGlow(null, 5, 0.6f, true));
@@ -326,7 +328,7 @@ namespace RoguelikeEngine.MapGeneration
         {
             int rooms = Rooms.Count();
             var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Wall).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Liquid)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms))
             {
                 cell.AddSpread(new SpreadGlow(null, 5, 0.6f, true));
@@ -340,7 +342,7 @@ namespace RoguelikeEngine.MapGeneration
             var borderWalls = GetCells().Where(cell => cell.Tile.HasTag(TileTag.Wall)).Where(cell => cell.GetNeighbors().Where(neighbor => neighbor != null).Any(neighbor => neighbor.Tile.HasTag(TileTag.Floor))).ToHashSet();
             var hidden = Generator.GetAllCells().Where(cell => cell.Tile == GeneratorTile.Empty);
             var validArea = hidden.Where(cell => cell.GetNeighbors().Any(neighbor => borderWalls.Contains(neighbor)));
-            validArea = validArea.Shuffle();
+            validArea = validArea.Shuffle(Random);
             foreach (var cell in validArea.Take(rooms))
             {
                 var border = cell.GetNeighbors().Intersect(borderWalls).ToList().Pick(Generator.Random); //Find a wall

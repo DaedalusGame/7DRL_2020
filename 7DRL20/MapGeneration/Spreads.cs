@@ -17,7 +17,7 @@ namespace RoguelikeEngine.MapGeneration
             Origin = origin;
         }
 
-        public abstract void Spread();
+        public abstract void Spread(Random random);
     }
 
     class SpreadCave : SpreadTile
@@ -33,7 +33,7 @@ namespace RoguelikeEngine.MapGeneration
             Chance = chance;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             Cell.Tile = GeneratorTile.Floor;
 
@@ -52,7 +52,7 @@ namespace RoguelikeEngine.MapGeneration
             else
             {
                 bool oneEmpty = false;
-                foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
+                foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle(random))
                 {
                     if (tile.Room == null)
                     {
@@ -95,7 +95,7 @@ namespace RoguelikeEngine.MapGeneration
             IsRoom = isRoom;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             Cell.Tile = GeneratorTile.FloorBrick;
             int index = 0;
@@ -114,7 +114,7 @@ namespace RoguelikeEngine.MapGeneration
             }
             else
             {
-                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle(random))
                 {
                     int dx = tile.X - Origin.X;
                     int dy = tile.Y - Origin.Y;
@@ -158,7 +158,7 @@ namespace RoguelikeEngine.MapGeneration
             Wall = wall;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             Cell.Tile = Floor;
             int index = 0;
@@ -177,7 +177,7 @@ namespace RoguelikeEngine.MapGeneration
             }
             else
             {
-                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle(random))
                 {
                     if (tile.Room == null)
                     {
@@ -208,7 +208,7 @@ namespace RoguelikeEngine.MapGeneration
             Wall = wall;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             Cell.Tile = Floor;
             int index = 0;
@@ -227,7 +227,7 @@ namespace RoguelikeEngine.MapGeneration
             }
             else
             {
-                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle(random))
                 {
                     if (tile.Tile == GeneratorTile.Empty && tile.Room == null)
                     {
@@ -260,14 +260,14 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             if (Distance <= 0)
                 return;
 
             int index = 0;
 
-            foreach (var tile in Cell.GetStatueNeighbors(GridHorizontal, GridVertical).Where(x => x != null).Where(x => x.Tile == GeneratorTile.Floor).Shuffle())
+            foreach (var tile in Cell.GetStatueNeighbors(GridHorizontal, GridVertical).Where(x => x != null).Where(x => x.Tile == GeneratorTile.Floor).Shuffle(random))
             {
                 if (tile.Tile == GeneratorTile.Floor)
                 {
@@ -292,7 +292,7 @@ namespace RoguelikeEngine.MapGeneration
             Glowing = glowing;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             if (Distance <= 0)
                 return;
@@ -300,7 +300,7 @@ namespace RoguelikeEngine.MapGeneration
             int index = 0;
             bool oneEmpty = false;
 
-            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
+            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle(random))
             {
                 if (tile.Glowing != Glowing)
                 {
@@ -334,12 +334,12 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             int index = 0;
             if(Distance > 1)
             {
-                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle(random))
                 {
                     if (tile.Tile.HasTag(TileTag.Floor))
                     {
@@ -366,7 +366,7 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             if (Distance <= 0)
                 return;
@@ -374,7 +374,7 @@ namespace RoguelikeEngine.MapGeneration
             int index = 0;
             bool oneEmpty = false;
 
-            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
+            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle(random))
             {
                 if (tile.Tile.HasTag(TileTag.Floor))
                 {
@@ -408,12 +408,12 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             int index = 0;
             if (Distance > 1)
             {
-                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle())
+                foreach (var tile in Cell.GetAllNeighbors().Where(x => x != null).Shuffle(random))
                 {
                     if (tile.Tile.HasTag(TileTag.Liquid) && tile.Tile != Tile)
                     {
@@ -440,7 +440,7 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             if (Distance <= 0)
                 return;
@@ -448,7 +448,7 @@ namespace RoguelikeEngine.MapGeneration
             int index = 0;
             bool oneEmpty = false;
 
-            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
+            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle(random))
             {
                 if (tile.Tile.HasTag(TileTag.Liquid) && tile.Tile != Tile)
                 {
@@ -484,14 +484,14 @@ namespace RoguelikeEngine.MapGeneration
             Tile = tile;
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             if (Distance <= 0)
                 return;
 
             int index = 0;
 
-            foreach (var tile in Cell.GetPlantNeighbors().Where(x => x != null).Where(x => x.Tile == GeneratorTile.Floor).Shuffle())
+            foreach (var tile in Cell.GetPlantNeighbors().Where(x => x != null).Where(x => x.Tile == GeneratorTile.Floor).Shuffle(random))
             {
                 if (index > 0 && Generator.Random.NextDouble() > Chance)
                     break;
@@ -524,7 +524,7 @@ namespace RoguelikeEngine.MapGeneration
             return cell.Tile.HasTag(TileTag.Wall) && !cell.Tile.HasTag(TileTag.Artificial);
         }
 
-        public override void Spread()
+        public override void Spread(Random random)
         {
             if (Distance <= 0)
                 return;
@@ -532,7 +532,7 @@ namespace RoguelikeEngine.MapGeneration
             int index = 0;
             bool oneEmpty = false;
 
-            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle())
+            foreach (var tile in Cell.GetNeighbors().Where(x => x != null).Shuffle(random))
             {
                 if (IsNaturalWall(tile))
                 {

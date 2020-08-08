@@ -77,7 +77,7 @@ namespace RoguelikeEngine
             BossDatabase.Add(new BossData(this, (tile) =>
             {
                 int radius = 2;
-                var tileSet = tile.GetNearby(radius).Where(x => GetSquareDistance(tile, x) <= radius * radius).Shuffle();
+                var tileSet = tile.GetNearby(radius).Where(x => GetSquareDistance(tile, x) <= radius * radius).Shuffle(Random);
                 new HeavenRay(World, tile, 10);
                 new TileExplosion(World, tileSet);
                 var boss = new Wallhach(World);

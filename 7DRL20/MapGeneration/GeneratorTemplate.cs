@@ -24,7 +24,7 @@ namespace RoguelikeEngine.MapGeneration
         public Tile BuildStairRoom()
         {
             var stairRoom = Rooms.PickAndRemoveBest(x => -x.Key.Connections.Count, Random);
-            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle();
+            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle(Random);
 
             var stairTile = stairRoomFloors.First();
             return stairTile;
@@ -33,7 +33,7 @@ namespace RoguelikeEngine.MapGeneration
         public Tile BuildStairRoom(Type type)
         {
             var stairRoom = Rooms.PickAndRemoveBest(x => (x.Key.Origin.Group.GetType() == type ? 100 : 0) - x.Key.Connections.Count, Random);
-            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle();
+            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle(Random);
 
             var stairTile = stairRoomFloors.First();
             return stairTile;
@@ -42,7 +42,7 @@ namespace RoguelikeEngine.MapGeneration
         public Tile GetStartRoom()
         {
             var stairRoom = Rooms.PickAndRemoveBest(x => x.Key.Connections.Count, Random);
-            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle();
+            var stairRoomFloors = stairRoom.Where(tile => !tile.Solid).Shuffle(Random);
 
             var stairTile = stairRoomFloors.First();
             return stairTile;
@@ -119,7 +119,7 @@ namespace RoguelikeEngine.MapGeneration
         private void BuildStoreRoom(List<IGrouping<RoomGroup, Tile>> rooms)
         {
             var storeRoom = rooms.PickAndRemoveBest(x => x.Any(tile => tile is FloorPlank || tile is FloorCarpet) ? -x.Key.Connections.Count : -9999, Random);
-            var storeRoomFloors = storeRoom.Where(tile => !tile.Solid).Shuffle();
+            var storeRoomFloors = storeRoom.Where(tile => !tile.Solid).Shuffle(Random);
 
             Material[] possibleFuels = new[] { Material.Coal };
             Material[] possibleMaterials = new[] { Material.Karmesine, Material.Ovium, Material.Jauxum, Material.Basalt };
@@ -141,7 +141,7 @@ namespace RoguelikeEngine.MapGeneration
         private void BuildSmeltery(List<IGrouping<RoomGroup, Tile>> rooms)
         {
             var smeltery = rooms.PickAndRemoveBest(x => !x.Any(tile => tile is FloorPlank || tile is FloorCarpet) ? -x.Key.Connections.Count : -9999, Random);
-            var smelteryFloors = smeltery.Where(tile => !tile.Solid).Shuffle();
+            var smelteryFloors = smeltery.Where(tile => !tile.Solid).Shuffle(Random);
 
             var anvilTile = smelteryFloors.ElementAt(0);
             var smelterTile = smelteryFloors.ElementAt(1);

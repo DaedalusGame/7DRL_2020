@@ -31,6 +31,7 @@ namespace RoguelikeEngine
 
         public ReusableID ObjectID { get; private set; }
 
+        protected Random Random = new Random();
         protected Map Map;
         protected List<CloudPart> Parts = new List<CloudPart>();
         
@@ -114,12 +115,13 @@ namespace RoguelikeEngine
         public void Drift(int dx, int dy, int n)
         {
             n = Math.Min(n, Parts.Count);
-            if (n == 0 || dx == 0 || dy == 0)
+            if (n == 0 || (dx == 0 && dy == 0))
                 return;
-            foreach(var part in Parts.Shuffle().Take(n))
+            foreach(var part in Parts.Shuffle(Random).Take(n))
             {
                 var neighbor = part.Tile.GetNeighbor(dx, dy);
-                if (!neighbor.Solid)
+                var existingCloud = Get(neighbor);
+                if (!neighbor.Solid && existingCloud == null)
                     part.MapTile = neighbor.Parent;
             }
             UpdateMask();
@@ -179,6 +181,16 @@ namespace RoguelikeEngine
                 }
             }
             base.Update();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            Drift(0, 1, Parts.Count / 2);
+            Drift(0, -1, Parts.Count / 2);
+            Drift(1, 0, Parts.Count / 2);
+            Drift(-1, 0, Parts.Count / 2);
+
+            return base.NormalTurn(turn);
         }
     }
 }
