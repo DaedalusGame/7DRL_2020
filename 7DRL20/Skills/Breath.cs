@@ -10,13 +10,18 @@ namespace RoguelikeEngine.Skills
 {
     abstract class SkillBreathBase : Skill
     {
+        float StartAngle = -MathHelper.PiOver2;
+        float EndAngle = MathHelper.PiOver2;
+        float Radius = 4;
+        float ArcSpeed = 1;
+
         public SkillBreathBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
         {
         }
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user);
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 5) && !InRange(user, user.AggroTarget, 2);
         }
 
         public override object GetEnemyTarget(Enemy user)
@@ -52,13 +57,12 @@ namespace RoguelikeEngine.Skills
                 float centerAngle = GetFacingAngle(facing);
                 Consume();
 
-                float startAngle = centerAngle - MathHelper.PiOver2;
-                float endAngle = centerAngle + MathHelper.PiOver2;
-                float radius = 4;
+                float startAngle = centerAngle - StartAngle;
+                float endAngle = centerAngle + EndAngle;
+                float radius = Radius;
 
                 float arcLength = (endAngle - startAngle) * radius;
-                float arcSpeed = 1;
-                float increment = arcLength / arcSpeed;
+                float arcSpeed = ArcSpeed;
 
                 List<Wait> breaths = new List<Wait>();
                 HashSet<Tile> tiles = new HashSet<Tile>();

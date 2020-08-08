@@ -150,6 +150,25 @@ namespace RoguelikeEngine
         }
     }
 
+    class TurnTakerCloud : TurnTaker
+    {
+        Cloud Cloud;
+
+        public TurnTakerCloud(ActionQueue queue, Cloud cloud) : base(queue)
+        {
+            Cloud = cloud;
+        }
+
+        public override object Owner => Cloud;
+        public override double Speed => 1;
+        public override bool RemoveFromQueue => Cloud.Destroyed;
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            return Cloud.NormalTurn(turn);
+        }
+    }
+
     enum TurnPhase
     {
         Start,

@@ -87,6 +87,7 @@ namespace RoguelikeEngine
         public int Height;
         MapTile[,] Tiles;
         public MapTile Outside;
+        public List<Cloud> Clouds = new List<Cloud>();
 
         public LevelFeelingSet Feelings = new LevelFeelingSet();
 
@@ -118,6 +119,22 @@ namespace RoguelikeEngine
                 return Tiles[x, y].Tile;
             else
                 return new Tile.FakeOutside(this, x, y);
+        }
+
+        public T GetCloud<T>() where T : Cloud
+        {
+            return (T)Clouds.Find(x => x.GetType() == typeof(T));
+        }
+
+        public T AddCloud<T>(Func<Map, T> constructor) where T : Cloud
+        {
+            T cloud = GetCloud<T>();
+            if(cloud == null)
+            {
+                cloud = constructor(this);
+                Clouds.Add(cloud);
+            }
+            return cloud;
         }
 
         public IEnumerable<Tile> GetNearby(int x, int y, int radius)
