@@ -61,6 +61,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.ExtraEffects.Add(new AttackDrain(0.6));
             attack.Elements.Add(Element.Pierce, 2.0);
             return attack;
@@ -76,6 +77,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 0.5);
             attack.StatusEffects.Add(new DefenseDown()
             {
@@ -95,6 +97,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 0.5);
             attack.StatusEffects.Add(new Poison()
             {
@@ -114,6 +117,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 0.5);
             if(!defender.HasFamily(Family.Slime))
                 attack.StatusEffects.Add(new Slimed(attacker)
@@ -433,6 +437,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack RamAttack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 1.0);
             return attack;
         }

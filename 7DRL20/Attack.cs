@@ -14,6 +14,19 @@ namespace RoguelikeEngine
         public abstract Wait End(Attack attack);
     }
 
+    class AttackPhysical : AttackSpecial
+    {
+        public override Wait End(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
     class AttackDrain : AttackSpecial
     {
         double Rate;

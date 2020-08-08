@@ -106,11 +106,14 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> OnDefend(Attack attack)
         {
-            int traitLvl = attack.Defender.GetTrait(this);
-
-            if(attack.Attacker.HasFamily(Family.Undead))
+            if (attack.ExtraEffects.Any(effect => effect is AttackPhysical))
             {
-                attack.Attacker.TakeDamage(10 * traitLvl, Element.Holy);
+                int traitLvl = attack.Defender.GetTrait(this);
+
+                if (attack.Attacker.HasFamily(Family.Undead))
+                {
+                    attack.Attacker.TakeDamage(10 * traitLvl, Element.Holy);
+                }
             }
 
             yield return Wait.NoWait;
@@ -296,12 +299,14 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Stiff(Attack attack)
         {
-            int traitLvl = attack.Defender.GetTrait(this);
+            if (attack.ExtraEffects.Any(effect => effect is AttackPhysical))
+            {
+                int traitLvl = attack.Defender.GetTrait(this);
 
-            attack.Attacker.TakeDamage(5 * traitLvl, Element.Pierce);
-            attack.Attacker.AddStatusEffect(new BleedLesser() { Buildup = traitLvl * 0.4, Duration = new Slider(30) });
-            attack.Attacker.AddStatusEffect(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(20) });
-
+                attack.Attacker.TakeDamage(5 * traitLvl, Element.Pierce);
+                attack.Attacker.AddStatusEffect(new BleedLesser() { Buildup = traitLvl * 0.4, Duration = new Slider(30) });
+                attack.Attacker.AddStatusEffect(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(20) });
+            }
             yield return Wait.NoWait;
         }
     }

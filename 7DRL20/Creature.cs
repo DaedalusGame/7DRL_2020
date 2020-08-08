@@ -940,6 +940,7 @@ namespace RoguelikeEngine
                     attack.Elements.Add(element.Key, element.Value);
                 }
             }
+            attack.ExtraEffects.Add(new AttackPhysical());
             return attack;
         }
 

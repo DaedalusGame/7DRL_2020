@@ -17,6 +17,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack Attack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Slash, 0.5);
             attack.Elements.Add(Element.TheEnd, 1.0);
             return attack;
@@ -37,6 +38,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack RamAttack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 0.5);
             attack.Elements.Add(Element.Pierce, 0.5);
             attack.Elements.Add(Element.TheEnd, 0.5);
@@ -59,6 +61,7 @@ namespace RoguelikeEngine.Skills
         protected override Attack RamAttack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 0.5);
             attack.Elements.Add(Element.Pierce, 0.5);
             attack.Elements.Add(Element.TheEnd, 0.5);
