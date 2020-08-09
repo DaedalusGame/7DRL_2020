@@ -454,9 +454,37 @@ namespace RoguelikeEngine.Traits
         {
             var subject = attack.Defender;
             if (Random.NextDouble() < 0.2 && subject is Creature creature)
-                new Smoke(creature.World, new Vector2(creature.X * 16 + 8, creature.Y * 18 + 8), Vector2.Zero, 0, 15);
+            {
+                ExplodeSmoke(creature);
+            }
 
             yield return Wait.NoWait;
+        }
+
+        private void ExplodeSmoke(Creature creature)
+        {
+            int n = 12;
+            new ScreenShakeRandom(creature.World, 5, 20, LerpHelper.Linear);
+            for (int i = 0; i < n; i++)
+            {
+                float angle = i * MathHelper.TwoPi / n;
+                Vector2 offset = Util.AngleToVector(angle) * 24;
+
+                new Smoke(creature.World, creature.VisualTarget + offset, Vector2.Zero, angle, 10 + Random.Next(5));
+            }
+
+            int radius = 2 * 16 + 8;
+
+            Cloud cloud = creature.Tile.Map.AddCloud(map => new CloudSmoke(map));
+
+            foreach (var tile in creature.Tile.GetNearby(creature.Mask.GetRectangle(creature.X, creature.Y), radius))
+            {
+                var distance = (tile.VisualTarget - creature.VisualTarget).LengthSquared();
+                if (distance <= radius * radius)
+                {
+                    cloud.Add(tile, 15);
+                }
+            }
         }
     }
 

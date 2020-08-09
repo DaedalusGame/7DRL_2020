@@ -35,9 +35,9 @@ namespace RoguelikeEngine
         protected Map Map;
         protected List<CloudPart> Parts = new List<CloudPart>();
         
-        public Cloud(SceneGame world, Map map)
+        public Cloud(Map map)
         {
-            World = world;
+            World = map.World;
             World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
             Map = map;
@@ -165,7 +165,7 @@ namespace RoguelikeEngine
     {
         int Ticks;
 
-        public CloudSmoke(SceneGame world, Map map) : base(world, map)
+        public CloudSmoke(Map map) : base(map)
         {
         }
 
