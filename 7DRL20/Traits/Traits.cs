@@ -396,8 +396,11 @@ namespace RoguelikeEngine.Traits
         {
             int traitLvl = attack.Attacker.GetTrait(this);
 
-            attack.StatusEffects.Add(new BleedLesser() { Buildup = traitLvl * 0.3, Duration = new Slider(20) });
-            attack.StatusEffects.Add(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(10) });
+            if (!attack.Defender.HasFamily(Family.Bloodless))
+            {
+                attack.StatusEffects.Add(new BleedLesser() { Buildup = traitLvl * 0.3, Duration = new Slider(20) });
+                attack.StatusEffects.Add(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(10) });
+            }
 
             yield return Wait.NoWait;
         }
@@ -434,8 +437,11 @@ namespace RoguelikeEngine.Traits
                 int traitLvl = attack.Defender.GetTrait(this);
 
                 attack.Attacker.TakeDamage(5 * traitLvl, Element.Pierce);
-                attack.Attacker.AddStatusEffect(new BleedLesser() { Buildup = traitLvl * 0.4, Duration = new Slider(30) });
-                attack.Attacker.AddStatusEffect(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(20) });
+                if (!attack.Attacker.HasFamily(Family.Bloodless))
+                {
+                    attack.Attacker.AddStatusEffect(new BleedLesser() { Buildup = traitLvl * 0.4, Duration = new Slider(30) });
+                    attack.Attacker.AddStatusEffect(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(20) });
+                }
             }
             yield return Wait.NoWait;
         }

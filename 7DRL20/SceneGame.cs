@@ -281,6 +281,7 @@ namespace RoguelikeEngine
             CameraMap = MapHome;
             CameraFocus = new CameraFocus(Player);
 
+            Player.Pickup(new Ingot(this, Material.Bone, 8));
             Player.Pickup(new Ingot(this, Material.Dilithium, 8));
             Player.Pickup(new Ingot(this, Material.Tiberium, 8));
             Player.Pickup(new Ingot(this, Material.Basalt, 8));

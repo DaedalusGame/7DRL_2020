@@ -25,6 +25,7 @@ namespace RoguelikeEngine.Enemies
             AllFamilies.Add(this);
         }
 
+        public static Family Bloodless = new Family("Bloodless");
         public static Family Undead = new Family("Undead");
         public static Family Dragon = new Family("Dragon");
         public static Family Slime = new Family("Slime");
@@ -684,6 +685,8 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.HP, 600));
             Effect.Apply(new EffectStat(this, Stat.Attack, 25));
 
+            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+
             Skills.Add(new SkillCannonShot());
         }
     }
@@ -707,6 +710,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 40));
 
             Effect.Apply(new EffectTrait(this, Trait.Undead));
+            Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDrainTouch());
@@ -736,6 +740,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
             Effect.Apply(new EffectTrait(this, Trait.Undead));
+            Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillDrainTouch());
@@ -762,6 +767,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
             Effect.Apply(new EffectTrait(this, Trait.Undead));
+            Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillDrainTouch());
@@ -898,6 +904,7 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectFamily(this, Family.Dragon));
             Effect.Apply(new EffectTrait(this, Trait.Undead));
+            Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillForcefield());
             Skills.Add(new SkillAgeOfDragons());

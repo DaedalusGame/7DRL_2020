@@ -285,6 +285,8 @@ namespace RoguelikeEngine
             AddOffensiveToolEffect(new EffectTrait(this, Trait.Splintering));
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddAdzeEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.05));
+
+            AddArmorEffect(new EffectTrait(this, Trait.Undead));
         }
     }
 
