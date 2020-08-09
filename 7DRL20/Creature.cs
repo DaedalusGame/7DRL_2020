@@ -413,6 +413,25 @@ namespace RoguelikeEngine
             return frontier.Except(PointLookup);
         }
 
+        public IEnumerable<Point> GetFullFrontier()
+        {
+            HashSet<Point> frontier = new HashSet<Point>();
+
+            foreach (Point point in PointList)
+            {
+                frontier.Add(new Point(point.X + 1, point.Y));
+                frontier.Add(new Point(point.X - 1, point.Y));
+                frontier.Add(new Point(point.X, point.Y + 1));
+                frontier.Add(new Point(point.X, point.Y - 1));
+                frontier.Add(new Point(point.X + 1, point.Y + 1));
+                frontier.Add(new Point(point.X - 1, point.Y - 1));
+                frontier.Add(new Point(point.X - 1, point.Y + 1));
+                frontier.Add(new Point(point.X + 1, point.Y - 1));
+            }
+
+            return frontier.Except(PointLookup);
+        }
+
         public IEnumerable<Point> GetFrontier(int dx, int dy)
         {
             HashSet<Point> frontier = new HashSet<Point>();
@@ -541,7 +560,7 @@ namespace RoguelikeEngine
                 Frame = creature.Frame + frame;
             }
 
-            public override bool Done => Creature.Frame >= Frame;
+            public override bool Done => Creature.Destroyed || Creature.Frame >= Frame;
 
             public override void Update()
             {
@@ -732,7 +751,7 @@ namespace RoguelikeEngine
 
         public void CheckDead(int dx, int dy)
         {
-            if(CurrentHP <= 0 && !Dead)
+            if(CurrentHP <= 0 && !Dead && !Destroyed)
             {
                 Dead = true;
                 World.Wait.Add(this.OnDeath(new DeathEvent(this)));

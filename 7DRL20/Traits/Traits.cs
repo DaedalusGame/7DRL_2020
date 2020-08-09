@@ -64,18 +64,47 @@ namespace RoguelikeEngine.Traits
     {
         public TraitSplintering() : base("Splintering", "Deals some damage to surrounding enemies.", new Color(235, 235, 207))
         {
-            Effect.Apply(new OnAttack(this, UndeadKiller));
+            Effect.Apply(new OnAttack(this, Splinter));
         }
 
-        public IEnumerable<Wait> UndeadKiller(Attack attack)
+        public IEnumerable<Wait> Splinter(Attack attack)
         {
-            var isUndead = attack.Defender.HasFamily(Family.Undead);
-            if (isUndead)
-            {
-                attack.Damage *= 1.5f;
-            }
+            int traitLvl = attack.Attacker.GetTrait(this);
 
+            if (attack.Defender is Creature targetCreature && attack.ReactionLevel == 0)
+            {
+                var boneShards = SpriteLoader.Instance.AddSprite("content/shards");
+                HashSet<Tile> targetTiles = new HashSet<Tile>();
+                HashSet<Creature> targets = new HashSet<Creature>();
+                targetTiles.AddRange(attack.Attacker.Mask.GetFullFrontier().Select(o => attack.Attacker.Tile.GetNeighbor(o.X, o.Y)));
+                targetTiles.AddRange(targetCreature.Mask.GetFullFrontier().Select(o => targetCreature.Tile.GetNeighbor(o.X, o.Y)));
+                targetTiles.RemoveRange(attack.Attacker.Tiles);
+                targetTiles.RemoveRange(targetCreature.Tiles);
+                yield return attack.Attacker.WaitSome(10);
+                foreach (Tile tile in targetTiles)
+                {
+                    targets.AddRange(tile.Creatures.Where(creature => creature != attack.Attacker && creature != attack.Defender));
+                    new Shards(attack.Attacker.World, boneShards, Vector2.Lerp(attack.Attacker.VisualTarget, targetCreature.VisualTarget, 0.5f), tile.VisualTarget, LerpHelper.CubicOut, 10);
+                }
+                List<Wait> waitForDamage = new List<Wait>();
+                foreach (var target in targets)
+                {
+                    double splinterDamage = traitLvl * 0.2 * attack.FinalDamage.Sum(x => x.Value);
+                    attack.Attacker.Attack(target, 0, 0, (a,b) => SplinterAttack(a, b, splinterDamage));
+                    waitForDamage.Add(target.CurrentAction);
+                }
+                yield return new WaitAll(waitForDamage);
+            }
             yield return Wait.NoWait;
+        }
+
+        private Attack SplinterAttack(Creature attacker, IEffectHolder defender, double force)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(force, 0, 1);
+            attack.Elements.Add(Element.Pierce, 1.0);
+            attack.ReactionLevel = 1;
+            return attack;
         }
     }
 

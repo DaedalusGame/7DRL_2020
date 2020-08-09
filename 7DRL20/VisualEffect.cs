@@ -672,12 +672,14 @@ namespace RoguelikeEngine
         int SubImage;
         Vector2 Velocity;
         float Scale => (float)LerpHelper.CubicIn(1, 0, Frame.Slide);
+        Color Color;
 
-        public SmokeSmall(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, int time) : base(world, position)
+        public SmokeSmall(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, Color color, int time) : base(world, position)
         {
             Sprite = sprite;
             SubImage = Random.Next(Sprite.SubImageCount);
             Velocity = velocity;
+            Color = color;
             Frame = new Slider(time);
         }
 
@@ -692,12 +694,12 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             var angle = Util.VectorToAngle(Velocity);
-            scene.DrawSpriteExt(Sprite, SubImage, Position - Sprite.Middle, Sprite.Middle, angle - MathHelper.PiOver2, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
+            scene.DrawSpriteExt(Sprite, SubImage, Position - Sprite.Middle, Sprite.Middle, angle - MathHelper.PiOver2, new Vector2(Scale), SpriteEffects.None, Color, 0);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
-            yield return DrawPass.EffectLow;
+            yield return DrawPass.Effect;
         }
     }
 
@@ -750,7 +752,7 @@ namespace RoguelikeEngine
             if (Frame.Done)
                 this.Destroy();
 
-            if (Random.NextDouble() < LerpHelper.Linear(0, 0.5, Frame.Slide))
+            if (Random.NextDouble() < LerpHelper.Linear(0, 0.5, Frame.Slide) && Tiles.Any())
             {
                 Tile startTile = Tiles.Pick(Random);
                 Vector2 startOffset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
@@ -1059,6 +1061,31 @@ namespace RoguelikeEngine
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
             yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class Shards : Projectile
+    {
+        public SpriteReference Sprite;
+        public LerpHelper.Delegate Lerp;
+        public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, (float)Lerp(0, 1, Frame.Slide));
+        float Angle;
+
+        public Shards(SceneGame world, SpriteReference sprite, Vector2 positionStart, Vector2 positionEnd, LerpHelper.Delegate lerp, int time) : base(world, positionStart, positionEnd, time)
+        {
+            Sprite = sprite;
+            Lerp = lerp;
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, new Vector2(1), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
         }
     }
 

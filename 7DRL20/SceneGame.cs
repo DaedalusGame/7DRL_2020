@@ -446,12 +446,14 @@ namespace RoguelikeEngine
             bool cancel = false;
             while (!cancel && Wait.Done && !Player.Dead && CameraFocus.Done)
             {
-                var corpse = Entities.Where(x => x.Dead).FirstOrDefault();
-                if(corpse != null)
+                var corpses = Entities.Where(x => x.Dead);
+                List<Wait> waitForDestruction = new List<Wait>();
+                foreach(var corpse in corpses)
                 {
-                    Wait.Add(Scheduler.Instance.RunAndWait(corpse.RoutineDestroy()));
-                    break;
+                    waitForDestruction.Add(Scheduler.Instance.RunAndWait(corpse.RoutineDestroy()));
                 }
+                if(waitForDestruction.Any())
+                    Wait.Add(new WaitAll(waitForDestruction));
 
                 Enemy foundBoss = Spawner.Bosses.Find(x => !x.Dead && IsBossVisible(x) && !SeenBosses.Contains(x));
                 if (foundBoss != null)

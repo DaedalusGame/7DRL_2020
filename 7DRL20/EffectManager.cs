@@ -142,12 +142,15 @@ namespace RoguelikeEngine
 
         }
 
-        public static IEnumerable<T> GetEffects<T>(IEffectHolder holder) where T : Effect
+        public static IEnumerable<T> GetEffects<T>(IEffectHolder holder, bool split = true) where T : Effect
         {
             if (holder.ObjectID == ReusableID.Null)
                 return Enumerable.Empty<T>();
-            IEnumerable<T> effects = GetDrawer(typeof(Effect)).Get(holder).SplitEffects<T>();
-            return effects;
+            var effects = GetDrawer(typeof(Effect)).Get(holder);
+            if (split)
+                return effects.SplitEffects<T>();
+            else
+                return effects.OfType<T>();
         }
 
         public static IEnumerable<T> SplitEffects<T>(this IEnumerable<Effect> effects) where T : Effect
@@ -189,7 +192,7 @@ namespace RoguelikeEngine
 
         public static void ClearEffects(this IEffectHolder holder)
         {
-            foreach (var effect in GetEffects<Effect>(holder))
+            foreach (var effect in GetEffects<Effect>(holder, false))
                 effect.Remove();
         }
 

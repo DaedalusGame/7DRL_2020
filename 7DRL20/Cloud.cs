@@ -34,6 +34,9 @@ namespace RoguelikeEngine
         protected Random Random = new Random();
         protected Map Map;
         protected List<CloudPart> Parts = new List<CloudPart>();
+
+        public string Name;
+        public string Description;
         
         public Cloud(Map map)
         {
@@ -145,6 +148,12 @@ namespace RoguelikeEngine
             //NOOP
         }
 
+        public virtual void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Game.FormatColor(Color.Yellow)}{Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}\n";
+            tooltip += $"{Description}\n";
+        }
+
         public bool ShouldDraw(Map map)
         {
             return map == Map;
@@ -167,17 +176,22 @@ namespace RoguelikeEngine
 
         public CloudSmoke(Map map) : base(map)
         {
+            Name = "Smoke Cloud";
+            Description = "Harmless smoke.";
         }
 
         public override void Update()
         {
+            SpriteReference smoke = SpriteLoader.Instance.AddSprite("content/smoke_small");
+
             Ticks++;
 
             foreach (var part in Parts)
             {
-                if((part.GetHashCode() + Ticks) % 20 == 0)
+                if((part.GetHashCode() + Ticks) % 1 == 0)
                 {
-                    new Smoke(World, part.Tile.VisualTarget, Vector2.Zero, 0, 12);
+                    Vector2 pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new SmokeSmall(World, smoke, pos, Vector2.Zero, Color.White, 12);
                 }
             }
             base.Update();

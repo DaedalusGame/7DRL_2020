@@ -55,7 +55,7 @@ namespace RoguelikeEngine.Skills
             MaxWallHits = 0;
             MaxCreatureHits = 999999;
             DestroyWalls = false;
-            CheckTarget = false;
+            CheckTarget = true;
         }
 
         protected override Attack RamAttack(Creature attacker, IEffectHolder defender)

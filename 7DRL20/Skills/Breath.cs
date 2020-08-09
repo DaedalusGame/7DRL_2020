@@ -57,7 +57,7 @@ namespace RoguelikeEngine.Skills
                 float centerAngle = GetFacingAngle(facing);
                 Consume();
 
-                float startAngle = centerAngle - StartAngle;
+                float startAngle = centerAngle + StartAngle;
                 float endAngle = centerAngle + EndAngle;
                 float radius = Radius;
 

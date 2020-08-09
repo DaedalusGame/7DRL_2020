@@ -410,6 +410,18 @@ namespace RoguelikeEngine
             return enumerable;
         }
 
+        public static void AddRange<T>(this HashSet<T> set,IEnumerable<T> enumerable)
+        {
+            foreach(var item in enumerable)
+                set.Add(item);
+        }
+
+        public static void RemoveRange<T>(this HashSet<T> set, IEnumerable<T> enumerable)
+        {
+            foreach (var item in enumerable)
+                set.Remove(item);
+        }
+
         private static T PickInternal<T>(IList<T> enumerable, Random random, bool remove)
         {
             int select = random.Next(enumerable.Count());

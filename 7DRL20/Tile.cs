@@ -127,6 +127,7 @@ namespace RoguelikeEngine
         public virtual IEnumerable<IEffectHolder> Contents => Parent.GetEffects<Effects.OnTile>().Select(x => x.Holder);
         public IEnumerable<Creature> Creatures => Contents.OfType<Creature>();
         public IEnumerable<Item> Items => Contents.OfType<Item>();
+        public IEnumerable<Cloud> Clouds => Contents.OfType<Cloud>();
 
         List<Effect> TileEffects = new List<Effect>();
         
@@ -255,7 +256,18 @@ namespace RoguelikeEngine
 
         public virtual void AddTooltip(ref string tooltip)
         {
-            if(Creatures.Any())
+            if (Clouds.Any())
+                tooltip += "\n";
+            int cloudCount = 0;
+            foreach (Cloud cloud in Clouds.Take(10 + 1))
+            {
+                if (cloudCount >= 10)
+                    tooltip += "...\n";
+                else
+                    cloud.AddTooltip(ref tooltip);
+                cloudCount++;
+            }
+            if (Creatures.Any())
                 tooltip += "\n";
             int creatureCount = 0;
             foreach (Creature creature in Creatures.Take(10+1))
