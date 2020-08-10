@@ -327,6 +327,35 @@ namespace RoguelikeEngine
         }
     }
 
+    class Wet : StatusEffect
+    {
+        public override string Name => $"Wet";
+        public override string Description => $"Extra damage from thunder attacks. Reduces fire damage.";
+
+        public override int MaxStacks => 1;
+
+        public Wet() : base()
+        {
+            Effect.Apply(new EffectStatPercent(this, Element.Thunder.DamageRate, 0.5));
+            Effect.Apply(new EffectStatPercent(this, Element.Fire.DamageRate, -0.25));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Wet;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
     class HealSlimed : StatusEffect
     {
         public override string Name => $"Slimed";

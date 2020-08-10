@@ -58,6 +58,10 @@ namespace RoguelikeEngine.Traits
         public static Trait Undead = new TraitUndead();
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
         public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
+
+        public static Trait Water = new TraitWater();
+        public static Trait Lava = new TraitLava();
+        public static Trait Acid = new TraitAcid();
     }
 
     class TraitSplintering : Trait
@@ -403,7 +407,6 @@ namespace RoguelikeEngine.Traits
             return attack;
         }
     }
-
 
     class TraitAlien : Trait
     {

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.MapGeneration;
+using RoguelikeEngine.Traits;
 
 namespace RoguelikeEngine
 {
@@ -1122,6 +1123,8 @@ namespace RoguelikeEngine
 
         public Water() : base("Water")
         {
+            Effect.Apply(new EffectTrait(this, Trait.Water));
+
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
 
@@ -1225,6 +1228,7 @@ namespace RoguelikeEngine
     {
         public Lava() : base("Lava")
         {
+            Effect.Apply(new EffectTrait(this, Trait.Lava));
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -1494,6 +1498,8 @@ namespace RoguelikeEngine
 
         public AcidPool() : base("Acid")
         {
+            Effect.Apply(new EffectTrait(this, Trait.Acid));
+
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
 

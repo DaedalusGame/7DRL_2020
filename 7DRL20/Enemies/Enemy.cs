@@ -778,7 +778,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectTrait(this, Trait.Undead));
             Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
-            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillMudTouch());
         }
     }
 

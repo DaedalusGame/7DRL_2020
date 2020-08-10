@@ -52,6 +52,22 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillMudTouch : SkillAttackBase
+    {
+        public SkillMudTouch() : base("Attack", "Mud Touch", 0, 0, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Bludgeon, 0.5);
+            attack.Elements.Add(Element.Mud, 0.5);
+            return attack;
+        }
+    }
+
     class SkillDrainTouch : SkillAttackBase
     {
         public SkillDrainTouch() : base("Attack", "Drain Touch", 0, 3, float.PositiveInfinity)
