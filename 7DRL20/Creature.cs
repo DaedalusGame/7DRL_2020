@@ -1050,6 +1050,26 @@ namespace RoguelikeEngine
             }
         }
 
+        public void AddStatBlock(ref string description)
+        {
+            description += $"{String.Join(", ", this.GetFamilies().Select(family => family.Name))}\n";
+
+            var effects = GetEffects<Effect>();
+            //var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
+
+            foreach (var stat in Stat.AllStats.OrderBy(stat => stat.Priority))
+            {
+                var value = this.GetStat(stat);
+                if(value != stat.DefaultStat)
+                    description += $"{Game.FormatStat(stat)} {stat.Name} {value}\n";
+            }
+            
+            /*foreach (var group in effectGroups.OrderBy(group => group.Key.VisualPriority))
+            {
+                group.Key.AddStatBlock(ref description, group);
+            }*/
+        }
+
         public bool ShouldDraw(Map map)
         {
             return Map == map;

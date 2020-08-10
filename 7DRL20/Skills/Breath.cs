@@ -169,4 +169,64 @@ namespace RoguelikeEngine.Skills
             };
         }
     }
+
+    class SkillIceBreath : SkillBreathBase
+    {
+        public SkillIceBreath() : base("Ice Breath", "Description", 1, 1, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles)
+        {
+            Tile tile = GetImpactTile(user, angle, radius);
+            Vector2 direction = Util.AngleToVector(angle);
+            Vector2 offset = direction * radius;
+            new SteamExplosion(user.World, user.VisualTarget, offset * 16f / 20f, angle, 20);
+            if (tile != null)
+                yield return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1, tiles));
+        }
+
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
+        {
+            var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
+            int chargeTime = Random.Next(10) + 1;
+            List<Tile> damageTiles = new List<Tile>();
+            foreach (Tile tile in tileSet)
+            {
+                if (!tiles.Contains(tile))
+                    damageTiles.Add(tile);
+                tiles.Add(tile);
+            }
+            //new FireField(user.World, tileSet, chargeTime);
+            new ScreenShakeRandom(user.World, 2, chargeTime + 30, LerpHelper.Invert(LerpHelper.Linear));
+            yield return user.WaitSome(chargeTime);
+            new ScreenShakeRandom(user.World, 4, 60, LerpHelper.Linear);
+            foreach (Tile tile in tileSet)
+            {
+                Vector2 offset = new Vector2(-0.5f + Random.NextFloat(), -0.5f + Random.NextFloat()) * 16;
+                if (Random.NextDouble() < 0.7)
+                    new SteamExplosion(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
+                //else if (Random.NextDouble() < 0.7)
+                //    new FlameBig(user.World, tile.VisualTarget + offset, Vector2.Zero, 0, Random.Next(14) + 6);
+                tile.VisualUnderColor = () => Color.TransparentBlack;
+            }
+            CloudIce cloud = user.Map.AddCloud(map => new CloudIce(map));
+            foreach (Tile tile in damageTiles)
+            {
+                cloud.Add(tile, 20);
+                foreach (Creature target in tile.Creatures)
+                {
+                    user.Attack(target, 0, 0, ExplosionAttack);
+                }
+            }
+        }
+
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Ice, 1.0);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
 }

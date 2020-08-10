@@ -269,6 +269,11 @@ namespace RoguelikeEngine
                 tile.AddActions(this, Player, selection);
                 foreach (Tile neighbor in tile.GetAdjacentNeighbors())
                     neighbor.AddActions(this, Player, selection);
+                selection.Add(new ActAction("Status", "Shows your stats.", () =>
+                {
+                    selection.Close();
+                    Open(new MenuStatus(this, Player));
+                }));
                 selection.Add(new ActAction("Inventory", "Opens your inventory.", () =>
                 {
                     selection.Close();
@@ -823,6 +828,77 @@ namespace RoguelikeEngine
                 partMaterial = ingot.Split(1);
             }
             return partMaterial;
+        }
+    }
+
+    class MenuStatus : Menu
+    {
+        PlayerUI UI;
+        SceneGame Scene => UI.Scene;
+        public Creature Holder
+        {
+            get;
+            set;
+        }
+        InfoBox ItemInfo;
+
+        public MenuStatus(PlayerUI ui, Creature holder)
+        {
+            UI = ui;
+            Holder = holder;
+            ItemInfo = new InfoBox(() => "Status", () => GetDescription(Holder), new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
+        }
+
+        public override bool IsMouseOver(int x, int y)
+        {
+            int widthDescription = 256;
+            int heightDescription = 20 * 16;
+            Rectangle rectDescription = new Rectangle(Scene.Viewport.Width * 3 / 4 - widthDescription / 2, Scene.Viewport.Height / 2 - heightDescription / 2, widthDescription, heightDescription);
+            if (rectDescription.Contains(x, y))
+                return true;
+            return base.IsMouseOver(x, y);
+        }
+
+        public override void Update(SceneGame scene)
+        {
+            base.Update(scene);
+
+            ItemInfo.Update(scene);
+        }
+
+        public override void HandleInput(SceneGame scene)
+        {
+            InputTwinState state = scene.InputState;
+
+            ItemInfo.HandleInput(scene);
+            if (ItemInfo.ShouldClose)
+                this.ShouldClose = true;
+        }
+
+        private string GetName(Item item)
+        {
+            return item != null ? $"{Game.FormatIcon(item)}{item.Name}\n" : $"No Item";
+        }
+
+        private string GetDescription(Creature creature)
+        {
+            string description = string.Empty;
+            creature.AddStatBlock(ref description);
+            return description;
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            ItemInfo.Draw(scene);
+
+            /*SpriteReference textbox = SpriteLoader.Instance.AddSprite("content/ui_box");
+            int widthDescription = 256;
+            int heightDescription = 20 * 16;
+            Rectangle rectDescription = new Rectangle(Scene.Viewport.Width * 3 / 4 - widthDescription / 2, Scene.Viewport.Height / 2 - heightDescription / 2, widthDescription, heightDescription);
+            Item item = ItemMenu.SelectedItem;
+            DrawLabelledUI(scene, textbox, rectDescription, item != null ? $"{Game.FormatIcon(item)}{item.Name}\n" : $"No Item");
+            string desc = GetDescription(item);
+            scene.DrawText(desc, new Vector2(rectDescription.X, rectDescription.Y), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(rectDescription));*/
         }
     }
 

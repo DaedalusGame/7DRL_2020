@@ -703,6 +703,24 @@ namespace RoguelikeEngine
         }
     }
 
+    class SmokeSmallAdditive : SmokeSmall
+    {
+        public SmokeSmallAdditive(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, Color color, int time) : base(world, sprite, position, velocity, color, time)
+        {
+
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class SmokeBlizzard
+    {
+
+    }
+
     class SmokeWave : Particle
     {
         SpriteReference Sprite;

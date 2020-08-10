@@ -461,7 +461,7 @@ namespace RoguelikeEngine
             }
         }
 
-        private string AddStatBlock(ref string statBlock, IEnumerable<Effect> effects)
+        private void AddStatBlock(ref string statBlock, IEnumerable<Effect> effects)
         {
             var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
 
@@ -469,8 +469,6 @@ namespace RoguelikeEngine
             {
                 group.Key.AddStatBlock(ref statBlock, group);
             }
-
-            return statBlock;
         }
 
         protected void PushMaterialBatch(SceneGame scene, Material material)

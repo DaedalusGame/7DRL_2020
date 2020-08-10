@@ -51,6 +51,11 @@
     <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Effects\OnTurn.cs" />
     <Compile Include="Effects\OnDeath.cs" />
+    <Compile Include="Enemies\Boss.cs" />
+    <Compile Include="Enemies\Dragon.cs" />
+    <Compile Include="Enemies\Slime.cs" />
+    <Compile Include="Enemies\Skeleton.cs" />
+    <Compile Include="Enemies\Fish.cs" />
     <Compile Include="EventBus.cs" />
     <Compile Include="Events\CreatureEvents.cs" />
     <Compile Include="IDrawable.cs" />
@@ -296,6 +301,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\cinder_ender.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\cloud_big_strip6.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\connected_bridge_base.png">

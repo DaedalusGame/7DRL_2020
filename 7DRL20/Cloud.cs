@@ -256,4 +256,55 @@ namespace RoguelikeEngine
             return base.NormalTurn(turn);
         }
     }
+
+    class CloudIce : Cloud
+    {
+        int Ticks;
+
+        public CloudIce(Map map) : base(map)
+        {
+            Name = "Blizzard";
+            Description = "Deals ice damage every turn.";
+        }
+
+        public override void Update()
+        {
+            SpriteReference smoke = SpriteLoader.Instance.AddSprite("content/cloud_big");
+
+            Ticks++;
+
+            foreach (var part in Parts)
+            {
+                if ((part.GetHashCode() + Ticks) % 7 == 0)
+                {
+                    Vector2 pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new SmokeSmallAdditive(World, smoke, pos, Vector2.Zero, new Color(64, 128, 255), 24);
+                }
+            }
+            base.Update();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            HashSet<Creature> targets = new HashSet<Creature>();
+
+            foreach(var part in Parts)
+            {
+                targets.AddRange(part.Tile.Creatures);
+            }
+
+            foreach(var target in targets)
+            {
+                target.TakeDamage(10, Element.Ice);
+                target.CheckDead(0, 0);
+            }
+
+            Drift(0, 1, Parts.Count / 2);
+            Drift(0, -1, Parts.Count / 2);
+            Drift(1, 0, Parts.Count / 2);
+            Drift(-1, 0, Parts.Count / 2);
+
+            return base.NormalTurn(turn);
+        }
+    }
 }
