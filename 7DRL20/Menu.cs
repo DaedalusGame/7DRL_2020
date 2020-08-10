@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using RoguelikeEngine.Effects;
 using System;
@@ -11,6 +12,17 @@ namespace RoguelikeEngine
     {
         public int Ticks;
         public virtual bool ShouldClose
+        {
+            get;
+            set;
+        }
+        public RenderTarget2D RenderTarget;
+        public virtual int Width
+        {
+            get;
+            set;
+        }
+        public virtual int Height
         {
             get;
             set;
@@ -49,6 +61,16 @@ namespace RoguelikeEngine
             {
                 scene.DrawUI(sprite, rectExterior, Color.White);
                 scene.DrawText(label, new Vector2(rectExterior.X, rectExterior.Y), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true).SetConstraints(rectExterior.Width - 16, rectExterior.Height));
+            }
+        }
+
+        public virtual void PreDraw(SceneGame scene)
+        {
+            if (Width > 0 && Height > 0)
+            {
+                if (RenderTarget == null || RenderTarget.IsContentLost || RenderTarget.Width != Width || RenderTarget.Height != Height)
+                    RenderTarget = new RenderTarget2D(scene.GraphicsDevice, Width, Height);
+                scene.GraphicsDevice.SetRenderTarget(RenderTarget);
             }
         }
 
@@ -285,6 +307,23 @@ namespace RoguelikeEngine
             }
         }
 
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+
+            if (SubMenu != null)
+                SubMenu.PreDraw(scene);
+
+            if (SkillInfo != null)
+                SkillInfo.PreDraw(scene);
+
+            if (BossWarning != null)
+                BossWarning.PreDraw(scene);
+
+            if (GameOverMenu != null)
+                GameOverMenu.PreDraw(scene);
+        }
+
         public override void Draw(SceneGame scene)
         {
             DrawSlot(scene, new Vector2(48, scene.Viewport.Height - 48), "Offhand", Player.EquipOffhand);
@@ -474,6 +513,16 @@ namespace RoguelikeEngine
                 }
             }
 
+            public override void PreDraw(SceneGame scene)
+            {
+                base.PreDraw(scene);
+
+                if (ItemMenu != null)
+                    ItemMenu.PreDraw(scene);
+                if (InfoWindow != null)
+                    InfoWindow.PreDraw(scene);
+            }
+
             public override void Draw(SceneGame scene)
             {
                 base.Draw(scene);
@@ -644,6 +693,16 @@ namespace RoguelikeEngine
             }
         }
 
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+
+            if (BlueprintMenu != null)
+                BlueprintMenu.PreDraw(scene);
+            if (CraftingMenu != null)
+                CraftingMenu.PreDraw(scene);
+        }
+
         public override void Draw(SceneGame scene)
         {
             if (BlueprintMenu != null)
@@ -763,6 +822,16 @@ namespace RoguelikeEngine
         {
             var selections = (SmelterSelection[])Enum.GetValues(typeof(SmelterSelection));
             return (SmelterSelection)(((int)selection + selections.Length) % selections.Length);
+        }
+
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+
+            if (ItemMenu != null)
+                ItemMenu.PreDraw(scene);
+            if (ActionMenu != null)
+                ActionMenu.PreDraw(scene);
         }
 
         public override void Draw(SceneGame scene)
@@ -887,6 +956,14 @@ namespace RoguelikeEngine
             return description;
         }
 
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+
+            if (ItemInfo != null)
+                ItemInfo.PreDraw(scene);
+        }
+
         public override void Draw(SceneGame scene)
         {
             ItemInfo.Draw(scene);
@@ -989,6 +1066,18 @@ namespace RoguelikeEngine
             if (item != null)
                 item.AddStatBlock(ref description);
             return description;
+        }
+
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+
+            if (ItemMenu != null)
+                ItemMenu.PreDraw(scene);
+            if (ItemInfo != null)
+                ItemInfo.PreDraw(scene);
+            if (ItemActionMenu != null)
+                ItemActionMenu.PreDraw(scene);
         }
 
         public override void Draw(SceneGame scene)
@@ -1119,8 +1208,7 @@ namespace RoguelikeEngine
         public Func<string> Text;
 
         public Vector2 Position;
-        public int Width;
-        public int Height;
+        public int Scroll;
 
         public InfoBox(Func<string> name, Func<string> text, Vector2 position, int width, int height)
         {
@@ -1138,11 +1226,28 @@ namespace RoguelikeEngine
 
         public override void HandleInput(SceneGame scene)
         {
+            int textHeight = FontUtil.GetStringHeight(Text());
             if (scene.InputState.IsKeyPressed(Keys.Enter))
                 Close();
             if (scene.InputState.IsKeyPressed(Keys.Escape))
                 Close();
+            if (scene.InputState.IsKeyPressed(Keys.W, 10, 1))
+                Scroll -= 3;
+            if (scene.InputState.IsKeyPressed(Keys.S, 10, 1))
+                Scroll += 3;
+            Scroll = MathHelper.Clamp(Scroll, 0, textHeight - Height + 8);
             base.HandleInput(scene);
+        }
+
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+            float openCoeff = Math.Min(Ticks / 7f, 1f);
+            scene.PushSpriteBatch(blendState: scene.NonPremultiplied, samplerState: SamplerState.PointWrap);
+            scene.GraphicsDevice.Clear(Color.TransparentBlack);
+            if (openCoeff >= 1)
+                scene.DrawText(Text(), new Vector2(8, 4 - Scroll), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue));
+            scene.PopSpriteBatch();
         }
 
         public override void Draw(SceneGame scene)
@@ -1157,7 +1262,10 @@ namespace RoguelikeEngine
             if (openCoeff > 0)
                 DrawLabelledUI(scene, textbox, rect, openCoeff >= 1 ? Name() : string.Empty);
             if (openCoeff >= 1)
-                scene.DrawText(Text(), new Vector2(x+8, y+4), Alignment.Left, new TextParameters().SetColor(Color.White,Color.Black).SetConstraints(Width - 16 - 16, Height-8));
+            {
+                scene.SpriteBatch.Draw(RenderTarget, new Rectangle(x, y, RenderTarget.Width, RenderTarget.Height), RenderTarget.Bounds, Color.White);
+                //scene.DrawText(Text(), new Vector2(x+8, y+4), Alignment.Left, new TextParameters().SetColor(Color.White,Color.Black).SetConstraints(Width - 16 - 16, Height-8));
+            }
         }
     }
 
@@ -1196,8 +1304,11 @@ namespace RoguelikeEngine
         public int DefaultSelection = -1;
 
         public Vector2 Position;
-        public int Width;
-        public int Height => ScrollHeight * 16;
+
+        public override int Height {
+            get { return ScrollHeight * 16; }
+            set {}
+        }
 
         public MenuAct(string name, Vector2 position, int width, int scrollHeight)
         {

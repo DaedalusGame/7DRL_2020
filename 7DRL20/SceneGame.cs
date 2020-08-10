@@ -554,11 +554,14 @@ namespace RoguelikeEngine
                 ));
             SpriteBatch.Draw(water.Texture, new Rectangle(0, 0, Water.Width, Water.Height), new Rectangle(0, 0, Water.Width, Water.Height), Color.White);
             PopSpriteBatch();
+            Menu.PreDraw(this);
         }
 
         public override void Draw(GameTime gameTime)
         {
             DrawTextures();
+
+            GraphicsDevice.SetRenderTarget(null);
 
             if (CameraTargetA == null || CameraTargetA.IsContentLost)
                 CameraTargetA = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);

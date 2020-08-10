@@ -41,7 +41,10 @@ namespace RoguelikeEngine
             Sprite = sprite;
             Priority = ID;
             Resistance = new ElementStat(this, $"{Name} Resistance", 0, 4, 0, SpriteLoader.Instance.AddSprite("content/stat_element_defense"));
-            DamageRate = new ElementStat(this, $"{Name} Damage Rate", 1, 4, 0.5, SpriteLoader.Instance.AddSprite("content/stat_element_rate"));
+            DamageRate = new ElementStat(this, $"{Name} Damage Rate", 1, 4, 0.5, SpriteLoader.Instance.AddSprite("content/stat_element_rate"))
+            {
+                Format = Stat.FormatRate,
+            };
             AllElements.Add(this);
         }
 
@@ -271,6 +274,7 @@ namespace RoguelikeEngine
         public string Name;
         public double DefaultStat;
         public SpriteReference Sprite;
+        public Func<Creature, double, string> Format = (creature, value) => value.ToString();
 
         public double Priority;
         public virtual double EffectivePriority => Priority;
@@ -285,23 +289,42 @@ namespace RoguelikeEngine
             AllStats.Add(this);
         }
 
-        public override string ToString()
-        {
-            return Name;
-        }
-
         public virtual void DrawIcon(Scene scene, Vector2 pos)
         {
             scene.DrawSprite(Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
         }
 
-        public static Stat HP = new Stat("HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"));
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        public static string FormatHP(Creature creature, double value)
+        {
+            return $"{creature.CurrentHP}/{value}";
+        }
+
+        public static string FormatRate(Creature creature, double value)
+        {
+            if (value < 0)
+                return $"x{-value} Invert";
+            else
+                return $"x{value}";
+        }
+
+        public static Stat HP = new Stat("HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"))
+        {
+            Format = FormatHP,
+        };
         public static Stat Attack = new Stat("Attack", 0, 1, SpriteLoader.Instance.AddSprite("content/stat_attack"));
         public static Stat Defense = new Stat("Defense", 0, 2, SpriteLoader.Instance.AddSprite("content/stat_defense"));
         public static Stat AlchemyPower = new Stat("Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
         public static Stat Speed = new Stat("Speed", 1, 8, SpriteLoader.Instance.AddSprite("content/stat_speed"));
 
-        public static Stat DamageRate = new Stat("Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"));
+        public static Stat DamageRate = new Stat("Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"))
+        {
+            Format = FormatRate,
+        };
 
         public static Stat MiningLevel = new Stat("Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
         public static Stat MiningSpeed = new Stat("Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
@@ -1054,20 +1077,20 @@ namespace RoguelikeEngine
         {
             description += $"{String.Join(", ", this.GetFamilies().Select(family => family.Name))}\n";
 
-            var effects = GetEffects<Effect>();
-            //var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
+            var effects = GetEffects<Effect>().Where(x => !(x is IStat));
+            var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
 
             foreach (var stat in Stat.AllStats.OrderBy(stat => stat.Priority))
             {
                 var value = this.GetStat(stat);
                 if(value != stat.DefaultStat)
-                    description += $"{Game.FormatStat(stat)} {stat.Name} {value}\n";
+                    description += $"{Game.FormatStat(stat)} {stat.Name} {stat.Format(this, value)}\n";
             }
             
-            /*foreach (var group in effectGroups.OrderBy(group => group.Key.VisualPriority))
+            foreach (var group in effectGroups.OrderBy(group => group.Key.VisualPriority))
             {
                 group.Key.AddStatBlock(ref description, group);
-            }*/
+            }
         }
 
         public bool ShouldDraw(Map map)
