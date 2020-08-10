@@ -76,6 +76,7 @@ namespace RoguelikeEngine
         //Status Elements
         public static Element Bleed = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
         public static Element Poison = new Element("Poison", SpriteLoader.Instance.AddSprite("content/element_poison"));
+        public static Element Acid = new Element("Acid", SpriteLoader.Instance.AddSprite("content/element_acid"));
 
         //Combination Elements
         public static Element Light = new ElementCombined("Light", SpriteLoader.Instance.AddSprite("content/element_light"), new Dictionary<Element, double>()
@@ -203,6 +204,7 @@ namespace RoguelikeEngine
 
         public static Element[] PhysicalElements = new Element[] { Bludgeon, Slash, Pierce };
         public static Element[] MagicalElements = new Element[] { Fire, Ice, Thunder, Water, Wind, Earth, Holy, Dark };
+        public static Element[] PrimalElements = new Element[] { Fire, Ice, Thunder, Acid, Poison };
     }
 
     class ElementCombined : Element

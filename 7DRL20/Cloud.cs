@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using RoguelikeEngine.Attacks;
 using RoguelikeEngine.Effects;
 
 namespace RoguelikeEngine
@@ -167,6 +168,54 @@ namespace RoguelikeEngine
         public virtual void Draw(SceneGame scene, DrawPass pass)
         {
             //NOOP
+        }
+    }
+
+    class CloudGeomancy : Cloud
+    {
+        List<Creature> Masters = new List<Creature>();
+
+        public CloudGeomancy(Map map) : base(map)
+        {
+            Name = "Geomancy";
+            Description = "Stat bonuses based on tile";
+        }
+
+        public void AddMaster(Creature creature)
+        {
+            if (!Masters.Contains(creature))
+                Masters.Add(creature);
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            Masters.RemoveAll(creature => creature.Dead);
+
+            if (Masters.Empty())
+            {
+                this.Destroy();
+            }
+            else
+            {
+                ProvideEffect();
+            }
+
+            return base.NormalTurn(turn);
+        }
+
+        public void ProvideEffect()
+        {
+            foreach (Creature creature in Map.Creatures)
+            {
+                if (!creature.HasStatusEffect<Geomancy>())
+                {
+                    creature.AddStatusEffect(new Geomancy(this)
+                    {
+                        Buildup = 1.0,
+                        Duration = new Slider(float.PositiveInfinity),
+                    });
+                }
+            }
         }
     }
 

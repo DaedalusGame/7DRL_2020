@@ -497,9 +497,13 @@ namespace RoguelikeEngine
 
         public override int MaxStacks => 1;
 
-        Creature Master;
+        CloudGeomancy Master;
 
-        public Geomancy(Creature master)
+        public Geomancy()
+        {
+        }
+
+        public Geomancy(CloudGeomancy master)
         {
             Master = master;
         }
@@ -520,7 +524,7 @@ namespace RoguelikeEngine
         {
             base.Update();
 
-            if (Master.Dead)
+            if (Master != null && Master.Destroyed) //TODO: also remove when leaving the floor
                 this.Remove();
         }
 

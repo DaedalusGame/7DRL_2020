@@ -11,7 +11,7 @@ namespace RoguelikeEngine.MapGeneration
     {
         public abstract IEnumerable<Enemy> Spawn(SceneGame world, Tile tile);
 
-        public static EnemySpawn Skeleton = new SingleSpawn((world) => new Skeleton(world));
+        public static EnemySpawn Skeleton = new SingleSpawn((world) => new PeatMummy(world));
         public static EnemySpawn DeathKnight = new SingleSpawn((world) => new DeathKnight(world));
 
         public static EnemySpawn BlastCannon = new SingleSpawn((world) => new BlastCannon(world));

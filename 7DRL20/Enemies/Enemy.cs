@@ -758,6 +758,30 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class PeatMummy : Enemy
+    {
+        public PeatMummy(SceneGame world) : base(world)
+        {
+            Name = "Peat Mummy";
+            Description = "Preserved for eternity";
+
+            Render = new CreaturePaperdollRender()
+            {
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_peatskull"),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_peatmummy"),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 50));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
+            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+
+            Skills.Add(new SkillAttack());
+        }
+    }
+
     class PrettyLich : Enemy
     {
         public PrettyLich(SceneGame world) : base(world)

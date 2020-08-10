@@ -299,15 +299,9 @@ namespace RoguelikeEngine.Attacks
             var tileSet = user.Tile.GetNearby(radius).Where(tile => GetSquareDistance(user.Tile, tile) <= radius * radius);
             new GeomancyField(user.World, user.Tile, tileSet, 50);
             yield return user.WaitSome(50);
-            foreach (Creature creature in user.World.Entities.ToList())
-            {
-                creature.AddStatusEffect(new Geomancy(user)
-                {
-                    Buildup = 1.0,
-                    Duration = new Slider(float.PositiveInfinity),
-                });
-                yield return user.WaitSome(5);
-            }
+            CloudGeomancy cloud = user.Map.AddCloud(map => new CloudGeomancy(map));
+            cloud.AddMaster(user);
+            cloud.ProvideEffect();
 
             yield return user.WaitSome(20);
         }

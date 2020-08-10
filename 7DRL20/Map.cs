@@ -87,6 +87,7 @@ namespace RoguelikeEngine
         public int Height;
         MapTile[,] Tiles;
         public MapTile Outside;
+        public IEnumerable<Creature> Creatures => World.Entities.Where(creature => creature.Map == this);
         public List<Cloud> Clouds = new List<Cloud>();
 
         public LevelFeelingSet Feelings = new LevelFeelingSet();
