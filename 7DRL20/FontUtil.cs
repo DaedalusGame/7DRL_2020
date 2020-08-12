@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace RoguelikeEngine
     public delegate Color TextColorFunction(int dialogIndex);
     public delegate Vector2 TextOffsetFunction(int dialogIndex);
 
-    public class TextParameters
+    class TextParameters
     {
         public bool Bold;
         public TextColorFunction Color = (index) => Microsoft.Xna.Framework.Color.Black;
@@ -86,6 +87,36 @@ namespace RoguelikeEngine
             CharSeperator = charSeperator;
             LineSeperator = lineSeperator;
             return this;
+        }
+
+        public void Format(FormatToken format)
+        {
+            switch (format)
+            {
+                case (FormatToken.Bold):
+                    Bold = !Bold;
+                    break;
+                case (FormatToken.Underline):
+                    Underline = !Underline;
+                    break;
+                case (FormatToken.Subscript):
+                    ScriptOffset += 8;
+                    break;
+                case (FormatToken.Superscript):
+                    ScriptOffset -= 8;
+                    break;
+            }
+        }
+
+        public void Format(FormatCode code)
+        {
+            if (code is FormatCodeColor color)
+            {
+                if (color.Color != null)
+                    Color = color.Color;
+                if (color.Border != null)
+                    Border = color.Border;
+            }
         }
 
         public TextParameters Copy()
@@ -157,7 +188,7 @@ namespace RoguelikeEngine
             var holder = EffectManager.GetHolder(ObjectID);
             if (holder is Item item && scene is SceneGame sceneGame)
             {
-                item.DrawIcon(sceneGame, pos + new Vector2(8,8));
+                item.DrawIcon(sceneGame, pos + new Vector2(8, 8));
             }
         }
     }
@@ -202,31 +233,143 @@ namespace RoguelikeEngine
         public abstract void Draw(Scene scene, Vector2 pos);
     }
 
-    class FontUtil
+    abstract class CharacterMachine
     {
-        enum FormatState
+        public abstract bool Done
         {
-            None,
-            Color,
-            Border,
-            Icon,
-            ElementIcon,
-            StatIcon,
+            get;
         }
 
+        public abstract void Add(char chr);
+
+        public abstract void Reset();
+
+        public abstract FormatCode GetResult();
+
+        public abstract string GetReplacement();
+    }
+
+    abstract class ColorMachine : CharacterMachine
+    {
+        protected StringBuilder colorBuffer = new StringBuilder(sizeof(int) / sizeof(char));
+
+        public override bool Done => colorBuffer.Length >= sizeof(int) / sizeof(char);
+
+        public override void Add(char chr)
+        {
+            colorBuffer.Append(chr);
+        }
+
+        public override void Reset()
+        {
+            colorBuffer.Clear();
+        }
+
+        public override string GetReplacement()
+        {
+            return new string(Game.FORMAT_BOLD, 1);
+        }
+    }
+
+    class ColorFontMachine : ColorMachine
+    {
+        public override FormatCode GetResult()
+        {
+            Color color = colorBuffer.ToColor();
+            return new FormatCodeColor(index => color, null);
+        }
+    }
+
+    class ColorBorderMachine : ColorMachine
+    {
+        public override FormatCode GetResult()
+        {
+            Color color = colorBuffer.ToColor();
+            return new FormatCodeColor(null, index => color);
+        }
+    }
+
+    class IconMachine : CharacterMachine
+    {
+        protected StringBuilder symbolBuffer = new StringBuilder(sizeof(int) / sizeof(char));
+
+        public override bool Done => symbolBuffer.Length >= sizeof(int) / sizeof(char);
+
+        public override void Add(char chr)
+        {
+            symbolBuffer.Append(chr);
+        }
+
+        public override void Reset()
+        {
+            symbolBuffer.Clear();
+        }
+
+        public override FormatCode GetResult()
+        {
+            int objectID = symbolBuffer.ToInt32();
+            return new FormatCodeItemIcon(objectID);
+        }
+
+        public override string GetReplacement()
+        {
+            return new string(Game.FORMAT_ICON, 1);
+        }
+    }
+
+    class StatIconMachine : IconMachine
+    {
+        public override FormatCode GetResult()
+        {
+            int objectID = symbolBuffer.ToInt32();
+            return new FormatCodeStatIcon(Stat.AllStats[objectID]);
+        }
+
+        public override string GetReplacement()
+        {
+            return new string(Game.FORMAT_ICON, 1);
+        }
+    }
+
+    class ElementIconMachine : IconMachine
+    {
+        public override FormatCode GetResult()
+        {
+            int objectID = symbolBuffer.ToInt32();
+            return new FormatCodeElementIcon(Element.AllElements[objectID]);
+        }
+
+        public override string GetReplacement()
+        {
+            return new string(Game.FORMAT_ICON, 1);
+        }
+    }
+
+    enum FormatToken
+    {
+        Bold,
+        Underline,
+        Subscript,
+        Superscript,
+        Space,
+        Newline,
+    }
+
+    class FontUtil
+    {
         public class Gibberish
         {
             public Dictionary<int, List<char>> ByWidth;
             public Func<char, bool> CharSelection;
 
-            public Gibberish(Func<char,bool> charSelection)
+            public Gibberish(Func<char, bool> charSelection)
             {
                 CharSelection = charSelection;
             }
 
             public char GetSimilar(char chr)
             {
-                if(ByWidth == null)
+                if (ByWidth == null)
                     ByWidth = Enumerable.Range(0, CharInfo.Length).Where(x => CharSelection((char)x)).GroupBy(x => CharInfo[x].Width).ToDictionary(x => x.Key, x => x.Select(y => (char)y).ToList());
                 int width = GetCharWidth(chr);
                 if (ByWidth.ContainsKey(width))
@@ -244,13 +387,13 @@ namespace RoguelikeEngine
         public static CharInfo[] CharInfo = new CharInfo[65536];
         public static Gibberish GibberishStandard = new Gibberish(x => x > ' ' && x <= '~');
         public static Gibberish GibberishAlpha = new Gibberish(x => (x > ' ' && x <= '~') || (x > 160 && x <= 832));
-        public static Gibberish GibberishQuery = new Gibberish(x => (x > 5120 && x <= 5760-128));
+        public static Gibberish GibberishQuery = new Gibberish(x => (x > 5120 && x <= 5760 - 128));
         public static Gibberish GibberishAlquimy = new Gibberish(x => (x > 40960 && x <= 40960 + 1024 + 128) || (x > 40960 + 1024 + 256 && x <= 40960 + 1024 + 256 + 256));
         public static Gibberish GibberishRune = new Gibberish(x => (x >= 6144 + 32 && x <= 6144 + 120 - 1) || (x >= 6144 + 128 && x <= 6144 + 128 + 32 + 10));
         public static Random Random = new Random();
 
         public static Dictionary<char, FormatCode> DynamicFormat = new Dictionary<char, FormatCode>();
-
+        
         public static FormatCode GetFormatCode(char chr)
         {
             if (DynamicFormat.ContainsKey(chr))
@@ -285,46 +428,6 @@ namespace RoguelikeEngine
             return CharInfo[chr].Offset;
         }
 
-        public static int GetStringLines(string str)
-        {
-            return (str.Count(x => x == '\n') + 1);
-        }
-
-        public static int GetStringWidth(string str, TextParameters parameters)
-        {
-            parameters = parameters.Copy();
-            int maxn = 0;
-            foreach (string line in str.Split('\n'))
-            {
-                int n = 0;
-
-                foreach (char chr in line)
-                {
-                    int width = GetCharWidth(chr);
-                    n += width;
-                    if (width > 0)
-                        n += parameters.CharSeperator + (parameters.Bold ? 1 : 0);
-
-                    switch (chr)
-                    {
-                        case (Game.FORMAT_BOLD):
-                            parameters.Bold = !parameters.Bold;
-                            break;
-                    }
-                }
-
-                if (n > maxn)
-                    maxn = n;
-            }
-
-            return maxn;
-        }
-
-        public static int GetStringHeight(string str)
-        {
-            return GetStringLines(str) * CharHeight;
-        }
-
         public static void RegisterChar(Color[] blah, int width, int height, char chr, int index)
         {
             Rectangle rect = GetCharRect(index);
@@ -347,220 +450,314 @@ namespace RoguelikeEngine
             if (!CharInfo[chr].Predefined)
                 CharInfo[chr] = new CharInfo(left, empty ? 0 : right - left + 1, false);
         }
-        
-        public static string FormatText(string str)
+
+        private static string CachedString;
+        private static TextParameters CachedParameters;
+        private static int CachedWidth;
+        private static int CachedHeight;
+        private static List<object> CachedTokens;
+
+        static CharacterMachine ColorFontMachine = new ColorFontMachine();
+        static CharacterMachine ColorBorderMachine = new ColorBorderMachine();
+        static CharacterMachine IconMachine = new IconMachine();
+        static CharacterMachine StatIconMachine = new StatIconMachine();
+        static CharacterMachine ElementIconMachine = new ElementIconMachine();
+
+        public static int GetStringWidth(string str, TextParameters parameters)
         {
-            StringBuilder builder = new StringBuilder();
-            FormatState state = FormatState.None;
-            DynamicFormat.Clear();
-            char dynamicCode = Game.FORMAT_DYNAMIC_BEGIN;
-
-            int indexObjectID = 0;
-            byte[] bufferObjectID = new byte[sizeof(Int32)];
-
-            int indexColor = 0;
-            int[] bufferColor = new int[4];
-
-            foreach (char c in str)
-            {
-                switch (state)
-                {
-                    case FormatState.None:
-                        switch (c)
-                        {
-                            case (Game.FORMAT_COLOR):
-                                state = FormatState.Color;
-                                indexColor = 0;
-                                break;
-                            case (Game.FORMAT_BORDER):
-                                state = FormatState.Border;
-                                indexColor = 0;
-                                break;
-                            case (Game.FORMAT_ICON):
-                                state = FormatState.Icon;
-                                indexObjectID = 0;
-                                break;
-                            case (Game.FORMAT_ELEMENT_ICON):
-                                state = FormatState.ElementIcon;
-                                break;
-                            case (Game.FORMAT_STAT_ICON):
-                                state = FormatState.StatIcon;
-                                break;
-                            default:
-                                builder.Append(c);
-                                break;
-                        }
-                        break;
-                    case FormatState.Color:
-                    case FormatState.Border:
-                        bufferColor[indexColor] = c;
-                        indexColor++;
-                        if (indexColor >= bufferColor.Length)
-                        {
-                            Color color = new Color(bufferColor[0], bufferColor[1], bufferColor[2], bufferColor[3]);
-                            switch (state)
-                            {
-                                case FormatState.Color:
-                                    builder.Append(dynamicCode);
-                                    DynamicFormat.Add(dynamicCode++, new FormatCodeColor(index => color, null));
-                                    break;
-                                case FormatState.Border:
-                                    builder.Append(dynamicCode);
-                                    DynamicFormat.Add(dynamicCode++, new FormatCodeColor(null, index => color));
-                                    break;
-                            }
-                            state = FormatState.None;
-                        }
-                        break;
-                    case FormatState.Icon:
-                        BitConverter.GetBytes(c).CopyTo(bufferObjectID, indexObjectID);
-                        indexObjectID += sizeof(char);
-                        if (indexObjectID >= bufferObjectID.Length)
-                        {
-                            int objectID = BitConverter.ToInt32(bufferObjectID, 0);
-                            builder.Append(dynamicCode);
-                            DynamicFormat.Add(dynamicCode++, new FormatCodeItemIcon(objectID));
-                            state = FormatState.None;
-                        }
-                        break;
-                    case FormatState.ElementIcon:
-                        int elementID = (int)c;
-                        Element element = Element.AllElements[elementID];
-                        builder.Append(dynamicCode);
-                        DynamicFormat.Add(dynamicCode++, new FormatCodeElementIcon(element));
-                        state = FormatState.None;
-                        break;
-                    case FormatState.StatIcon:
-                        int statID = (int)c;
-                        Stat stat = Stat.AllStats[statID];
-                        builder.Append(dynamicCode);
-                        DynamicFormat.Add(dynamicCode++, new FormatCodeStatIcon(stat));
-                        state = FormatState.None;
-                        break;
-                }
-            }
-
-            return builder.ToString();
+            if (str != CachedString)
+                SetupString(str, Vector2.Zero, Alignment.Center, parameters, null);
+            return CachedWidth;
         }
 
-        public static string StripFormat(string str)
+        public static int GetStringHeight(string str, TextParameters parameters)
         {
-            StringBuilder builder = new StringBuilder();
-            FormatState state = FormatState.None;
-
-            int indexColor = 0;
-            int indexObjectID = 0;
-
-            foreach (char c in str)
-            {
-                switch (state)
-                {
-                    case FormatState.None:
-                        switch (c)
-                        {
-                            case (Game.FORMAT_COLOR):
-                                state = FormatState.Color;
-                                indexColor = 0;
-                                break;
-                            case (Game.FORMAT_BORDER):
-                                state = FormatState.Border;
-                                indexColor = 0;
-                                break;
-                            case (Game.FORMAT_ICON):
-                                state = FormatState.Icon;
-                                indexObjectID = 0;
-                                break;
-                            case (Game.FORMAT_ELEMENT_ICON):
-                                state = FormatState.ElementIcon;
-                                break;
-                            case (Game.FORMAT_STAT_ICON):
-                                state = FormatState.StatIcon;
-                                break;
-                            default:
-                                builder.Append(c);
-                                break;
-                        }
-                        break;
-                    case FormatState.Color:
-                    case FormatState.Border:
-                        indexColor++;
-                        if (indexColor >= 4)
-                        {
-                            builder.Append(Game.FORMAT_BOLD);
-                            state = FormatState.None;
-                        }
-                        break;
-                    case FormatState.Icon:
-                        indexObjectID += sizeof(char);
-                        if (indexObjectID >= sizeof(int))
-                        {
-                            builder.Append(Game.FORMAT_ICON);
-                            state = FormatState.None;
-                        }
-                        break;
-                    case FormatState.ElementIcon:
-                        builder.Append(Game.FORMAT_ICON);
-                        state = FormatState.None;
-                        break;
-                    case FormatState.StatIcon:
-                        builder.Append(Game.FORMAT_ICON);
-                        state = FormatState.None;
-                        break;
-                }
-            }
-
-            return builder.ToString();
+            if (str != CachedString)
+                SetupString(str, Vector2.Zero, Alignment.Center, parameters, null);
+            return CachedHeight;
         }
 
-        public static string FitString(string str, TextParameters parameters)
+        public delegate void DrawChar(char chr, Vector2 drawpos, TextParameters parameters);
+
+        public static void SetupString(string str, Vector2 drawpos, Alignment alignment, TextParameters parameters, Game game)
         {
-            parameters = parameters.Copy();
-            int maxwidth = parameters.MaxWidth ?? int.MaxValue;
-            int lastspot = 0;
-            int idealspot = 0;
+            bool cache = false;
+            if (str != CachedString)
+                cache = true;
+
+            if (cache)
+            {
+                CachedString = str;
+                CachedParameters = parameters;
+
+                CachedWidth = 0;
+                CachedHeight = 0;
+            }
+
+            parameters = CachedParameters.Copy();
+
+            int getWidth(object token)
+            {
+                if (token is FormatToken format)
+                {
+                    if (format == FormatToken.Space)
+                        return 4;
+                    return 0;
+                }
+                if (token is string s)
+                    return GetWordLength(s, parameters);
+                if (token is FormatCode code)
+                    return code.Width;
+                return 0;
+            }
+
             int width = 0;
-            string newstr = "";
+            int maxwidth = parameters.MaxWidth ?? int.MaxValue;
+
+            int y = 0;
+            int offset;
+            if (cache)
+                CachedTokens = Tokenize(str);
+            var tokens = new Stack<object>(CachedTokens.Reverse<object>());
+            List<object> line = new List<object>();
+
+            if (cache)
+                CachedHeight = CharHeight;
+
+            TextParameters lineParameters = parameters.Copy();
+
+            while(tokens.Count > 0)
+            {
+                var token = tokens.Pop();
+                int tokenWidth = getWidth(token);
+                if (tokenWidth > maxwidth)
+                {
+                    if (token is string s && s.Length > 1)
+                    {
+                        var split = SplitWord(ref s, parameters.Copy(), 0);
+                        tokens.Push(s);
+                        token = split;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                bool isNewLine = false;
+
+                if (token is FormatCode code)
+                {
+                    parameters.Format(code);
+                }
+                else if(token is FormatToken format)
+                {
+                    parameters.Format(format);
+
+                    if (format == FormatToken.Newline)
+                        isNewLine = true;
+                }
+
+                if (width + tokenWidth > maxwidth || isNewLine)
+                {
+                    offset = (parameters.MaxWidth ?? 0) - width;
+                    switch (alignment)
+                    {
+                        case (Alignment.Left):
+                            offset = 0;
+                            break;
+                        case (Alignment.Center):
+                            offset /= 2;
+                            break;
+                    }
+                    if (game != null)
+                        DrawLine(line, lineParameters, drawpos + new Vector2(offset, y), game);
+                    line.Clear();
+                    //Newline
+                    y += parameters.LineSeperator;
+                    if (cache)
+                    {
+                        CachedWidth = Math.Max(CachedWidth, width);
+                        CachedHeight += parameters.LineSeperator;
+                    }
+                    width = 0;
+                    if (!isNewLine)
+                        tokens.Push(token);
+                    continue;
+                }
+
+                width += tokenWidth;
+                line.Add(token);
+            }
+
+            offset = (parameters.MaxWidth ?? 0) - width;
+            switch (alignment)
+            {
+                case (Alignment.Left):
+                    offset = 0;
+                    break;
+                case (Alignment.Center):
+                    offset /= 2;
+                    break;
+            }
+            if (game != null)
+                DrawLine(line, lineParameters, drawpos + new Vector2(offset, y), game);
+            if (cache)
+                CachedWidth = Math.Max(CachedWidth, width);
+            line.Clear();
+        }
+
+        private static void DrawLine(IEnumerable<object> tokens, TextParameters parameters, Vector2 drawpos, Game game)
+        {
+            int x = 0;
+            foreach(var token in tokens)
+            {
+                if(token is string str)
+                {
+                    foreach(var chr in str)
+                    {
+                        game.DrawChar(chr, drawpos + new Vector2(x, 0), parameters);
+                        x += GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+                    }
+                }
+                if(token is FormatToken format)
+                {
+                    parameters.Format(format);
+                    x += format.GetWidth();
+                }
+                if (token is FormatCode code)
+                {
+                    parameters.Format(code);
+                    
+                    if (code is FormatCodeIcon icon)
+                    {
+                        icon.Draw(game.Scene, drawpos + new Vector2(x, 0));
+                    }
+
+                    x += code.Width;
+                }
+            }
+        }
+
+        
+
+        private static string SplitWord(ref string str, TextParameters parameters, int maxWidth)
+        {
+            int width = 0;
+            StringBuilder builder = new StringBuilder();
+            foreach (var chr in str)
+            {
+                int charWidth = GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+                if(width + charWidth > maxWidth)
+                {
+                    break;
+                }
+                builder.Append(chr);
+                width += charWidth;
+            }
+            str = str.Remove(0, builder.Length);
+            return builder.ToString();
+        }
+
+        private static int GetWordLength(string str, TextParameters parameters)
+        {
+            int width = 0;
+            foreach (var chr in str)
+            {
+                width += GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+            }
+            return width;
+        }
+
+        private static List<object> Tokenize(string str)
+        {
+            StringBuilder builder = new StringBuilder();
+            List<object> tokens = new List<object>();
+            CharacterMachine machine = null;
+
+            void pushString()
+            {
+                if (builder.Length > 0)
+                    tokens.Add(builder.ToString());
+                builder.Clear();
+            }
 
             for (int i = 0; i < str.Length; i++)
             {
                 char chr = str[i];
-                var charWidth = GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
-                if (charWidth > maxwidth)
-                    return "";
-                width += charWidth;
 
-                switch (chr)
+                if (machine != null)
                 {
-                    case (Game.FORMAT_BOLD):
-                        parameters.Bold = !parameters.Bold;
-                        break;
+                    machine.Add(chr);
+                    if (machine.Done)
+                    {
+                        tokens.Add(machine.GetResult());
+                        machine = null;
+                    }
                 }
-
-                if (chr == ' ')
+                else
                 {
-                    idealspot = i + 1;
-                }
-
-                if (chr == '\n')
-                {
-                    width = 0;
-                }
-
-                if (width > maxwidth)
-                {
-                    if (idealspot == lastspot)
-                        idealspot = i;
-                    string substr = str.Substring(lastspot, idealspot - lastspot);
-                    newstr += substr.Trim() + "\n";
-                    lastspot = idealspot;
-                    i = idealspot - 1;
-                    width = 0;
+                    switch (chr)
+                    {
+                        case (Game.FORMAT_BOLD):
+                            pushString();
+                            tokens.Add(FormatToken.Bold);
+                            break;
+                        case (Game.FORMAT_UNDERLINE):
+                            pushString();
+                            tokens.Add(FormatToken.Underline);
+                            break;
+                        case (Game.FORMAT_SUBSCRIPT):
+                            pushString();
+                            tokens.Add(FormatToken.Subscript);
+                            break;
+                        case (Game.FORMAT_SUPERSCRIPT):
+                            pushString();
+                            tokens.Add(FormatToken.Superscript);
+                            break;
+                        case (' '):
+                            pushString();
+                            tokens.Add(FormatToken.Space);
+                            break;
+                        case ('\n'):
+                            pushString();
+                            tokens.Add(FormatToken.Newline);
+                            break;
+                        case (Game.FORMAT_COLOR):
+                            pushString();
+                            machine = ColorFontMachine;
+                            machine.Reset();
+                            break;
+                        case (Game.FORMAT_BORDER):
+                            pushString();
+                            machine = ColorBorderMachine;
+                            machine.Reset();
+                            break;
+                        case (Game.FORMAT_ICON):
+                            pushString();
+                            machine = IconMachine;
+                            machine.Reset();
+                            break;
+                        case (Game.FORMAT_STAT_ICON):
+                            pushString();
+                            machine = StatIconMachine;
+                            machine.Reset();
+                            break;
+                        case (Game.FORMAT_ELEMENT_ICON):
+                            pushString();
+                            machine = ElementIconMachine;
+                            machine.Reset();
+                            break;
+                        default:
+                            builder.Append(chr);
+                            break;
+                    }
                 }
             }
 
-            newstr += str.Substring(lastspot, str.Length - lastspot);
+            pushString();
 
-            return newstr;
+            return tokens;
         }
     }
 }

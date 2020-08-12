@@ -14,22 +14,24 @@ namespace RoguelikeEngine
         public BlendState BlendState;
         public SamplerState SamplerState;
         public Matrix Transform;
+        public Matrix Projection;
         public Microsoft.Xna.Framework.Graphics.Effect Shader;
-        public Action<Matrix> ShaderSetup;
+        public Action<Matrix, Matrix> ShaderSetup;
 
-        public DrawStackFrame(SpriteSortMode sortMode, BlendState blendState, SamplerState samplerState, Matrix transform, Microsoft.Xna.Framework.Graphics.Effect shader, Action<Matrix> shaderSetup)
+        public DrawStackFrame(SpriteSortMode sortMode, BlendState blendState, SamplerState samplerState, Matrix transform, Matrix projection, Microsoft.Xna.Framework.Graphics.Effect shader, Action<Matrix, Matrix> shaderSetup)
         {
             SortMode = sortMode;
             BlendState = blendState;
             SamplerState = samplerState;
             Transform = transform;
+            Projection = projection;
             Shader = shader;
             ShaderSetup = shaderSetup;
         }
 
         public void Apply(Scene scene)
         {
-            ShaderSetup(Transform);
+            ShaderSetup(Transform, Projection);
             scene.SpriteBatch.Begin(SortMode, BlendState, SamplerState, null, RasterizerState.CullNone, Shader, Transform);
         }
     }
@@ -81,31 +83,31 @@ namespace RoguelikeEngine
             return (int)MathHelper.Clamp(sprite.SubImageCount * frame / frameEnd, 0, sprite.SubImageCount - 1);
         }
 
-        public void SetupNormal(Matrix transform)
+        public void SetupNormal(Matrix transform, Matrix projection)
         {
             Shader.CurrentTechnique = Shader.Techniques["BasicColorDrawing"];
-            Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
         }
 
         public void SetupColorMatrix(ColorMatrix matrix)
         {
-            SetupColorMatrix(matrix, WorldTransform);
+            SetupColorMatrix(matrix, WorldTransform, Projection);
         }
 
-        public void SetupColorMatrix(ColorMatrix matrix, Matrix transform)
+        public void SetupColorMatrix(ColorMatrix matrix, Matrix transform, Matrix projection)
         {
             Shader.CurrentTechnique = Shader.Techniques["ColorMatrix"];
             Shader.Parameters["color_matrix"].SetValue(matrix.Matrix);
             Shader.Parameters["color_add"].SetValue(matrix.Add);
-            Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
         }
 
         public void SetupWave(Vector2 waveTime, Vector2 waveDistance, Vector4 components)
         {
-            SetupWave(waveTime, waveDistance, components, WorldTransform);
+            SetupWave(waveTime, waveDistance, components, WorldTransform, Projection);
         }
 
-        public void SetupWave(Vector2 waveTime, Vector2 waveDistance, Vector4 components, Matrix transform)
+        public void SetupWave(Vector2 waveTime, Vector2 waveDistance, Vector4 components, Matrix transform, Matrix projection)
         {
             Shader.CurrentTechnique = Shader.Techniques["Wave"];
             Shader.Parameters["wave_time_horizontal"].SetValue(waveTime.X);
@@ -113,24 +115,24 @@ namespace RoguelikeEngine
             Shader.Parameters["wave_distance_horizontal"].SetValue(waveDistance.X);
             Shader.Parameters["wave_distance_vertical"].SetValue(waveDistance.Y);
             Shader.Parameters["wave_components"].SetValue(components);
-            Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
         }
 
         public void SetupDistortion(Texture2D map, Vector2 offset, Matrix mapTransform)
         {
-            SetupDistortion(map, offset, mapTransform, WorldTransform);
+            SetupDistortion(map, offset, mapTransform, WorldTransform, Projection);
         }
 
-        public void SetupDistortion(Texture2D map, Vector2 offset, Matrix mapTransform, Matrix transform)
+        public void SetupDistortion(Texture2D map, Vector2 offset, Matrix mapTransform, Matrix transform, Matrix projection)
         {
             Shader.CurrentTechnique = Shader.Techniques["Distort"];
             Shader.Parameters["distort_offset"].SetValue(offset);
             Shader.Parameters["texture_map"].SetValue(map);
             Shader.Parameters["map_transform"].SetValue(mapTransform);
-            Shader.Parameters["WorldViewProjection"].SetValue(transform * Projection);
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
         }
 
-        public void PushSpriteBatch(SpriteSortMode? sortMode = null, BlendState blendState = null, SamplerState samplerState = null, Matrix? transform = null, Microsoft.Xna.Framework.Graphics.Effect shader = null, Action<Matrix> shaderSetup = null)
+        public void PushSpriteBatch(SpriteSortMode? sortMode = null, BlendState blendState = null, SamplerState samplerState = null, Matrix? transform = null, Matrix? projection = null, Microsoft.Xna.Framework.Graphics.Effect shader = null, Action<Matrix, Matrix> shaderSetup = null)
         {
             var lastState = SpriteBatchStack.Any() ? SpriteBatchStack.Peek() : null;
             if (sortMode == null)
@@ -141,9 +143,11 @@ namespace RoguelikeEngine
                 samplerState = lastState?.SamplerState ?? SamplerState.PointClamp;
             if (transform == null)
                 transform = lastState?.Transform ?? Matrix.Identity;
+            if (projection == null)
+                projection = lastState?.Projection ?? Matrix.Identity;
             if (shaderSetup == null)
                 shaderSetup = SetupNormal;
-            var newState = new DrawStackFrame(sortMode.Value, blendState, samplerState, transform.Value, shader, shaderSetup);
+            var newState = new DrawStackFrame(sortMode.Value, blendState, samplerState, transform.Value, projection.Value, shader, shaderSetup);
             if (!SpriteBatchStack.Empty())
                 SpriteBatch.End();
             newState.Apply(this);

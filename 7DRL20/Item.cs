@@ -250,9 +250,9 @@ namespace RoguelikeEngine
         {
             var ore = SpriteLoader.Instance.AddSprite("content/item_ore");
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Material.ColorTransform, matrix);
+                scene.SetupColorMatrix(Material.ColorTransform, matrix, projection);
             });
             scene.DrawSprite(ore, 0, position - ore.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
@@ -309,9 +309,9 @@ namespace RoguelikeEngine
         {
             var ingot = SpriteLoader.Instance.AddSprite("content/item_ingot");
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Material.ColorTransform, matrix);
+                scene.SetupColorMatrix(Material.ColorTransform, matrix, projection);
             });
             scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             scene.PopSpriteBatch();
@@ -473,9 +473,9 @@ namespace RoguelikeEngine
 
         protected void PushMaterialBatch(SceneGame scene, Material material)
         {
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(material.ColorTransform, matrix);
+                scene.SetupColorMatrix(material.ColorTransform, matrix, projection);
             });
         }
 

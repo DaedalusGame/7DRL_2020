@@ -884,9 +884,9 @@ namespace RoguelikeEngine
                 return;
             var ore = SpriteLoader.Instance.AddSprite("content/ore");
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Material.ColorTransform, matrix);
+                scene.SetupColorMatrix(Material.ColorTransform, matrix, projection);
             });
             scene.DrawSprite(ore, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Color.White, 0);
             scene.PopSpriteBatch();
@@ -1279,9 +1279,9 @@ namespace RoguelikeEngine
             if (!IsVisible())
                 color = HiddenColor;
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(ColorMatrix, matrix);
+                scene.SetupColorMatrix(ColorMatrix, matrix, projection);
             });
             scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
             scene.PopSpriteBatch();
@@ -1319,9 +1319,9 @@ namespace RoguelikeEngine
             if (!IsVisible())
                 color = HiddenColor;
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(ColorMatrix, matrix);
+                scene.SetupColorMatrix(ColorMatrix, matrix, projection);
             });
             scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
             scene.PopSpriteBatch();
@@ -1798,9 +1798,9 @@ namespace RoguelikeEngine
             {
                 ColorMatrix color = ColorMatrix.Lerp(allMaterials.ToDictionary(x => x.Key.ColorTransform, x => x.Value));
 
-                scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+                scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
                 {
-                    scene.SetupColorMatrix(color, matrix);
+                    scene.SetupColorMatrix(color, matrix, projection);
                 });
                 scene.DrawLava(new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
                 scene.PopSpriteBatch();

@@ -557,15 +557,15 @@ namespace RoguelikeEngine
                     break;
             }
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(BodyColor * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(BodyColor * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(Body, facingOffset + frameOffset, creature.VisualPosition(), mirror, Color.White, 0);
             scene.PopSpriteBatch();
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(HeadColor * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(HeadColor * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(Head, facingOffset + frameOffset, creature.VisualPosition(), mirror, Color.White, 0);
             scene.PopSpriteBatch();

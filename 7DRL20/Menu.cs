@@ -27,6 +27,7 @@ namespace RoguelikeEngine
             get;
             set;
         }
+        public Matrix Projection;
 
         public void Close()
         {
@@ -50,7 +51,7 @@ namespace RoguelikeEngine
 
         public int GetStringHeight(string str, TextParameters parameters)
         {
-            return FontUtil.GetStringHeight(FontUtil.FitString(FontUtil.StripFormat(str), parameters));
+            return FontUtil.GetStringHeight(str, parameters);
         }
 
         protected void DrawLabelledUI(SceneGame scene, SpriteReference sprite, Rectangle rectInterior, string label)
@@ -60,12 +61,13 @@ namespace RoguelikeEngine
             if (!string.IsNullOrWhiteSpace(label))
             {
                 scene.DrawUI(sprite, rectExterior, Color.White);
-                scene.DrawText(label, new Vector2(rectExterior.X, rectExterior.Y), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true).SetConstraints(rectExterior.Width - 16, rectExterior.Height));
+                scene.DrawText(label, new Vector2(rectExterior.X, rectExterior.Y), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black).SetBold(true).SetConstraints(rectExterior.Width, rectExterior.Height));
             }
         }
 
         public virtual void PreDraw(SceneGame scene)
         {
+            Projection = Matrix.CreateOrthographicOffCenter(0, Width, Height, 0, 0, -1);
             if (Width > 0 && Height > 0)
             {
                 if (RenderTarget == null || RenderTarget.IsContentLost || RenderTarget.Width != Width || RenderTarget.Height != Height)
@@ -546,9 +548,9 @@ namespace RoguelikeEngine
                     if(material != null)
                     {
                         var partSprite = PartTypes.GetSprite(e, material);
-                        scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+                        scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
                         {
-                            scene.SetupColorMatrix(material.ColorTransform, matrix);
+                            scene.SetupColorMatrix(material.ColorTransform, matrix, projection);
                         });
                         scene.DrawSprite(partSprite, 0, linePos + new Vector2(16, 0), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
                         scene.PopSpriteBatch();
@@ -1226,7 +1228,8 @@ namespace RoguelikeEngine
 
         public override void HandleInput(SceneGame scene)
         {
-            int textHeight = FontUtil.GetStringHeight(Text());
+            TextParameters parameters = new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue);
+            int textHeight = FontUtil.GetStringHeight(Text(), parameters);
             if (scene.InputState.IsKeyPressed(Keys.Enter))
                 Close();
             if (scene.InputState.IsKeyPressed(Keys.Escape))
@@ -1243,7 +1246,7 @@ namespace RoguelikeEngine
         {
             base.PreDraw(scene);
             float openCoeff = Math.Min(Ticks / 7f, 1f);
-            scene.PushSpriteBatch(blendState: scene.NonPremultiplied, samplerState: SamplerState.PointWrap);
+            scene.PushSpriteBatch(blendState: scene.NonPremultiplied, samplerState: SamplerState.PointWrap, projection: Projection);
             scene.GraphicsDevice.Clear(Color.TransparentBlack);
             if (openCoeff >= 1)
                 scene.DrawText(Text(), new Vector2(8, 4 - Scroll), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue));

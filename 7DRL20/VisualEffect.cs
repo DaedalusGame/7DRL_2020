@@ -1144,9 +1144,9 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             SpriteReference hand = SpriteLoader.Instance.AddSprite("content/hand");
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(ColorMatrix, matrix);
+                scene.SetupColorMatrix(ColorMatrix, matrix, projection);
             });
             scene.DrawSpriteExt(hand, 0, Position - hand.Middle, hand.Middle, Angle, new Vector2(1), Mirror, Color.White * Alpha, 0);
             scene.PopSpriteBatch();
@@ -1254,9 +1254,9 @@ namespace RoguelikeEngine
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             float angle = Util.VectorToAngle(PositionEnd - PositionStart);
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color, matrix);
+                scene.SetupColorMatrix(Color, matrix, projection);
             });
             scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, angle, SpriteEffects.None, 0);
             scene.PopSpriteBatch();
@@ -1344,9 +1344,9 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(ColorMatrix, matrix);
+                scene.SetupColorMatrix(ColorMatrix, matrix, projection);
             });
             scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
             scene.PopSpriteBatch();
@@ -1391,9 +1391,9 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(ColorMatrix, matrix);
+                scene.SetupColorMatrix(ColorMatrix, matrix, projection);
             });
             scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color.White, 0);
             scene.PopSpriteBatch();
@@ -2051,8 +2051,7 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            string fit = FontUtil.FitString(Text, Parameters);
-            var height = FontUtil.GetStringHeight(fit);
+            var height = FontUtil.GetStringHeight(Text, Parameters);
             Vector2 pos = Vector2.Transform(Position + Offset, scene.WorldTransform);
             scene.DrawText(Text, pos - new Vector2(0, height / 2), Alignment.Center, Parameters);
         }

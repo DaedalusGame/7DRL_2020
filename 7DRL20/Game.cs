@@ -28,7 +28,7 @@ namespace RoguelikeEngine
         public InputTwinState InputState => Input.Current;
 
         const int FontSpritesAmount = 64;
-        SpriteReference[] FontSprites = new SpriteReference[FontSpritesAmount];
+        public static SpriteReference[] FontSprites = new SpriteReference[FontSpritesAmount];
 
         FrameCounter FPS = new FrameCounter();
         FrameCounter GFPS = new FrameCounter();
@@ -247,12 +247,9 @@ namespace RoguelikeEngine
 
         public static string FormatIcon(IEffectHolder effectHolder)
         {
-            int objectID = effectHolder.ObjectID;
-            byte[] bufferObjectID = BitConverter.GetBytes(objectID);
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_ICON);
-            for(int i = 0; i < bufferObjectID.Length; i += sizeof(char))
-                builder.Append(BitConverter.ToChar(bufferObjectID, i));
+            builder.Append(StringUtil.ToFormatString(effectHolder.ObjectID));
             return builder.ToString();
         }
 
@@ -260,7 +257,7 @@ namespace RoguelikeEngine
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_ELEMENT_ICON);
-            builder.Append((char)element.ID);
+            builder.Append(StringUtil.ToFormatString(element.ID));
             return builder.ToString();
         }
 
@@ -268,7 +265,7 @@ namespace RoguelikeEngine
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_STAT_ICON);
-            builder.Append((char)stat.ID);
+            builder.Append(StringUtil.ToFormatString(stat.ID));
             return builder.ToString();
         }
 
@@ -276,10 +273,7 @@ namespace RoguelikeEngine
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_COLOR);
-            builder.Append((char)color.R);
-            builder.Append((char)color.G);
-            builder.Append((char)color.B);
-            builder.Append((char)color.A);
+            builder.Append(StringUtil.ToFormatString(color));
             return builder.ToString();
         }
 
@@ -287,42 +281,50 @@ namespace RoguelikeEngine
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_BORDER);
-            builder.Append((char)color.R);
-            builder.Append((char)color.G);
-            builder.Append((char)color.B);
-            builder.Append((char)color.A);
+            builder.Append(StringUtil.ToFormatString(color));
             return builder.ToString();
+        }
+
+        public void DrawChar(char chr, Vector2 drawpos, TextParameters parameters)
+        {
+            Texture2D tex = Game.FontSprites[chr / FontUtil.CharsPerPage].Texture;
+
+            int index = chr % FontUtil.CharsPerPage;
+            int offset = FontUtil.GetCharOffset(chr);
+            int width = FontUtil.GetCharWidth(chr);
+
+            var color = parameters.Color(chr);
+            var border = parameters.Border(chr);
+            var charOffset = parameters.Offset(chr);
+
+            if (border.A > 0)
+            { //Only draw outline if it's actually non-transparent
+                SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset - 1, parameters.ScriptOffset + 0), FontUtil.GetCharRect(index), border);
+                SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset, parameters.ScriptOffset + 1), FontUtil.GetCharRect(index), border);
+                SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset, parameters.ScriptOffset - 1), FontUtil.GetCharRect(index), border);
+                if (parameters.Bold)
+                {
+                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset + 2, parameters.ScriptOffset + 0), FontUtil.GetCharRect(index), border);
+                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset + 1, parameters.ScriptOffset + 1), FontUtil.GetCharRect(index), border);
+                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset + 1, parameters.ScriptOffset - 1), FontUtil.GetCharRect(index), border);
+                }
+                else
+                {
+                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset + 1, parameters.ScriptOffset), FontUtil.GetCharRect(index), border);
+                }
+            }
+
+            SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset, parameters.ScriptOffset), FontUtil.GetCharRect(index), color);
+            if (parameters.Bold)
+                SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(-offset + 1, parameters.ScriptOffset), FontUtil.GetCharRect(index), color);
         }
 
         public void DrawText(string str, Vector2 drawpos, Alignment alignment, TextParameters parameters)
         {
-            parameters = parameters.Copy();
-            int lineoffset = 0;
-            int totalindex = 0;
-            str = FontUtil.FormatText(str);
-            str = FontUtil.FitString(str, parameters);
-
-            foreach (string line in str.Split('\n'))
-            {
-                if (lineoffset + parameters.LineSeperator > parameters.MaxHeight)
-                    break;
-                int textwidth = FontUtil.GetStringWidth(line, parameters);
-                int offset = (parameters.MaxWidth ?? 0) - textwidth;
-                switch (alignment)
-                {
-                    case (Alignment.Left):
-                        offset = 0;
-                        break;
-                    case (Alignment.Center):
-                        offset /= 2;
-                        break;
-                }
-                DrawTextLine(line, drawpos + new Vector2(offset, lineoffset), totalindex, parameters);
-                totalindex += line.Length;
-                lineoffset += parameters.LineSeperator;
-            }
+            FontUtil.SetupString(str, drawpos, alignment, parameters, this);
         }
 
+        /*
         private void DrawTextLine(string str, Vector2 drawpos, int totalindex, TextParameters parameters)
         {
             int pos = 0;
@@ -415,6 +417,6 @@ namespace RoguelikeEngine
                     pos += parameters.CharSeperator + (parameters.Bold ? 1 : 0);
                 totalindex++;
             }
-        }
+        }*/
     }
 }

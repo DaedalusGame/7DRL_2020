@@ -207,9 +207,9 @@ namespace RoguelikeEngine.Enemies
                     break;
             }
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(Sprite, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
@@ -248,9 +248,9 @@ namespace RoguelikeEngine.Enemies
                     break;
             }
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(fish, facingOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
@@ -289,9 +289,9 @@ namespace RoguelikeEngine.Enemies
                     break;
             }
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(fish, facingOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
@@ -323,9 +323,9 @@ namespace RoguelikeEngine.Enemies
                     break;
             }
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(Sprite, frameOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
@@ -358,9 +358,9 @@ namespace RoguelikeEngine.Enemies
                     break;
             }
 
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix) =>
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix);
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
             });
             scene.DrawSprite(Sprite, facingOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();

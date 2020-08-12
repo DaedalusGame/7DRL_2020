@@ -533,11 +533,12 @@ namespace RoguelikeEngine
                 Lava = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
             GraphicsDevice.SetRenderTarget(Lava);
             GraphicsDevice.Clear(Color.Transparent);
-            PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
+            PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix, projection) => SetupWave(
                 new Vector2(-Frame / 30f, -Frame / 30f + MathHelper.PiOver4),
                 new Vector2(0.2f, 0.2f),
                 new Vector4(0.1f, 0.0f, 0.1f, 0.0f),
-                Matrix.Identity
+                Matrix.Identity,
+                Projection
                 ));
             SpriteBatch.Draw(lava.Texture, new Rectangle(0, 0, Lava.Width, Lava.Height), new Rectangle(0, 0, Lava.Width, Lava.Height), Color.White);
             PopSpriteBatch();
@@ -546,11 +547,12 @@ namespace RoguelikeEngine
                 Water = new RenderTarget2D(GraphicsDevice, Viewport.Width, Viewport.Height);
             GraphicsDevice.SetRenderTarget(Water);
             GraphicsDevice.Clear(Color.Transparent);
-            PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix) => SetupWave(
+            PushSpriteBatch(shader: Shader, samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shaderSetup: (matrix, projection) => SetupWave(
                 new Vector2(-Frame / 30f, -Frame / 30f + MathHelper.PiOver4),
                 new Vector2(0.2f, 0.2f),
                 new Vector4(0.1f, 0.0f, 0.1f, 0.0f),
-                Matrix.Identity
+                Matrix.Identity,
+                Projection
                 ));
             SpriteBatch.Draw(water.Texture, new Rectangle(0, 0, Water.Width, Water.Height), new Rectangle(0, 0, Water.Width, Water.Height), Color.White);
             PopSpriteBatch();
@@ -596,25 +598,25 @@ namespace RoguelikeEngine
             SpriteBatch.Draw(Pixel, DistortionMap.Bounds, new Color(0,64,0));
             SpriteBatch.Draw(noise.Texture, DistortionMap.Bounds, new Rectangle((int)noiseOffset.X, (int)noiseOffset.Y, DistortionMap.Width, DistortionMap.Height), Color.Red);
             PopSpriteBatch();*/
-            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform, projection: Projection);
             drawPasses.DrawPass(this, DrawPass.SeaDistort);
             PopSpriteBatch();
 
             GraphicsDevice.SetRenderTarget(CameraTargetA);
             //Render Liquid to Target A
-            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform, projection: Projection);
             drawPasses.DrawPass(this, DrawPass.SeaFloor);
             drawPasses.DrawPass(this, DrawPass.Sea);
             PopSpriteBatch();
 
             GraphicsDevice.SetRenderTarget(CameraTargetB);
             SwapBuffers();
-            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform);
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: WorldTransform, projection: Projection);
             drawPasses.DrawPass(this, DrawPass.LiquidFloor);
             //Render Target A (Liquid) to Target B (with distortion)
-            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: Matrix.Identity, shader: Shader, shaderSetup: (matrix) =>
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, transform: Matrix.Identity, shader: Shader, shaderSetup: (matrix, projection) =>
             {
-                SetupDistortion(DistortionMap, new Vector2(30f / DistortionMap.Width, 30f / DistortionMap.Height), Matrix.Identity, Matrix.Identity);
+                SetupDistortion(DistortionMap, new Vector2(30f / DistortionMap.Width, 30f / DistortionMap.Height), Matrix.Identity, Matrix.Identity, Projection);
             });
             SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
             //SpriteBatch.Draw(DistortionMap, DistortionMap.Bounds, Color.White);
@@ -647,16 +649,16 @@ namespace RoguelikeEngine
                 color *= screenFlash.Color;
             }
 
-            SetupColorMatrix(color, Matrix.Identity);
+            SetupColorMatrix(color, Matrix.Identity, Projection);
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, effect: Shader);
             SpriteBatch.Draw(CameraTargetA, CameraTargetA.Bounds, Color.White);
             SpriteBatch.End();
 
             SpriteReference cursor_tile = SpriteLoader.Instance.AddSprite("content/cursor_tile");
 
-            SetupNormal(Matrix.Identity);
+            SetupNormal(Matrix.Identity, Projection);
             //SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transformMatrix: WorldTransform);
-            PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap, transform: WorldTransform);
+            PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection);
 
             if (TileCursor.HasValue)
             {
@@ -673,7 +675,7 @@ namespace RoguelikeEngine
             //SetupNormal(Matrix.Identity);
             //SpriteBatch.Begin(blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap);
 
-            PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap);
+            PushSpriteBatch(blendState: NonPremultiplied, samplerState: SamplerState.PointWrap, projection: Projection);
 
             DrawQuestText(CameraMap);
 
@@ -692,9 +694,9 @@ namespace RoguelikeEngine
             {
                 SpriteReference ui_tooltip = SpriteLoader.Instance.AddSprite("content/ui_box");
                 TextParameters tooltipParameters = new TextParameters().SetColor(Color.White, Color.Black);
-                string fitTooltip = FontUtil.FitString(FontUtil.StripFormat(Tooltip), tooltipParameters);
-                int tooltipWidth = FontUtil.GetStringWidth(fitTooltip, tooltipParameters);
-                int tooltipHeight = FontUtil.GetStringHeight(fitTooltip);
+                //string fitTooltip = FontUtil.FitString(FontUtil.StripFormat(Tooltip), tooltipParameters);
+                int tooltipWidth = FontUtil.GetStringWidth(Tooltip, tooltipParameters);
+                int tooltipHeight = FontUtil.GetStringHeight(Tooltip, tooltipParameters);
                 int tooltipX = InputState.MouseX + 4;
                 int tooltipY = Math.Max(0, InputState.MouseY - 4 - tooltipHeight);
                 DrawUI(ui_tooltip, new Rectangle(tooltipX, tooltipY, tooltipWidth, tooltipHeight), Color.White);

@@ -58,6 +58,7 @@
     <Compile Include="Enemies\Fish.cs" />
     <Compile Include="EventBus.cs" />
     <Compile Include="Events\CreatureEvents.cs" />
+    <Compile Include="FontUtil.cs" />
     <Compile Include="IDrawable.cs" />
     <Compile Include="MapGeneration\GeneratorTemplate.cs" />
     <Compile Include="MapGeneration\GroupGenerator.cs" />
@@ -105,7 +106,6 @@
     <Compile Include="FibonacciHeap\FibonacciHeapDoubleKey.cs" />
     <Compile Include="FibonacciHeap\FibonacciHeapNode.cs" />
     <Compile Include="FibonacciHeap\FibonacciHeapNodeDoubleKey.cs" />
-    <Compile Include="FontUtil.cs" />
     <Compile Include="FrameCounter.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="IEffectHolder.cs" />
@@ -132,6 +132,7 @@
     <Compile Include="Slider.cs" />
     <Compile Include="SpriteLoader.cs" />
     <Compile Include="StatusEffect.cs" />
+    <Compile Include="StringUtil.cs" />
     <Compile Include="Tile.cs" />
     <Compile Include="Traits\EnemyTraits.cs" />
     <Compile Include="Traits\TileTraits.cs" />
@@ -157,6 +158,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\adze_binding.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\adze_fork.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\adze_grip.png">
