@@ -694,11 +694,21 @@ namespace RoguelikeEngine
             {
                 SpriteReference ui_tooltip = SpriteLoader.Instance.AddSprite("content/ui_box");
                 TextParameters tooltipParameters = new TextParameters().SetColor(Color.White, Color.Black);
-                //string fitTooltip = FontUtil.FitString(FontUtil.StripFormat(Tooltip), tooltipParameters);
                 int tooltipWidth = FontUtil.GetStringWidth(Tooltip, tooltipParameters);
+                int screenWidth = Viewport.Width - 8 - InputState.MouseX + 4;
+                bool invert = false;
+                if (tooltipWidth > screenWidth)
+                {
+                    screenWidth = Viewport.Width - screenWidth;
+                    invert = true;
+                }
+                tooltipParameters = new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(screenWidth,int.MaxValue);
+                tooltipWidth = FontUtil.GetStringWidth(Tooltip, tooltipParameters);
                 int tooltipHeight = FontUtil.GetStringHeight(Tooltip, tooltipParameters);
                 int tooltipX = InputState.MouseX + 4;
                 int tooltipY = Math.Max(0, InputState.MouseY - 4 - tooltipHeight);
+                if (invert)
+                    tooltipX -= tooltipWidth;
                 DrawUI(ui_tooltip, new Rectangle(tooltipX, tooltipY, tooltipWidth, tooltipHeight), Color.White);
                 DrawText(Tooltip, new Vector2(tooltipX, tooltipY), Alignment.Left, tooltipParameters);
             }

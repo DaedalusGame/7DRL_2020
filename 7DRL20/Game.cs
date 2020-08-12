@@ -208,6 +208,7 @@ namespace RoguelikeEngine
         public const char FORMAT_BORDER = (char)(FORMAT_CODES_BEGIN + 8);
         public const char FORMAT_BLANK = (char)(FORMAT_CODES_BEGIN + 9);
         public const char FORMAT_STAT_ICON = (char)(FORMAT_CODES_BEGIN + 10);
+        public const char FORMAT_SYMBOL = (char)(FORMAT_CODES_BEGIN + 11);
         public const char FORMAT_DYNAMIC_BEGIN = (char)(FORMAT_CODES_BEGIN + 1024);
         public const char FORMAT_DYNAMIC_END = (char)(FORMAT_DYNAMIC_BEGIN + 512);
 
@@ -269,6 +270,14 @@ namespace RoguelikeEngine
             return builder.ToString();
         }
 
+        public static string FormatSymbol(Symbol symbol)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_SYMBOL);
+            builder.Append(StringUtil.ToFormatString(symbol.ID));
+            return builder.ToString();
+        }
+
         public static string FormatColor(Color color)
         {
             StringBuilder builder = new StringBuilder();
@@ -323,100 +332,5 @@ namespace RoguelikeEngine
         {
             FontUtil.SetupString(str, drawpos, alignment, parameters, this);
         }
-
-        /*
-        private void DrawTextLine(string str, Vector2 drawpos, int totalindex, TextParameters parameters)
-        {
-            int pos = 0;
-
-            foreach (char chr in str)
-            {
-                if (totalindex > parameters.DialogIndex)
-                    break;
-                char chrTrue = chr;
-                FormatCode formatCode = FontUtil.GetFormatCode(chr);
-                FormatCodeIcon icon = null;
-
-                if (formatCode != null)
-                {
-                    if(formatCode is FormatCodeColor codeColor)
-                    {
-                        if (codeColor.Color != null)
-                            parameters.Color = codeColor.Color;
-                        if (codeColor.Border != null)
-                            parameters.Border = codeColor.Border;
-                        chrTrue = FORMAT_BLANK;
-                    }
-                    if(formatCode is FormatCodeIcon codeIcon)
-                    {
-                        icon = codeIcon;
-                        chrTrue = FORMAT_ICON;
-                    } 
-                }
-                else
-                {
-                    switch (chr)
-                    {
-                        case (FORMAT_BOLD):
-                            parameters.Bold = !parameters.Bold;
-                            break;
-                        case (FORMAT_UNDERLINE):
-                            parameters.Underline = !parameters.Underline;
-                            break;
-                        case (FORMAT_SUBSCRIPT):
-                            parameters.ScriptOffset += 8;
-                            break;
-                        case (FORMAT_SUPERSCRIPT):
-                            parameters.ScriptOffset -= 8;
-                            break;
-                        case (FORMAT_ICON):
-                            break;
-                        default:
-                            //chrTrue = FontUtil.GetSimilarChar(chr,FontUtil.GibberishStandard);
-                            break;
-                    }
-                }
-
-                Texture2D tex = FontSprites[chrTrue / FontUtil.CharsPerPage].Texture;
-                int index = chrTrue % FontUtil.CharsPerPage;
-                int offset = FontUtil.GetCharOffset(chrTrue);
-                int width = FontUtil.GetCharWidth(chrTrue);
-
-                var color = parameters.Color(totalindex);
-                var border = parameters.Border(totalindex);
-                var charOffset = parameters.Offset(totalindex);
-
-                if (border.A > 0)
-                { //Only draw outline if it's actually non-transparent
-                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset - 1, parameters.ScriptOffset + 0), FontUtil.GetCharRect(index), border);
-                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset + 1), FontUtil.GetCharRect(index), border);
-                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset - 1), FontUtil.GetCharRect(index), border);
-                    if (parameters.Bold)
-                    {
-                        SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset + 2, parameters.ScriptOffset + 0), FontUtil.GetCharRect(index), border);
-                        SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset + 1, parameters.ScriptOffset + 1), FontUtil.GetCharRect(index), border);
-                        SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset + 1, parameters.ScriptOffset - 1), FontUtil.GetCharRect(index), border);
-                    }
-                    else
-                    {
-                        SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset + 1, parameters.ScriptOffset), FontUtil.GetCharRect(index), border);
-                    }
-                }
-
-                SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset), FontUtil.GetCharRect(index), color);
-                if (parameters.Bold)
-                    SpriteBatch.Draw(tex, drawpos + charOffset + new Vector2(pos - offset + 1, parameters.ScriptOffset), FontUtil.GetCharRect(index), color);
-
-                if (icon != null)
-                {
-                    icon.Draw(Scene, drawpos + charOffset + new Vector2(pos - offset, parameters.ScriptOffset));
-                }
-
-                pos += width;
-                if(width > 0)
-                    pos += parameters.CharSeperator + (parameters.Bold ? 1 : 0);
-                totalindex++;
-            }
-        }*/
     }
 }

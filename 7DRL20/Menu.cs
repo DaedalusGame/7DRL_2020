@@ -917,7 +917,8 @@ namespace RoguelikeEngine
         {
             UI = ui;
             Holder = holder;
-            ItemInfo = new InfoBox(() => "Status", () => GetDescription(Holder), new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
+            string text = GetDescription(Holder);
+            ItemInfo = new InfoBox(() => "Status", () => text, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
         }
 
         public override bool IsMouseOver(int x, int y)

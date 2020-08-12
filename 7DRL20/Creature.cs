@@ -28,17 +28,17 @@ namespace RoguelikeEngine
 
         public int ID;
         public string Name;
-        public SpriteReference Sprite;
+        public Symbol Symbol;
         public Stat Resistance;
         public Stat DamageRate;
 
         public double Priority;
 
-        public Element(string name, SpriteReference sprite)
+        public Element(string name, Symbol symbol)
         {
             ID = AllElements.Count;
             Name = name;
-            Sprite = sprite;
+            Symbol = symbol;
             Priority = ID;
             Resistance = new ElementStat(this, $"{Name} Resistance", 0, 4, 0, SpriteLoader.Instance.AddSprite("content/stat_element_defense"));
             DamageRate = new ElementStat(this, $"{Name} Damage Rate", 1, 4, 0.5, SpriteLoader.Instance.AddSprite("content/stat_element_rate"))
@@ -46,6 +46,10 @@ namespace RoguelikeEngine
                 Format = Stat.FormatRate,
             };
             AllElements.Add(this);
+        }
+
+        public Element(string name, SpriteReference sprite) : this(name, new Symbol(sprite))
+        {
         }
 
         public virtual bool CanSplit()
@@ -273,25 +277,24 @@ namespace RoguelikeEngine
         public int ID;
         public string Name;
         public double DefaultStat;
-        public SpriteReference Sprite;
+        public Symbol Symbol;
         public Func<Creature, double, string> Format = (creature, value) => value.ToString();
 
         public double Priority;
         public virtual double EffectivePriority => Priority;
 
-        public Stat(string name, double defaultStat, double priority, SpriteReference sprite)
+        public Stat(string name, double defaultStat, double priority, Symbol symbol)
         {
             ID = AllStats.Count;
             Name = name;
             DefaultStat = defaultStat;
-            Sprite = sprite;
+            Symbol = symbol;
             Priority = priority;
             AllStats.Add(this);
         }
 
-        public virtual void DrawIcon(Scene scene, Vector2 pos)
+        public Stat(string name, double defaultStat, double priority, SpriteReference sprite) : this(name, defaultStat, priority, new Symbol(sprite))
         {
-            scene.DrawSprite(Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
         }
 
         public override string ToString()
@@ -329,9 +332,6 @@ namespace RoguelikeEngine
         public static Stat MiningLevel = new Stat("Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
         public static Stat MiningSpeed = new Stat("Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
 
-        public static Stat Cooldown = new Stat("Cooldown", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_cooldown"));
-        public static Stat Warmup = new Stat("Warmup", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_warmup"));
-
         public static Stat Blood = new Stat("Blood", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_blood"));
 
         public static Stat SlimeHP = new Stat("SlimeHP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
@@ -353,16 +353,14 @@ namespace RoguelikeEngine
         public double SubPriority;
         public override double EffectivePriority => Priority + (Element.Priority + SubPriority) / Element.AllElements.Count;
 
-        public ElementStat(Element element, string name, double defaultStat, double priority, double subPriority, SpriteReference sprite) : base(name, defaultStat, priority, sprite)
+        public ElementStat(Element element, string name, double defaultStat, double priority, double subPriority, Symbol symbol) : base(name, defaultStat, priority, symbol)
         {
             Element = element;
             SubPriority = subPriority;
         }
 
-        public override void DrawIcon(Scene scene, Vector2 pos)
+        public ElementStat(Element element, string name, double defaultStat, double priority, double subPriority, SpriteReference sprite) : this(element, name, defaultStat, priority, subPriority, new SymbolElement(sprite, element))
         {
-            scene.DrawSprite(Element.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
-            scene.DrawSprite(Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
         }
     }
 

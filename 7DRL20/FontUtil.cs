@@ -193,36 +193,20 @@ namespace RoguelikeEngine
         }
     }
 
-    class FormatCodeElementIcon : FormatCodeIcon
+    class FormatCodeSymbolIcon : FormatCodeIcon
     {
-        public Element Element;
+        public Symbol Symbol;
 
-        public FormatCodeElementIcon(Element element)
+        public FormatCodeSymbolIcon(Symbol symbol)
         {
-            Element = element;
+            Symbol = symbol;
         }
 
         public override void Draw(Scene scene, Vector2 pos)
         {
-            scene.DrawSprite(Element.Sprite, 0, pos, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            Symbol.DrawIcon(scene, pos);
         }
     }
-
-    class FormatCodeStatIcon : FormatCodeIcon
-    {
-        public Stat Stat;
-
-        public FormatCodeStatIcon(Stat stat)
-        {
-            Stat = stat;
-        }
-
-        public override void Draw(Scene scene, Vector2 pos)
-        {
-            Stat.DrawIcon(scene, pos);
-        }
-    }
-
 
     abstract class FormatCodeIcon : FormatCode
     {
@@ -322,7 +306,7 @@ namespace RoguelikeEngine
         public override FormatCode GetResult()
         {
             int objectID = symbolBuffer.ToInt32();
-            return new FormatCodeStatIcon(Stat.AllStats[objectID]);
+            return new FormatCodeSymbolIcon(Stat.AllStats[objectID].Symbol);
         }
 
         public override string GetReplacement()
@@ -336,7 +320,21 @@ namespace RoguelikeEngine
         public override FormatCode GetResult()
         {
             int objectID = symbolBuffer.ToInt32();
-            return new FormatCodeElementIcon(Element.AllElements[objectID]);
+            return new FormatCodeSymbolIcon(Element.AllElements[objectID].Symbol);
+        }
+
+        public override string GetReplacement()
+        {
+            return new string(Game.FORMAT_ICON, 1);
+        }
+    }
+
+    class SymbolMachine : IconMachine
+    {
+        public override FormatCode GetResult()
+        {
+            int objectID = symbolBuffer.ToInt32();
+            return new FormatCodeSymbolIcon(Symbol.AllSymbols[objectID]);
         }
 
         public override string GetReplacement()
@@ -462,6 +460,7 @@ namespace RoguelikeEngine
         static CharacterMachine IconMachine = new IconMachine();
         static CharacterMachine StatIconMachine = new StatIconMachine();
         static CharacterMachine ElementIconMachine = new ElementIconMachine();
+        static CharacterMachine SymbolMachine = new SymbolMachine();
 
         public static int GetStringWidth(string str, TextParameters parameters)
         {
@@ -532,9 +531,9 @@ namespace RoguelikeEngine
                 int tokenWidth = getWidth(token);
                 if (tokenWidth > maxwidth)
                 {
-                    if (token is string s && s.Length > 1)
+                    if (token is string s && s.Length > 1 && maxwidth > 0)
                     {
-                        var split = SplitWord(ref s, parameters.Copy(), 0);
+                        var split = SplitWord(ref s, parameters.Copy(), maxwidth - width);
                         tokens.Push(s);
                         token = split;
                     }
@@ -746,6 +745,11 @@ namespace RoguelikeEngine
                         case (Game.FORMAT_ELEMENT_ICON):
                             pushString();
                             machine = ElementIconMachine;
+                            machine.Reset();
+                            break;
+                        case (Game.FORMAT_SYMBOL):
+                            pushString();
+                            machine = SymbolMachine;
                             machine.Reset();
                             break;
                         default:

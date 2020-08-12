@@ -69,9 +69,9 @@ namespace RoguelikeEngine
                 name = $"{Game.FormatColor(Color.Gray)}{Name}{Game.FormatColor(Color.White)}";
 
             if (WarmupLeft > 0)
-                return $"- {name} {Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}{WarmupLeft}{Game.FormatStat(Stat.Warmup)}{Game.FORMAT_BOLD}{Game.FormatColor(Color.White)}";
+                return $"- {name} {Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}{WarmupLeft}{Game.FormatSymbol(Symbol.Warmup)}{Game.FORMAT_BOLD}{Game.FormatColor(Color.White)}";
             else if(CooldownLeft > 0)
-                return $"- {name} {Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}{CooldownLeft}{Game.FormatStat(Stat.Cooldown)}{Game.FORMAT_BOLD}{Game.FormatColor(Color.White)}";
+                return $"- {name} {Game.FormatColor(Color.White)}{Game.FORMAT_BOLD}{CooldownLeft}{Game.FormatSymbol(Symbol.Cooldown)}{Game.FORMAT_BOLD}{Game.FormatColor(Color.White)}";
             else
                 return $"- {name}";
         }
