@@ -735,16 +735,44 @@ namespace RoguelikeEngine
         SmelterSelection Selection;
         InventoryItemList ItemMenu;
         MenuTextSelection ActionMenu;
+        MenuTextSelection SmelterMenu;
+        InfoBox SmelterInfo;
 
         public MenuSmelter(PlayerUI ui, Creature holder, Smelter smelter)
         {
             UI = ui;
             Holder = holder;
             Smelter = smelter;
-            /*ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20)
-            {
-                Filter = (item) => item is IOre,
-            };*/
+
+            SmelterMenu = new MenuTextSelection("", new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height * 3 / 4), 256, 6);
+            SmelterMenu.Add(new ActAction("Add Ore", "Add ore to be smelted.", () => {
+                Selection = SmelterSelection.Ore;
+                ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20)
+                {
+                    Filter = (item) => item is IOre,
+                };
+            }));
+            SmelterMenu.Add(new ActAction("Add Fuel", "Add ore to be smelted.", () => {
+                Selection = SmelterSelection.Fuel;
+                ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20)
+                {
+                    Filter = (item) => item is IFuel fuel && fuel.FuelTemperature > 0,
+                };
+            }));
+            SmelterMenu.Add(new ActAction("Empty", "Add ore to be smelted.", () => {
+                Selection = SmelterSelection.Empty;
+                Smelter.Empty();
+            }));
+            SmelterMenu.AddDefault(new ActAction("Cancel", "", () => { SmelterMenu.Close(); }));
+
+            SmelterInfo = new InfoBox(() => "Smelter", this.GetDescription, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
+        }
+
+        private string GetDescription()
+        {
+            string description = String.Empty;
+            Smelter.AddDescription(ref description);
+            return description;
         }
 
         public override bool IsMouseOver(int x, int y)
@@ -752,6 +780,8 @@ namespace RoguelikeEngine
             if (ItemMenu != null && ItemMenu.IsMouseOver(x, y))
                 return true;
             if (ActionMenu != null && ActionMenu.IsMouseOver(x, y))
+                return true;
+            if (SmelterMenu != null && SmelterMenu.IsMouseOver(x, y))
                 return true;
             return base.IsMouseOver(x, y);
         }
@@ -766,11 +796,22 @@ namespace RoguelikeEngine
             {
                 ItemMenu.Update(scene);
             }
+            if (SmelterMenu != null)
+            {
+                SmelterMenu.Update(scene);
+            }
+            if (SmelterInfo != null)
+            {
+                SmelterInfo.Update(scene);
+            }
         }
 
         public override void HandleInput(SceneGame scene)
         {
             InputTwinState state = scene.InputState;
+
+            if (SmelterInfo != null)
+                SmelterInfo.HandleInput(scene);
 
             if (ActionMenu != null)
             {
@@ -784,46 +825,15 @@ namespace RoguelikeEngine
                 if (ItemMenu.ShouldClose)
                     ItemMenu = null;
             }
-            else
+            else if(SmelterMenu != null)
             {
-                if (scene.InputState.IsKeyPressed(Keys.Escape))
-                    Close();
-                if (scene.InputState.IsKeyPressed(Keys.W, 15, 5))
-                    Selection--;
-                if (scene.InputState.IsKeyPressed(Keys.S, 15, 5))
-                    Selection++;
-                Selection = Clamp(Selection);
-                if (scene.InputState.IsKeyPressed(Keys.Enter))
+                SmelterMenu.HandleInput(scene);
+                if (SmelterMenu.ShouldClose)
                 {
-                    switch (Selection)
-                    {
-                        case (SmelterSelection.Ore):
-                            ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20)
-                            {
-                                Filter = (item) => item is IOre,
-                            };
-                            break;
-                        case (SmelterSelection.Fuel):
-                            ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20)
-                            {
-                                Filter = (item) => item is IFuel fuel && fuel.FuelTemperature > 0,
-                            };
-                            break;
-                        case (SmelterSelection.Empty):
-                            Smelter.Empty();
-                            break;
-                        case (SmelterSelection.Cancel):
-                            Close();
-                            break;
-                    }
+                    SmelterMenu = null;
+                    Close();
                 }
             }
-        }
-
-        private SmelterSelection Clamp(SmelterSelection selection)
-        {
-            var selections = (SmelterSelection[])Enum.GetValues(typeof(SmelterSelection));
-            return (SmelterSelection)(((int)selection + selections.Length) % selections.Length);
         }
 
         public override void PreDraw(SceneGame scene)
@@ -834,43 +844,22 @@ namespace RoguelikeEngine
                 ItemMenu.PreDraw(scene);
             if (ActionMenu != null)
                 ActionMenu.PreDraw(scene);
+            if (SmelterMenu != null)
+                SmelterMenu.PreDraw(scene);
+            if (SmelterInfo != null)
+                SmelterInfo.PreDraw(scene);
         }
 
         public override void Draw(SceneGame scene)
         {
+            if (SmelterInfo != null)
+                SmelterInfo.Draw(scene);
+            if (SmelterMenu != null)
+                SmelterMenu.Draw(scene);
             if (ItemMenu != null)
                 ItemMenu.Draw(scene);
             if (ActionMenu != null)
                 ActionMenu.Draw(scene);
-
-            SpriteReference textbox = SpriteLoader.Instance.AddSprite("content/ui_box");
-            int widthSmelter = 256;
-            int heightSmelter = 20 * 16;
-            Rectangle rectSmelter = new Rectangle(Scene.Viewport.Width * 1 / 4 - widthSmelter / 2, Scene.Viewport.Height / 2 - heightSmelter / 2, widthSmelter, heightSmelter);
-            DrawLabelledUI(scene, textbox, rectSmelter, $"{Smelter.Name}\n");
-
-            TextParameters parameters = new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(rectSmelter);
-
-            string description = String.Empty;
-            Smelter.AddDescription(ref description);
-
-            int currentY = 0;
-            int remainingHeight = heightSmelter;
-            scene.DrawText(description, new Vector2(rectSmelter.X, rectSmelter.Y + currentY), Alignment.Left, parameters);
-            currentY += GetStringHeight(description, parameters);
-
-            DrawLine(scene, SmelterSelection.Ore, new Vector2(rectSmelter.X, rectSmelter.Y + currentY), widthSmelter, "Add Ore");
-            DrawLine(scene, SmelterSelection.Fuel, new Vector2(rectSmelter.X, rectSmelter.Y + currentY + 16), widthSmelter, "Add Fuel");
-            DrawLine(scene, SmelterSelection.Empty, new Vector2(rectSmelter.X, rectSmelter.Y + currentY + 32), widthSmelter, "Empty");
-            DrawLine(scene, SmelterSelection.Cancel, new Vector2(rectSmelter.X, rectSmelter.Y + currentY + 48), widthSmelter, "Cancel");
-        }
-
-        private void DrawLine(SceneGame scene, SmelterSelection selection, Vector2 linePos, int width, string name)
-        {
-            SpriteReference cursor = SpriteLoader.Instance.AddSprite("content/cursor");
-            if (Selection == selection)
-                scene.SpriteBatch.Draw(cursor.Texture, linePos, cursor.GetFrameRect(0), Color.White);
-            scene.DrawText(name, linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
         }
 
         public void SelectItem(Item item)
@@ -1246,11 +1235,9 @@ namespace RoguelikeEngine
         public override void PreDraw(SceneGame scene)
         {
             base.PreDraw(scene);
-            float openCoeff = Math.Min(Ticks / 7f, 1f);
             scene.PushSpriteBatch(blendState: scene.NonPremultiplied, samplerState: SamplerState.PointWrap, projection: Projection);
             scene.GraphicsDevice.Clear(Color.TransparentBlack);
-            if (openCoeff >= 1)
-                scene.DrawText(Text(), new Vector2(8, 4 - Scroll), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue));
+            scene.DrawText(Text(), new Vector2(8, 4 - Scroll), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue));
             scene.PopSpriteBatch();
         }
 
@@ -1340,11 +1327,21 @@ namespace RoguelikeEngine
             if (scene.InputState.IsKeyPressed(Keys.S, 15, 5))
                 Selection++;
             Selection = SelectionCount <= 0 ? 0 : (Selection + SelectionCount) % SelectionCount;
-            if (Selection < Scroll)
-                Scroll = Selection;
-            if (Selection >= Scroll + ScrollHeight)
-                Scroll = Math.Max(Selection - ScrollHeight + 1, 0);
+            Scroll = MathHelper.Clamp(Scroll, Math.Max(0, Selection * 16 - Height + 16), Math.Min(Selection * 16, SelectionCount * 16 - Height));
             base.HandleInput(scene);
+        }
+
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+
+            scene.PushSpriteBatch(blendState: scene.NonPremultiplied, samplerState: SamplerState.PointWrap, projection: Projection);
+            scene.GraphicsDevice.Clear(Color.TransparentBlack);
+            for (int i = 0; i < SelectionCount; i++)
+            {
+                DrawLine(scene, new Vector2(0, i * 16 - Scroll), i);
+            }
+            scene.PopSpriteBatch();
         }
 
         public override void Draw(SceneGame scene)
@@ -1359,12 +1356,7 @@ namespace RoguelikeEngine
             if (openCoeff > 0)
                 DrawLabelledUI(scene, textbox, rect, openCoeff >= 1 ? Name : string.Empty);
             if (openCoeff >= 1)
-                for (int i = 0; i < ScrollHeight; i++)
-                {
-                    int e = Scroll + i;
-                    if (e < SelectionCount)
-                        DrawLine(scene, new Vector2(x, y + i * 16), e);
-                }
+                scene.SpriteBatch.Draw(RenderTarget, rect, RenderTarget.Bounds, Color.White);
         }
 
         public abstract void DrawLine(SceneGame scene, Vector2 linePos, int e);
