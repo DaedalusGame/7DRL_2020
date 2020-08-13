@@ -75,6 +75,20 @@ namespace RoguelikeEngine
             }
         }
 
+        public bool IsMouseWheelUp()
+        {
+            int previous = Previous.Mouse.ScrollWheelValue;
+            int next = Next.Mouse.ScrollWheelValue;
+            return next > previous;
+        }
+
+        public bool IsMouseWheelDown()
+        {
+            int previous = Previous.Mouse.ScrollWheelValue;
+            int next = Next.Mouse.ScrollWheelValue;
+            return next < previous;
+        }
+
         public bool IsKeyDown(Keys key)
         {
             return Next.Keyboard.IsKeyDown(key);

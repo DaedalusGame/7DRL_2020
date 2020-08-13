@@ -490,6 +490,15 @@ namespace RoguelikeEngine
                 }
             }
 
+            public override bool IsMouseOver(int x, int y)
+            {
+                if (ItemMenu != null && ItemMenu.IsMouseOver(x, y))
+                    return true;
+                if (InfoWindow != null && InfoWindow.IsMouseOver(x, y))
+                    return true;
+                return base.IsMouseOver(x, y);
+            }
+
             public override void Update(SceneGame scene)
             {
                 base.Update(scene);
@@ -663,6 +672,15 @@ namespace RoguelikeEngine
             {
                 Create = create,
             };
+        }
+
+        public override bool IsMouseOver(int x, int y)
+        {
+            if (BlueprintMenu != null && BlueprintMenu.IsMouseOver(x, y))
+                return true;
+            if (CraftingMenu != null && CraftingMenu.IsMouseOver(x, y))
+                return true;
+            return base.IsMouseOver(x, y);
         }
 
         public override void Update(SceneGame scene)
@@ -1228,6 +1246,10 @@ namespace RoguelikeEngine
                 Scroll -= 3;
             if (scene.InputState.IsKeyPressed(Keys.S, 10, 1))
                 Scroll += 3;
+            if (scene.InputState.IsMouseWheelUp())
+                Scroll -= 6;
+            if (scene.InputState.IsMouseWheelDown())
+                Scroll += 6;
             Scroll = MathHelper.Clamp(Scroll, 0, textHeight - Height + 8);
             base.HandleInput(scene);
         }
