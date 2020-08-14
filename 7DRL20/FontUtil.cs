@@ -53,8 +53,10 @@ namespace RoguelikeEngine
 
         public TextParameters SetColor(TextColorFunction color, TextColorFunction border)
         {
-            Color = color;
-            Border = border;
+            if (color != null)
+                Color = color;
+            if (border != null)
+                Border = border;
             return this;
         }
 
@@ -655,7 +657,8 @@ namespace RoguelikeEngine
                     {
                         int width = GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
                         game.DrawChar(chr, index, drawpos + new Vector2(x, 0), parameters);
-                        DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
+                        if (parameters.Underline)
+                            DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
                         x += width;
                         index++;
                     }
@@ -664,7 +667,8 @@ namespace RoguelikeEngine
                 {
                     int width = format.GetWidth();
                     parameters.Format(format);
-                    DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
+                    if(parameters.Underline)
+                        DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
                     x += width;
                     index++;
                 }
@@ -678,7 +682,8 @@ namespace RoguelikeEngine
                         icon.Draw(game.Scene, drawpos + new Vector2(x, 0));
                     }
 
-                    DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
+                    if (parameters.Underline)
+                        DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
                     x += width;
                     index++;
                 }
