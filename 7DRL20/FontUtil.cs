@@ -561,6 +561,8 @@ namespace RoguelikeEngine
 
             TextParameters lineParameters = parameters.Copy();
 
+            int index = 0;
+
             while(tokens.Count > 0)
             {
                 var token = tokens.Pop();
@@ -606,7 +608,7 @@ namespace RoguelikeEngine
                             break;
                     }
                     if (game != null)
-                        DrawLine(line, lineParameters, drawpos + new Vector2(offset, y), game);
+                        DrawLine(line, ref index, lineParameters, drawpos + new Vector2(offset, y), game);
                     line.Clear();
                     //Newline
                     y += parameters.LineSeperator;
@@ -636,13 +638,13 @@ namespace RoguelikeEngine
                     break;
             }
             if (game != null)
-                DrawLine(line, lineParameters, drawpos + new Vector2(offset, y), game);
+                DrawLine(line, ref index, lineParameters, drawpos + new Vector2(offset, y), game);
             if (cache)
                 CachedWidth = Math.Max(CachedWidth, width);
             line.Clear();
         }
 
-        private static void DrawLine(IEnumerable<object> tokens, TextParameters parameters, Vector2 drawpos, Game game)
+        private static void DrawLine(IEnumerable<object> tokens, ref int index, TextParameters parameters, Vector2 drawpos, Game game)
         {
             int x = 0;
             foreach(var token in tokens)
@@ -651,17 +653,24 @@ namespace RoguelikeEngine
                 {
                     foreach(var chr in str)
                     {
-                        game.DrawChar(chr, drawpos + new Vector2(x, 0), parameters);
-                        x += GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+                        int width = GetCharWidth(chr) + parameters.CharSeperator + (parameters.Bold ? 1 : 0);
+                        game.DrawChar(chr, index, drawpos + new Vector2(x, 0), parameters);
+                        DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
+                        x += width;
+                        index++;
                     }
                 }
                 if(token is FormatToken format)
                 {
+                    int width = format.GetWidth();
                     parameters.Format(format);
-                    x += format.GetWidth();
+                    DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
+                    x += width;
+                    index++;
                 }
                 if (token is FormatCode code)
                 {
+                    int width = code.Width;
                     parameters.Format(code);
                     
                     if (code is FormatCodeIcon icon)
@@ -669,12 +678,22 @@ namespace RoguelikeEngine
                         icon.Draw(game.Scene, drawpos + new Vector2(x, 0));
                     }
 
-                    x += code.Width;
+                    DrawCharLine(width, 16, index, parameters, drawpos + new Vector2(x, 0), game);
+                    x += width;
+                    index++;
                 }
             }
         }
 
-        
+        private static void DrawCharLine(int width, int yoffset, int i, TextParameters parameters, Vector2 drawpos, Game game)
+        {
+            var color = parameters.Color(i);
+            var border = parameters.Border(i);
+            var charOffset = parameters.Offset(i);
+
+            game.Scene.SpriteBatch.Draw(game.Pixel, drawpos + charOffset + new Vector2(0, 15), new Rectangle(0, 0, width, 3), border);
+            game.Scene.SpriteBatch.Draw(game.Pixel, drawpos + charOffset + new Vector2(0, 16), new Rectangle(0, 0, width, 1), color);
+        }
 
         private static string SplitWord(ref string str, TextParameters parameters, int maxWidth)
         {

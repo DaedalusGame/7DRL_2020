@@ -304,7 +304,7 @@ namespace RoguelikeEngine
             return builder.ToString();
         }
 
-        public void DrawChar(char chr, Vector2 drawpos, TextParameters parameters)
+        public void DrawChar(char chr, int i, Vector2 drawpos, TextParameters parameters)
         {
             Texture2D tex = Game.FontSprites[chr / FontUtil.CharsPerPage].Texture;
 
@@ -312,9 +312,9 @@ namespace RoguelikeEngine
             int offset = FontUtil.GetCharOffset(chr);
             int width = FontUtil.GetCharWidth(chr);
 
-            var color = parameters.Color(chr);
-            var border = parameters.Border(chr);
-            var charOffset = parameters.Offset(chr);
+            var color = parameters.Color(i);
+            var border = parameters.Border(i);
+            var charOffset = parameters.Offset(i);
 
             if (border.A > 0)
             { //Only draw outline if it's actually non-transparent
