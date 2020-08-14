@@ -204,7 +204,24 @@ namespace RoguelikeEngine
 
         public override void Draw(Scene scene, Vector2 pos)
         {
-            Symbol.DrawIcon(scene, pos);
+            Symbol.DrawIcon(scene, pos, 1);
+        }
+    }
+
+    class FormatCodeBar : FormatCodeIcon
+    {
+        public Symbol Symbol;
+        public float Slide;
+
+        public FormatCodeBar(Symbol symbol, float slide)
+        {
+            Symbol = symbol;
+            Slide = slide;
+        }
+
+        public override void Draw(Scene scene, Vector2 pos)
+        {
+            Symbol.DrawIcon(scene, pos, Slide);
         }
     }
 
@@ -343,6 +360,24 @@ namespace RoguelikeEngine
         }
     }
 
+    class BarMachine : IconMachine
+    {
+        public override bool Done => symbolBuffer.Length >= sizeof(int) / sizeof(char) + sizeof(float) / sizeof(char);
+
+        public override FormatCode GetResult()
+        {
+            int objectID = symbolBuffer.ToInt32();
+            symbolBuffer.Remove(0, sizeof(int) / sizeof(char));
+            float slide = symbolBuffer.ToSingle();
+            return new FormatCodeBar(Symbol.AllSymbols[objectID], slide);
+        }
+
+        public override string GetReplacement()
+        {
+            return new string(Game.FORMAT_ICON, 1);
+        }
+    }
+
     enum FormatToken
     {
         Bold,
@@ -461,6 +496,7 @@ namespace RoguelikeEngine
         static CharacterMachine StatIconMachine = new StatIconMachine();
         static CharacterMachine ElementIconMachine = new ElementIconMachine();
         static CharacterMachine SymbolMachine = new SymbolMachine();
+        static CharacterMachine BarMachine = new BarMachine();
 
         public static int GetStringWidth(string str, TextParameters parameters)
         {
@@ -750,6 +786,11 @@ namespace RoguelikeEngine
                         case (Game.FORMAT_SYMBOL):
                             pushString();
                             machine = SymbolMachine;
+                            machine.Reset();
+                            break;
+                        case (Game.FORMAT_BAR):
+                            pushString();
+                            machine = BarMachine;
                             machine.Reset();
                             break;
                         default:

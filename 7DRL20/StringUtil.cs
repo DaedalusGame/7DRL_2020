@@ -34,6 +34,13 @@ namespace RoguelikeEngine
             return BitConverter.ToInt32(buffer, 0);
         }
 
+        public static float ToSingle(this StringBuilder builder)
+        {
+            byte[] buffer = new byte[sizeof(Single)];
+            Encoding.Unicode.GetBytes(builder.ToString(), 0, sizeof(Single) / sizeof(char), buffer, 0);
+            return BitConverter.ToSingle(buffer, 0);
+        }
+
         public static Color ToColor(this StringBuilder builder)
         {
             unchecked
@@ -48,6 +55,11 @@ namespace RoguelikeEngine
         }
 
         public static string ToFormatString(int value)
+        {
+            return Encoding.Unicode.GetString(BitConverter.GetBytes(value));
+        }
+
+        public static string ToFormatString(float value)
         {
             return Encoding.Unicode.GetString(BitConverter.GetBytes(value));
         }

@@ -1631,9 +1631,11 @@ namespace RoguelikeEngine
         public Container OreContainer;
         public Container FuelContainer;
         public Dictionary<Material, int> Fuels = new Dictionary<Material, int>();
+        public Dictionary<Material, int> FuelCapacities = new Dictionary<Material, int>();
 
         public double FuelTemperature => Fuels.Any() ? Fuels.Max(x => x.Key.FuelTemperature) : 0;
         public int FuelAmount => Fuels.Sum(fuel => fuel.Value);
+        public int FuelCapacity => FuelCapacities.Sum(fuel => fuel.Value);
         public double SpeedBoost => 1.0f;
 
         public Smelter(SceneGame world) : base("Smelter")
@@ -1714,6 +1716,7 @@ namespace RoguelikeEngine
                     if (!Fuels.ContainsKey(fuel.Material))
                     {
                         Fuels.Add(fuel.Material, fuel.Amount);
+                        FuelCapacities.Add(fuel.Material, fuel.Amount);
                         item.Destroy();
                     }
                 }
@@ -1726,7 +1729,10 @@ namespace RoguelikeEngine
             {
                 Fuels[key] -= i;
                 if (Fuels[key] <= 0)
+                {
                     Fuels.Remove(key);
+                    FuelCapacities.Remove(key);
+                }
             }
         }
 
@@ -1750,7 +1756,8 @@ namespace RoguelikeEngine
         public void AddDescription(ref string tooltip)
         {
             tooltip += $"Ready: {(int)(Math.Round(Ready, 2) * 100)}% ({Math.Round(SpeedBoost, 1)}x Speed)\n";
-            tooltip += $"Heat: {FuelTemperature} ({FuelAmount} Fuel left)\n";
+            float percentage = FuelCapacity > 0 ? (float)FuelAmount / FuelCapacity : 0;
+            tooltip += $"Heat: {FuelTemperature} ({Game.FormatBar(Symbol.FuelBar, percentage)}{FuelAmount} Fuel left)\n";
             tooltip += "\n";
             tooltip += "Ore:\n";
             if (OreContainer.Items.Any())

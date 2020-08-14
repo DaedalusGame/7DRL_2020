@@ -209,6 +209,7 @@ namespace RoguelikeEngine
         public const char FORMAT_BLANK = (char)(FORMAT_CODES_BEGIN + 9);
         public const char FORMAT_STAT_ICON = (char)(FORMAT_CODES_BEGIN + 10);
         public const char FORMAT_SYMBOL = (char)(FORMAT_CODES_BEGIN + 11);
+        public const char FORMAT_BAR = (char)(FORMAT_CODES_BEGIN + 12);
         public const char FORMAT_DYNAMIC_BEGIN = (char)(FORMAT_CODES_BEGIN + 1024);
         public const char FORMAT_DYNAMIC_END = (char)(FORMAT_DYNAMIC_BEGIN + 512);
 
@@ -275,6 +276,15 @@ namespace RoguelikeEngine
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_SYMBOL);
             builder.Append(StringUtil.ToFormatString(symbol.ID));
+            return builder.ToString();
+        }
+
+        public static string FormatBar(Symbol symbol, float slide)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_BAR);
+            builder.Append(StringUtil.ToFormatString(symbol.ID));
+            builder.Append(StringUtil.ToFormatString(slide));
             return builder.ToString();
         }
 
