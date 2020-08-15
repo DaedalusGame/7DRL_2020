@@ -47,10 +47,16 @@ namespace RoguelikeEngine
 
             public string Sprite;
             public ComboList<EquipSlot, Effect> Effects = new ComboList<EquipSlot, Effect>();
+            public ComboList<EquipSlot, Effect> ItemEffects = new ComboList<EquipSlot, Effect>();
 
             public Part(string sprite)
             {
                 Sprite = sprite;
+            }
+
+            public void AddItemEffect(Effect effect)
+            {
+                ItemEffects.Add(effect);
             }
 
             public void AddEffect(Effect effect)
@@ -71,6 +77,11 @@ namespace RoguelikeEngine
             public IEnumerable<Effect> GetEffects()
             {
                 return Effects.Values;
+            }
+
+            public IEnumerable<Effect> GetItemEffects()
+            {
+                return ItemEffects.Values;
             }
 
             public static implicit operator Part(string sprite) => new Part(sprite); 
@@ -118,9 +129,21 @@ namespace RoguelikeEngine
             return EffectManager.GetEffects<T>(this);
         }
 
+        public void AddDurability(double durability, double handleMod, double extraBonus)
+        {
+            foreach(var part in Parts)
+            {
+                part.Value.AddItemEffect(new EffectStat(this, Stat.Durability, durability * part.Key.DurabilityMod));
+                if(part.Key.Shape == PartShape.Handle)
+                    part.Value.AddItemEffect(new EffectStatMultiply(this, Stat.Durability, handleMod));
+                if (part.Key.Shape == PartShape.Extra)
+                    part.Value.AddItemEffect(new EffectStatPercent(this, Stat.Durability, extraBonus));
+            }
+        }
+
         public void AddEffect(PartType part, Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             Parts[part].AddEffect(effect);
         }
 
@@ -138,6 +161,7 @@ namespace RoguelikeEngine
 
         public void AddHeadEffect(Effect effect)
         {
+            //effect.Apply();
             Parts[ToolBlade.Blade].AddEffect(effect);
             Parts[ToolAdze.Head].AddEffect(effect);
             Parts[ToolPlate.Composite].AddEffect(effect);
@@ -146,7 +170,7 @@ namespace RoguelikeEngine
 
         public void AddHandleEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             Parts[ToolBlade.Guard].AddEffect(effect);
             Parts[ToolBlade.Handle].AddEffect(effect);
             Parts[ToolAdze.Binding].AddEffect(effect);
@@ -156,7 +180,7 @@ namespace RoguelikeEngine
 
         public void AddFullEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolBlade.Parts, effect);
             AddEffects(ToolAdze.Parts, effect);
             AddEffects(ToolPlate.Parts, effect);
@@ -164,51 +188,51 @@ namespace RoguelikeEngine
 
         public void AddOffensiveEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolBlade.Parts, effect);
             AddEffects(ToolAdze.Parts, effect);
         }
 
         public void AddOffensiveHeadEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             Parts[ToolBlade.Blade].AddEffect(effect);
             Parts[ToolAdze.Head].AddEffect(effect);
         }
 
         public void AddBladeEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolBlade.Parts, effect);
         }
 
         public void AddAdzeEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolAdze.Parts, effect);
         }
 
         public void AddPlateEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolPlate.Parts, effect);
         }
 
         public void AddArmorEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolPlate.Parts, effect, new[] { EquipSlot.Body });
         }
 
         public void AddShieldEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolPlate.Parts, effect, new[] { EquipSlot.Offhand });
         }
 
         public void AddOffensiveToolEffect(Effect effect)
         {
-            effect.Apply();
+            //effect.Apply();
             AddEffects(ToolBlade.Parts, effect);
             AddEffects(ToolAdze.Parts, effect);
         }
@@ -252,6 +276,9 @@ namespace RoguelikeEngine
             MeltingRequired = false;
             FuelTemperature = 100;
             ColorTransform = ColorMatrix.Tint(new Color(177, 135, 103));
+
+            AddDurability(50, 1.5, 0);
+
             AddFullEffect(new EffectStat(this, Stat.Attack, 10));
         }
     }
@@ -277,6 +304,8 @@ namespace RoguelikeEngine
             Parts[ToolAdze.Head] = "reap";
             Parts[ToolAdze.Binding] = "grip";
 
+            AddDurability(80, 1.5, 0);
+
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Slash, 1.0));
@@ -297,6 +326,8 @@ namespace RoguelikeEngine
             FuelTemperature = 2000;
             MeltingTemperature = 75;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(35*2, 86*2, 79*2), new Color(234, 252, 253));
+
+            AddDurability(50, 0.5, 0.1);
 
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
@@ -322,6 +353,8 @@ namespace RoguelikeEngine
             MeltingTemperature = 260;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(92, 156, 65), new Color(238, 251, 77));
 
+            AddDurability(50, 0.5, 0.1);
+
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.2));
 
@@ -345,6 +378,8 @@ namespace RoguelikeEngine
         {
             MeltingTemperature = 500;
             ColorTransform = ColorMatrix.TwoColor(new Color(89, 89, 89), new Color(239, 236, 233));
+
+            AddDurability(50, 0.5, 0.1);
 
             Parts[ToolBlade.Blade] = "cleave";
             Parts[ToolBlade.Guard] = "binding";
@@ -371,6 +406,8 @@ namespace RoguelikeEngine
             Priority = 2;
             MeltingTemperature = 760;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(92, 156, 65), new Color(187, 253, 204));
+
+            AddDurability(100, 1.0, 0);
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.2));
@@ -415,6 +452,8 @@ namespace RoguelikeEngine
 
             Parts[ToolBlade.Blade] = "rip";
             Parts[ToolAdze.Head] = "sledge";
+
+            AddDurability(500, 0.6, 0.1);
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.5));
@@ -464,6 +503,8 @@ namespace RoguelikeEngine
             MeltingTemperature = 800;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(198, 77, 55), new Color(242, 214, 208));
 
+            AddDurability(100, 1, 0);
+
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
@@ -494,6 +535,8 @@ namespace RoguelikeEngine
             MeltingTemperature = 700;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(94, 101, 170), new Color(215, 227, 253));
 
+            AddDurability(100, 1, 0);
+
             AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
             AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
@@ -518,6 +561,8 @@ namespace RoguelikeEngine
         {
             MeltingTemperature = 550;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(105, 142, 64), new Color(208, 251, 121));
+
+            AddDurability(100, 1, 0);
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));

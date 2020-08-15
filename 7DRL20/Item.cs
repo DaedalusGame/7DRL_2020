@@ -324,15 +324,26 @@ namespace RoguelikeEngine
         }
     }
 
+    enum PartShape
+    {
+        Head,
+        Handle,
+        Extra,
+    }
+
     class PartType
     {
         public string Name;
         public string SpritePrefix;
+        public double DurabilityMod;
+        public PartShape Shape;
 
-        public PartType(string name, string prefix)
+        public PartType(string name, string prefix, PartShape shape, double durabilityMod)
         {
             Name = name;
             SpritePrefix = prefix;
+            DurabilityMod = durabilityMod;
+            Shape = shape;
         }
     }
 
@@ -344,6 +355,9 @@ namespace RoguelikeEngine
         {
             get;
         }
+
+        public double DurabilityMax => this.GetStat(Stat.Durability);
+        public double Durability => DurabilityMax - this.GetTotalDamage();
 
         public ToolCore(SceneGame world, string name, string description, PartType[] parts) : base(world, name, description)
         {
@@ -357,7 +371,7 @@ namespace RoguelikeEngine
             for(int i = 0; i < Parts.Length; i++)
             {
                 var part = GetMaterialPart(i);
-                list.AddRange(part.GetEffects().SplitEffects<T>());
+                list.AddRange(part.GetItemEffects().SplitEffects<T>());
             }
             return list;
         }
@@ -444,6 +458,7 @@ namespace RoguelikeEngine
             //for(int i = 0; i < Materials.Length; i++)
             //    statBlock += $" {Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
             statBlock += "\n";
+            statBlock += $"{Game.FormatStat(Stat.Durability)} Durability: {Durability}/{DurabilityMax}\n";
             var validSlots = ValidSlots;
             var generalBlock = GetEquipEffects();
             var blocks = validSlots.ToDictionary(slot => slot, slot => GetEquipEffects(slot).Where(effect => !generalBlock.Contains(effect)));
@@ -496,9 +511,9 @@ namespace RoguelikeEngine
         public const int GUARD = 1;
         public const int HANDLE = 2;
 
-        public static PartType Blade = new PartType("Blade", "content/blade_");
-        public static PartType Guard = new PartType("Guard", "content/blade_");
-        public static PartType Handle = new PartType("Handle", "content/blade_");
+        public static PartType Blade = new PartType("Blade", "content/blade_", PartShape.Head, 1.0);
+        public static PartType Guard = new PartType("Guard", "content/blade_", PartShape.Extra, 0.5);
+        public static PartType Handle = new PartType("Handle", "content/blade_", PartShape.Handle, 0.5);
 
         public static PartType[] Parts = new[] { Blade, Guard, Handle };
 
@@ -548,9 +563,9 @@ namespace RoguelikeEngine
         public const int BINDING = 1;
         public const int HANDLE = 2;
 
-        public static PartType Head = new PartType("Head", "content/adze_");
-        public static PartType Binding = new PartType("Binding", "content/adze_");
-        public static PartType Handle = new PartType("Handle", "content/adze_");
+        public static PartType Head = new PartType("Head", "content/adze_", PartShape.Head, 1.0);
+        public static PartType Binding = new PartType("Binding", "content/adze_", PartShape.Extra, 0.25);
+        public static PartType Handle = new PartType("Handle", "content/adze_", PartShape.Handle, 0.5);
 
         public static PartType[] Parts = new[] { Head, Binding, Handle };
 
@@ -600,9 +615,9 @@ namespace RoguelikeEngine
         public const int COMPOSITE = 1;
         public const int TRIM = 2;
 
-        public static PartType Core = new PartType("Core", "content/plate_");
-        public static PartType Composite = new PartType("Composite", "content/plate_");
-        public static PartType Trim = new PartType("Trim", "content/plate_");
+        public static PartType Core = new PartType("Core", "content/plate_", PartShape.Head, 3.0);
+        public static PartType Composite = new PartType("Composite", "content/plate_", PartShape.Head, 1.0);
+        public static PartType Trim = new PartType("Trim", "content/plate_", PartShape.Extra, 0.25);
 
         public static PartType[] Parts = new[] { Core, Composite, Trim };
 

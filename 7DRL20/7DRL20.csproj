@@ -58,6 +58,7 @@
     <Compile Include="Enemies\Fish.cs" />
     <Compile Include="EventBus.cs" />
     <Compile Include="Events\CreatureEvents.cs" />
+    <Compile Include="Events\ItemEvents.cs" />
     <Compile Include="FontUtil.cs" />
     <Compile Include="IDrawable.cs" />
     <Compile Include="MapGeneration\GeneratorTemplate.cs" />
@@ -1023,6 +1024,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\stat_defense.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\stat_durability.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\stat_element_defense.png">

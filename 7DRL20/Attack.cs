@@ -55,6 +55,53 @@ namespace RoguelikeEngine
         }
     }
 
+    class AttackWeapon : AttackSpecial
+    {
+        Item Weapon;
+
+        public AttackWeapon(Item weapon)
+        {
+            Weapon = weapon;
+        }
+
+        public override Wait End(Attack attack)
+        {
+            Weapon.TakeDamage(1, Element.Bludgeon, true);
+
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
+    class AttackArmor : AttackSpecial
+    {
+        IEnumerable<Item> Armors;
+
+        public AttackArmor(IEnumerable<Item> armors)
+        {
+            Armors = armors;
+        }
+
+        public override Wait End(Attack attack)
+        {
+            foreach(Item item in Armors)
+            {
+                item.TakeDamage(1, Element.Bludgeon, true);
+            }
+
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
     class Attack
     {
         public Creature Attacker;
@@ -90,6 +137,7 @@ namespace RoguelikeEngine
         public virtual IEnumerable<Wait> RoutineStart()
         {
             CalculateDamage();
+            CalculateArmor();
 
             yield return Attacker.OnStartAttack(this);
             yield return Defender.OnStartDefend(this);
@@ -128,7 +176,28 @@ namespace RoguelikeEngine
             yield return new WaitAll(Waits);
         }
 
-        protected virtual void CalculateDamage()
+        private void CalculateArmor()
+        {
+            var equipment = Defender.GetEffects<EffectItemEquipped>();
+            var mainhand = equipment.FirstOrDefault(x => x.Slot == EquipSlot.Mainhand)?.Item;
+            var offhand = equipment.FirstOrDefault(x => x.Slot == EquipSlot.Offhand)?.Item;
+            var body = equipment.FirstOrDefault(x => x.Slot == EquipSlot.Body)?.Item;
+
+            List<Item> armors = new List<Item>();
+
+            //TODO: Should have some other check to find out if an item is a shield/armor
+            if (mainhand is ToolPlate)
+                armors.Add(mainhand);
+            if (offhand is ToolPlate)
+                armors.Add(offhand);
+            if (body is ToolPlate)
+                armors.Add(body);
+
+            if (armors.Any())
+                ExtraEffects.Add(new AttackArmor(armors));
+        }
+
+        private void CalculateDamage()
         {
             double attack = Attacker.GetStat(Stat.Attack) * AttackModifier + Force;
             double defense = Defender.GetStat(Stat.Defense) * DefenseModifier;

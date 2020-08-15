@@ -333,6 +333,7 @@ namespace RoguelikeEngine
         public static Stat MiningLevel = new Stat("Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
         public static Stat MiningSpeed = new Stat("Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
 
+        public static Stat Durability = new Stat("Durability", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_durability"));
         public static Stat Blood = new Stat("Blood", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_blood"));
 
         public static Stat SlimeHP = new Stat("SlimeHP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
@@ -977,6 +978,7 @@ namespace RoguelikeEngine
             }
             else
             {
+                attack.ExtraEffects.Add(new AttackWeapon(attacker.EquipMainhand));
                 foreach (var element in attacker.GetElements())
                 {
                     attack.Elements.Add(element.Key, element.Value);
