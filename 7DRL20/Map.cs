@@ -124,7 +124,7 @@ namespace RoguelikeEngine
 
         public T GetCloud<T>() where T : Cloud
         {
-            return (T)Clouds.Find(x => x.GetType() == typeof(T));
+            return (T)Clouds.Find(x => !x.Destroyed && x.GetType() == typeof(T));
         }
 
         public T AddCloud<T>(Func<Map, T> constructor) where T : Cloud

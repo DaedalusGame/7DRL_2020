@@ -105,6 +105,16 @@ namespace RoguelikeEngine
             return false;
         }
 
+        protected bool InFrontier(Creature user, Func<Creature, bool> filter)
+        {
+            foreach (var frontier in user.Mask.GetFullFrontier().Select(p => user.Tile.GetNeighbor(p.X, p.Y)))
+            {
+                if (frontier.Creatures.Any(filter))
+                    return true;
+            }
+            return false;
+        }
+
         protected bool InLineOfSight(Creature user, Creature target, int distance)
         {
             return InLineOfSight(user, target, user.Facing, distance);

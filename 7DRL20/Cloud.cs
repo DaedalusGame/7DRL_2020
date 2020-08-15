@@ -257,6 +257,87 @@ namespace RoguelikeEngine
         }
     }
 
+    class WeatherRain : Cloud
+    {
+        int Ticks;
+        public int Duration;
+
+        public WeatherRain(Map map) : base(map)
+        {
+        }
+
+        public override void Update()
+        {
+            Ticks++;
+
+            for (int i = 0; i < 3; i++)
+            {
+                Vector2 impact = World.GetScreenPosition(Random.NextFloat(), Random.NextFloat());
+                Tile tile = Map.GetTile((int)(impact.X / 16),(int)(impact.Y / 16));
+                if(!tile.Solid)
+                    new RainDrop(World, impact, Random.Next(20, 100));
+            }
+
+            base.Update();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            foreach (Creature creature in Map.Creatures)
+            {
+                creature.AddStatusEffect(new Wet()
+                {
+                    Buildup = 1.0,
+                    Duration = new Slider(10),
+                });
+            }
+
+            Duration--;
+            if (Duration <= 0)
+                this.Destroy();
+
+            return base.NormalTurn(turn);
+        }
+    }
+
+    class CloudPoisonSmoke : Cloud
+    {
+        int Ticks;
+
+        public CloudPoisonSmoke(Map map) : base(map)
+        {
+            Name = "Poison Smoke Cloud";
+            Description = "Poisonous smoke.";
+        }
+
+        public override void Update()
+        {
+            SpriteReference smoke = SpriteLoader.Instance.AddSprite("content/cloud_big");
+
+            Ticks++;
+
+            foreach (var part in Parts)
+            {
+                if ((part.GetHashCode() + Ticks) % 7 == 0)
+                {
+                    Vector2 pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new SmokeSmall(World, smoke, pos, Vector2.Zero, new Color(185, 13, 242), 24);
+                }
+            }
+            base.Update();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            Drift(0, 1, Parts.Count / 2);
+            Drift(0, -1, Parts.Count / 2);
+            Drift(1, 0, Parts.Count / 2);
+            Drift(-1, 0, Parts.Count / 2);
+
+            return base.NormalTurn(turn);
+        }
+    }
+
     class CloudIce : Cloud
     {
         int Ticks;

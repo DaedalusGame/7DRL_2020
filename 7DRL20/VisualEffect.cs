@@ -666,6 +666,99 @@ namespace RoguelikeEngine
         }
     }
 
+    class Cutter : Particle
+    {
+        Func<Vector2> Anchor;
+        float Scale;
+        float Angle;
+        float SpeedStart, SpeedEnd;
+        LerpHelper.Delegate SpeedLerp;
+        Color Color;
+
+        public override Vector2 Position
+        {
+            get
+            {
+                return Anchor();
+            }
+            set
+            {
+                //NOOP
+            }
+        }
+
+        public Cutter(SceneGame world, Func<Vector2> anchor, float speedStart, float speedEnd, LerpHelper.Delegate speedLerp, float scale, float angle, Color color, int time) : base(world, Vector2.Zero)
+        {
+            Anchor = anchor;
+            SpeedStart = speedStart;
+            SpeedEnd = speedEnd;
+            SpeedLerp = speedLerp;
+            Color = color;
+            Scale = scale;
+            Angle = angle;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            Angle += (float)SpeedLerp(SpeedStart, SpeedEnd, Frame.Slide);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            var cutter = SpriteLoader.Instance.AddSprite("content/cutter");
+
+            scene.DrawSpriteExt(cutter, scene.AnimationFrame(cutter, Frame.Time - (Frame.EndTime - 4), 4), Position - cutter.Middle, cutter.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class RainDrop : Particle
+    {
+        int Distance;
+
+        public RainDrop(SceneGame world, Vector2 position, int distance) : base(world, position)
+        {
+            Frame = new Slider(8);
+            Distance = distance;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            var rain = SpriteLoader.Instance.AddSprite("content/rain");
+
+            float impactLength = 4;
+            float moveLength = Frame.EndTime - impactLength;
+
+            float moveSlide = 1 - MathHelper.Clamp(Frame.Time / moveLength, 0, 1);
+            Vector2 offset = new Vector2(1,-4) * Distance * moveSlide;
+
+            var middle = new Vector2(rain.Width / 2, 28);
+
+            scene.DrawSpriteExt(rain, scene.AnimationFrame(rain, Frame.Time - moveLength, impactLength), Position + offset - middle, middle, 0, SpriteEffects.None, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
     class SmokeSmall : Particle
     {
         SpriteReference Sprite;
@@ -714,11 +807,6 @@ namespace RoguelikeEngine
         {
             yield return DrawPass.EffectAdditive;
         }
-    }
-
-    class SmokeBlizzard
-    {
-
     }
 
     class SmokeWave : Particle

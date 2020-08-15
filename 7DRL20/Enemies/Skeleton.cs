@@ -34,6 +34,7 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillAttack());
+            Skills.Add(new SkillSpinSlash());
         }
     }
 

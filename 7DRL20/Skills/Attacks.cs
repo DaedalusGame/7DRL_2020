@@ -54,7 +54,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillMudTouch : SkillAttackBase
     {
-        public SkillMudTouch() : base("Attack", "Mud Touch", 0, 0, float.PositiveInfinity)
+        public SkillMudTouch() : base("Mud Touch", "Attack", 0, 0, float.PositiveInfinity)
         {
         }
 
@@ -70,7 +70,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillDrainTouch : SkillAttackBase
     {
-        public SkillDrainTouch() : base("Attack", "Drain Touch", 0, 3, float.PositiveInfinity)
+        public SkillDrainTouch() : base("Drain Touch", "Attack", 0, 3, float.PositiveInfinity)
         {
         }
 
@@ -84,9 +84,25 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillLightningClaw : SkillAttackBase
+    {
+        public SkillLightningClaw() : base("Lightning Claw", "Attack", 0, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Slash, 0.5);
+            attack.Elements.Add(Element.Thunder, 0.5);
+            return attack;
+        }
+    }
+
     class SkillAcidTouch : SkillAttackBase
     {
-        public SkillAcidTouch() : base("Attack", "Acid Touch", 0, 1, float.PositiveInfinity)
+        public SkillAcidTouch() : base("Acid Touch", "Attack", 0, 1, float.PositiveInfinity)
         {
         }
 
@@ -106,7 +122,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillPoisonTouch : SkillAttackBase
     {
-        public SkillPoisonTouch() : base("Attack", "Poison Touch", 0, 1, float.PositiveInfinity)
+        public SkillPoisonTouch() : base("Poison Touch", "Attack", 0, 1, float.PositiveInfinity)
         {
         }
 
@@ -126,7 +142,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillSlimeTouch : SkillAttackBase
     {
-        public SkillSlimeTouch() : base("Attack", "Slime Touch", 0, 1, float.PositiveInfinity)
+        public SkillSlimeTouch() : base("Slime Touch", "Attack", 0, 1, float.PositiveInfinity)
         {
         }
 
@@ -459,6 +475,255 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    abstract class SkillSpinBase : Skill
+    {
+        public int Rotations = 1;
+        public int RotationTime = 3;
+
+        public SkillSpinBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InFrontier(user, user.IsHostile);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+
+            Facing visualFacing = user.Facing;
+            user.VisualPose = user.Static(CreaturePose.Attack);
+            user.VisualFacing = () => visualFacing;
+
+            List<Wait> waits = new List<Wait>();
+            HashSet<Creature> targets = new HashSet<Creature>();
+            for (int i = 0; i < Rotations; i++)
+            {
+                CreateVisual(user);
+                visualFacing = visualFacing.TurnLeft();
+                yield return new WaitTime(RotationTime);
+                visualFacing = visualFacing.TurnLeft();
+                yield return new WaitTime(RotationTime);
+                visualFacing = visualFacing.TurnLeft();
+                yield return new WaitTime(RotationTime);
+                visualFacing = visualFacing.TurnLeft();
+                yield return new WaitTime(RotationTime);
+                waits.Add(Scheduler.Instance.RunAndWait(RoutineDamage(user, targets, i)));
+            }
+
+            user.VisualPose = user.Static(CreaturePose.Stand);
+            user.VisualFacing = () => user.Facing;
+
+            yield return new WaitAll(waits);
+        }
+
+        public abstract IEnumerable<Wait> RoutineDamage(Creature user, HashSet<Creature> targets, int n);
+
+        public IEnumerable<Wait> RoutineDamageSurrounding(Creature user, HashSet<Creature> targets, bool multihit, Func<Creature, IEffectHolder, Attack> attack)
+        {
+            List<Wait> waits = new List<Wait>();
+            foreach (var tile in user.Mask.GetFullFrontier().Select(o => user.Tile.GetNeighbor(o.X, o.Y)))
+            {
+                foreach (var target in tile.Creatures)
+                {
+                    if (multihit || !targets.Contains(target))
+                    {
+                        user.Attack(target, 0, 0, attack);
+                    }
+                    targets.Add(target);
+                    waits.Add(target.CurrentAction);
+                }
+            }
+            yield return new WaitAll(waits);
+        }
+
+        public abstract void CreateVisual(Creature user);
+
+        public void CreateWhirl(Creature user, float size, Color colorA, Color colorB)
+        {
+            int totaltime = RotationTime * 4;
+            new Cutter(user.World, () => user.VisualTarget, -MathHelper.TwoPi / totaltime, -(MathHelper.TwoPi / totaltime) * 0.5f, LerpHelper.Linear, size, Random.NextFloat() * MathHelper.TwoPi, colorA, totaltime + Random.Next(4));
+            new Cutter(user.World, () => user.VisualTarget, -MathHelper.TwoPi / totaltime, -(MathHelper.TwoPi / totaltime) * 0.5f, LerpHelper.Linear, size * 0.80f, Random.NextFloat() * MathHelper.TwoPi, Color.Lerp(colorA, colorB, 0.5f), totaltime + Random.Next(4));
+            new Cutter(user.World, () => user.VisualTarget, -MathHelper.TwoPi / totaltime, -(MathHelper.TwoPi / totaltime) * 0.5f, LerpHelper.Linear, size * 0.60f, Random.NextFloat() * MathHelper.TwoPi, colorB, totaltime + Random.Next(4));
+        }
+    }
+
+    class SkillSpinSlash : SkillSpinBase
+    {
+        public SkillSpinSlash() : base("Spin Slash", "Attacks all surrounding enemies.", 0, 0, float.PositiveInfinity)
+        {
+            Rotations = 1;
+            RotationTime = 3;
+        }
+
+        public override void CreateVisual(Creature user)
+        {
+            CreateWhirl(user, 1.0f, Color.White, Color.Gray);
+        }
+
+        public override IEnumerable<Wait> RoutineDamage(Creature user, HashSet<Creature> targets, int n)
+        {
+            return RoutineDamageSurrounding(user, targets, false, SpinAttack);
+        }
+
+        protected Attack SpinAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Slash, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillWildSpin : SkillSpinBase
+    {
+        public SkillWildSpin() : base("Wild Spin", "Attacks all surrounding enemies two times.", 0, 5, float.PositiveInfinity)
+        {
+            Rotations = 2;
+            RotationTime = 4;
+        }
+
+        public override void CreateVisual(Creature user)
+        {
+            CreateWhirl(user, 1.0f, Color.White, Color.Gray);
+        }
+
+        public override IEnumerable<Wait> RoutineDamage(Creature user, HashSet<Creature> targets, int n)
+        {
+            return RoutineDamageSurrounding(user, targets, true, SpinAttack);
+        }
+
+        protected Attack SpinAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
+
+    abstract class SkillStompBase : Skill
+    {
+        public SkillStompBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            user.VisualPosition = user.SlideJump(user.VisualPosition(), new Vector2(user.X, user.Y) * 16, 16, LerpHelper.Linear, 20);
+            yield return user.WaitSome(20);
+            yield return Scheduler.Instance.RunAndWait(RoutineImpact(user));
+        }
+
+        public abstract IEnumerable<Wait> RoutineImpact(Creature user);
+    }
+
+    class SkillPuddleStomp : SkillStompBase
+    {
+        struct AttackTile
+        {
+            public Tile Tile;
+            public Func<Creature,IEffectHolder,Attack> Attack;
+
+            public AttackTile(Tile tile, Func<Creature, IEffectHolder, Attack> attack)
+            {
+                Tile = tile;
+                Attack = attack;
+            }
+        }
+
+        public SkillPuddleStomp() : base("Puddle Stomp", "Stomp ground and affect nearby enemies with ground effects.", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InFrontier(user, user.IsHostile) && user.Tiles.Any(tile => GetAttack(user,tile) != null);
+        }
+
+        public override IEnumerable<Wait> RoutineImpact(Creature user)
+        {
+            new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
+            new SeismArea(user.World, user.Tiles, 10);
+            HashSet<Tile> affectedTiles = new HashSet<Tile>();
+            List<AttackTile> attackTiles = new List<AttackTile>();
+            foreach(var tile in user.Tiles)
+            {
+                Func<Creature, IEffectHolder, Attack> attack = GetAttack(user, tile);
+                if (attack != null)
+                {
+                    attackTiles.AddRange(tile.GetAllNeighbors().Select(target => new AttackTile(target, attack)));
+                    affectedTiles.AddRange(tile.GetAllNeighbors());
+                }
+            }
+            affectedTiles.RemoveRange(user.Tiles);
+
+            List<Wait> waits = new List<Wait>();
+            foreach(var attackTile in attackTiles)
+            {
+                if (!affectedTiles.Contains(attackTile.Tile))
+                    continue;
+                foreach(var target in attackTile.Tile.Creatures)
+                {
+                    user.Attack(target, 0, 0, attackTile.Attack);
+                    waits.Add(target.CurrentAction);
+                }
+            }
+            yield return new WaitAll(waits);
+        }
+
+        private Func<Creature, IEffectHolder, Attack> GetAttack(Creature user, Tile tile)
+        {
+            if(tile is Water)
+            {
+                return WaterAttack;
+            }
+            if(tile is Lava)
+            {
+                return LavaAttack;
+            }
+
+            return null;
+        }
+
+        private Attack WaterAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(25, 1, 1);
+            attack.Elements.Add(Element.Water, 1.0);
+            attack.StatusEffects.Add(new Wet()
+            {
+                Duration = new Slider(10),
+                Buildup = 1,
+            });
+            return attack;
+        }
+
+        private Attack LavaAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(50, 1, 1);
+            attack.Elements.Add(Element.Fire, 1.0);
+            return attack;
+        }
+    }
+
     /*class SkillCannon : Skill
     {
         public SkillCannon() : base("Cannon", "Ranged Fire Attack", 2, 3, float.PositiveInfinity)
@@ -508,6 +773,8 @@ namespace RoguelikeEngine.Skills
 
     class SkillLightning : Skill
     {
+        public int Bolts = 1;
+
         public SkillLightning() : base("Lightning", "Ranged Thunder Attack", 2, 5, float.PositiveInfinity)
         {
         }
@@ -529,17 +796,39 @@ namespace RoguelikeEngine.Skills
             yield return user.WaitSome(50);
 
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
-            var nearbyTiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X,user.Y),6).Where(tile => tile != user.Tile).Shuffle(Random);
+            List<Wait> waits = new List<Wait>();
+            HashSet<Creature> targets = new HashSet<Creature>();
+            for(int i = 0; i < Bolts; i++)
+            {
+                waits.Add(Scheduler.Instance.RunAndWait(RoutineThunder(user, targets)));
+                yield return new WaitTime(5);
+            }
+            yield return new WaitAll(waits);
+        }
+
+        private int GetDistance(Rectangle a, Rectangle b)
+        {
+            int dx = Util.GetDeltaX(a, b);
+            int dy = Util.GetDeltaY(a, b);
+
+            return Math.Max(Math.Abs(dx), Math.Abs(dy));
+        }
+
+        private IEnumerable<Wait> RoutineThunder(Creature user, HashSet<Creature> targets)
+        {
+            Rectangle userMask = user.Mask.GetRectangle(user.X, user.Y);
+            var nearbyTiles = user.Tile.GetNearby(userMask, 6).Where(tile => GetDistance(new Rectangle(tile.X, tile.Y, 1, 1), userMask) > 0).Shuffle(Random);
             Tile shootTile = null;
             var trigger = Random.NextDouble();
-            var nearbyTarget = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => user.IsHostile(c)));
-            var nearbyDragon = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => c is BlueDragon));
+            var nearbyTarget = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => !targets.Contains(c) && user.IsHostile(c)));
+            var nearbyDragon = nearbyTiles.FirstOrDefault(tile => tile.Creatures.Any(c => !targets.Contains(c) && c is BlueDragon));
             if (trigger < 0.5 && nearbyTarget != null)
                 shootTile = nearbyTarget;
             if (shootTile == null && nearbyDragon != null)
                 shootTile = nearbyDragon;
             if (shootTile == null)
                 shootTile = nearbyTiles.First();
+            targets.AddRange(shootTile.Creatures);
             new Lightning(user.World, user.VisualTarget, shootTile.VisualTarget, 10, 10);
             yield return user.WaitSome(20);
 
@@ -549,7 +838,6 @@ namespace RoguelikeEngine.Skills
                 yield return chainTarget.CurrentAction;
                 break;
             }
-            yield return user.WaitSome(20);
         }
 
         private static Attack ThunderAttack(Creature user, IEffectHolder target)
@@ -557,6 +845,44 @@ namespace RoguelikeEngine.Skills
             Attack attack = new Attack(user, target);
             attack.Elements.Add(Element.Thunder, 1.0);
             return attack;
+        }
+    }
+
+    class SkillLightningDance : SkillLightning
+    {
+        public SkillLightningDance()
+        {
+            Name = "Lightning Dance";
+            Description = "5 Ranged Thunder Attacks. Does not strike targets twice.";
+            Bolts = 5;
+        }
+    }
+
+    class SkillRainDance : Skill
+    {
+        public SkillRainDance() : base("Rain Dance", "Starts a rainstorm for 20 turns.", 5, 35, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 6);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            var rain = user.Map.AddCloud(map => new WeatherRain(map));
+            rain.Duration = Math.Max(20, rain.Duration);
+            yield return user.WaitSome(20);
         }
     }
 

@@ -2,6 +2,7 @@
 using RoguelikeEngine.Attacks;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Skills;
+using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,22 +23,57 @@ namespace RoguelikeEngine.Enemies
             Render = new BigCreatureRender()
             {
                 Sprite = SpriteLoader.Instance.AddSprite("content/gashwal"),
-                Color = ColorMatrix.TwoColor(new Color(69, 56, 37), new Color(223, 213, 198)),
             };
             Mask.Add(new Point(0, 0));
             Mask.Add(new Point(0, 1));
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 50));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.Apply(new EffectStat(this, Stat.HP, 900));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 50));
 
             Effect.Apply(new EffectFamily(this, Family.Boss));
 
-            Skills.Add(new SkillDrainTouch());
-            Skills.Add(new SkillLightning());
-            //Skills.Add(new SkillDrainTouch());
-            //Skills.Add(new SkillAttack());
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillWildSpin());
+            Skills.Add(new SkillPuddleStomp());
+            Skills.Add(new SkillRainDance());
+            Skills.Add(new SkillPrance(3, 5));
+        }
+    }
+
+    class GashwalHairy : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public GashwalHairy(SceneGame world) : base(world)
+        {
+            Name = "Hairy Gashwal";
+            Description = "Disco Inferno";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/hairy_gashwal"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 1200));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 50));
+
+            Effect.Apply(new EffectFamily(this, Family.Boss));
+
+            Effect.Apply(new EffectTrait(this, Trait.Sparking));
+
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillLightningClaw());
+            Skills.Add(new SkillWildSpin());
+            Skills.Add(new SkillPuddleStomp());
+            Skills.Add(new SkillLightningDance());
+            Skills.Add(new SkillRainDance());
+            Skills.Add(new SkillPrance(3, 5));
         }
     }
 

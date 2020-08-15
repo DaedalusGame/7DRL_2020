@@ -146,6 +146,38 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillPrance : SkillJumpBase
+    {
+        int Distance;
+        int JumpDistance;
+
+        public SkillPrance(int distance, int jumpDistance) : base("Prance", "Move to tile aligned with enemy", 2, 3, float.PositiveInfinity)
+        {
+            InstantUses = new Slider(3);
+            Distance = distance;
+            JumpDistance = jumpDistance;
+        }
+
+        protected override IEnumerable<TileDirection> GetPossibleTiles(Creature user, Creature target)
+        {
+            if (target == null || target.Tile == null)
+                return Enumerable.Empty<TileDirection>();
+
+            Rectangle userRectangle = user.Mask.GetRectangle();
+            Rectangle targetRectangle = target.Mask.GetRectangle();
+
+            return GetAlignedTiles(target.Tile, userRectangle, targetRectangle, Distance)
+                .Where(tile => GetSquareDistance(tile.Tile, user.Tile) < JumpDistance * JumpDistance)
+                .Where(tile => CanLand(user, tile.Tile))
+                .Shuffle(Random);
+        }
+
+        protected override void Land(Creature user)
+        {
+            new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
+        }
+    }
+
     class SkillDive : Skill
     {
         public override bool Hidden(Creature user) => true;

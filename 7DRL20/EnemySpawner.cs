@@ -63,15 +63,42 @@ namespace RoguelikeEngine
             {
                 var boss = new EnderErebizo(World);
                 boss.MoveTo(tile, 0);
-                //boss.MakeAggressive(World.Player);
                 boss.AddControlTurn();
                 return new[] { boss };
             })
-            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.1)
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.01)
             .SetTile(tile => tile.Opaque, tile => {
                 var rectangle = new Rectangle(tile.X, tile.Y, 2, 2);
                 var checkTiles = tile.GetNearby(rectangle, 0);
                 return checkTiles.All(t => t.Opaque);
+            }));
+
+            BossDatabase.Add(new BossData(this, (tile) =>
+            {
+                var boss = new Gashwal(World);
+                boss.MoveTo(tile, 0);
+                boss.AddControlTurn();
+                return new[] { boss };
+            })
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.2)
+            .SetTile(tile => !tile.Solid, tile => {
+                var rectangle = new Rectangle(tile.X, tile.Y, 2, 2);
+                var checkTiles = tile.GetNearby(rectangle, 0);
+                return checkTiles.All(t => !t.Solid && t.Creatures.Empty());
+            }));
+
+            BossDatabase.Add(new BossData(this, (tile) =>
+            {
+                var boss = new GashwalHairy(World);
+                boss.MoveTo(tile, 0);
+                boss.AddControlTurn();
+                return new[] { boss };
+            })
+            .SetSlowChance(data => data.AliveBosses.Count < 2, 0.2)
+            .SetTile(tile => !tile.Solid, tile => {
+                var rectangle = new Rectangle(tile.X, tile.Y, 2, 2);
+                var checkTiles = tile.GetNearby(rectangle, 0);
+                return checkTiles.All(t => !t.Solid && t.Creatures.Empty());
             }));
 
             BossDatabase.Add(new BossData(this, (tile) =>
@@ -82,12 +109,11 @@ namespace RoguelikeEngine
                 new TileExplosion(World, tileSet);
                 var boss = new Wallhach(World);
                 boss.MoveTo(tile, 0);
-                //boss.MakeAggressive(World.Player);
                 boss.AddControlTurn();
                 return new[] { boss };
             })
             .SetSlowChance(data => data.AliveBosses.Count < 2, 0.1)
-            .SetTile(tile => !tile.Opaque && tile.Creatures.Empty()));
+            .SetTile(tile => !tile.Opaque && !tile.Solid && tile.Creatures.Empty()));
         }
 
         protected int GetSquareDistance(Tile a, Tile b)

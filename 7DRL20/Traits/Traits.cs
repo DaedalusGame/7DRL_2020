@@ -54,6 +54,7 @@ namespace RoguelikeEngine.Traits
         public static Trait SludgeArmor = new TraitSludgeArmor();
         public static Trait Slaughtering = new TraitSlaughtering();
         public static Trait LifeSteal = new TraitLifeSteal();
+        public static Trait Sparking = new TraitSparking();
 
         public static Trait Undead = new TraitUndead();
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
@@ -633,6 +634,54 @@ namespace RoguelikeEngine.Traits
         {
             Effect.Apply(new EffectFamily(this, Family.Undead));
             Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
+        }
+    }
+
+    class TraitSparking : Trait
+    {
+        Random Random = new Random();
+
+        public TraitSparking() : base("Sparking", "Spark to adjacent tiles, dealing Thunder damage.", new Color(128, 112, 128))
+        {
+            Effect.Apply(new OnAttack(this, Spark));
+        }
+
+        public IEnumerable<Wait> Spark(Attack attack)
+        {
+            int traitLvl = attack.Attacker.GetTrait(this);
+
+            if (attack.Defender is Creature targetCreature && attack.ReactionLevel == 0)
+            {
+                var lightning = SpriteLoader.Instance.AddSprite("content/lightning");
+                HashSet<Tile> targetTiles = new HashSet<Tile>();
+                HashSet<Creature> targets = new HashSet<Creature>();
+                targetTiles.AddRange(attack.Attacker.Mask.GetFullFrontier().Select(o => attack.Attacker.Tile.GetNeighbor(o.X, o.Y)));
+                targetTiles.RemoveRange(attack.Attacker.Tiles);
+                yield return attack.Attacker.WaitSome(10);
+                foreach (Tile tile in targetTiles)
+                {
+                    targets.AddRange(tile.Creatures.Where(creature => creature != attack.Attacker));
+                }
+                List<Wait> waitForDamage = new List<Wait>();
+                foreach (var target in targets)
+                {
+                    double sparkDamage = traitLvl * 20;
+                    new LightningSpark(attack.Attacker.World, lightning, attack.Attacker.VisualPosition() + attack.Attacker.Mask.GetRandomPixel(Random), target.VisualPosition() + target.Mask.GetRandomPixel(Random), 5);
+                    attack.Attacker.Attack(target, 0, 0, (a, b) => SparkAttack(a, b, sparkDamage));
+                    waitForDamage.Add(target.CurrentAction);
+                }
+                yield return new WaitAll(waitForDamage);
+            }
+            yield return Wait.NoWait;
+        }
+
+        private Attack SparkAttack(Creature attacker, IEffectHolder defender, double force)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(force, 0, 1);
+            attack.Elements.Add(Element.Thunder, 1.0);
+            attack.ReactionLevel = 1;
+            return attack;
         }
     }
 }

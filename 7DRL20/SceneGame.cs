@@ -281,25 +281,25 @@ namespace RoguelikeEngine
             CameraMap = MapHome;
             CameraFocus = new CameraFocus(Player);
 
-            Player.Pickup(new Ingot(this, Material.Bone, 8));
-            Player.Pickup(new Ingot(this, Material.Dilithium, 8));
-            Player.Pickup(new Ingot(this, Material.Tiberium, 8));
-            Player.Pickup(new Ingot(this, Material.Basalt, 8));
-            Player.Pickup(new Ingot(this, Material.Meteorite, 8));
-            Player.Pickup(new Ingot(this, Material.Obsidiorite, 8));
-            Player.Pickup(new Ingot(this, Material.Jauxum, 8));
-            Player.Pickup(new Ingot(this, Material.Karmesine, 8));
-            Player.Pickup(new Ingot(this, Material.Ovium, 8));
-            Player.Pickup(new Ingot(this, Material.Ardite, 8));
-            Player.Pickup(new Ingot(this, Material.Cobalt, 8));
-            Player.Pickup(new Ingot(this, Material.Manyullyn, 8));
-            Player.Pickup(new Ingot(this, Material.Terrax, 8));
-            Player.Pickup(new Ingot(this, Material.Triberium, 8));
-            Player.Pickup(new Ingot(this, Material.Aurorium, 8));
-            Player.Pickup(new Ingot(this, Material.Violium, 8));
-            Player.Pickup(new Ingot(this, Material.Astrium, 8));
-            Player.Pickup(new Ingot(this, Material.Ignitz, 8));
-            Player.Pickup(new Ingot(this, Material.Tritonite, 8));
+            Player.Pickup(new Ingot(this, Material.Bone, 80));
+            Player.Pickup(new Ingot(this, Material.Dilithium, 80));
+            Player.Pickup(new Ingot(this, Material.Tiberium, 80));
+            Player.Pickup(new Ingot(this, Material.Basalt, 80));
+            Player.Pickup(new Ingot(this, Material.Meteorite, 80));
+            Player.Pickup(new Ingot(this, Material.Obsidiorite, 80));
+            Player.Pickup(new Ingot(this, Material.Jauxum, 80));
+            Player.Pickup(new Ingot(this, Material.Karmesine, 80));
+            Player.Pickup(new Ingot(this, Material.Ovium, 80));
+            Player.Pickup(new Ingot(this, Material.Ardite, 80));
+            Player.Pickup(new Ingot(this, Material.Cobalt, 80));
+            Player.Pickup(new Ingot(this, Material.Manyullyn, 80));
+            Player.Pickup(new Ingot(this, Material.Terrax, 80));
+            Player.Pickup(new Ingot(this, Material.Triberium, 80));
+            Player.Pickup(new Ingot(this, Material.Aurorium, 80));
+            Player.Pickup(new Ingot(this, Material.Violium, 80));
+            Player.Pickup(new Ingot(this, Material.Astrium, 80));
+            Player.Pickup(new Ingot(this, Material.Ignitz, 80));
+            Player.Pickup(new Ingot(this, Material.Tritonite, 80));
 
             Quest getOre = new TutorialGetOre(this);
             Quest getFuel = new TutorialGetFuel(this, getOre);
@@ -719,6 +719,19 @@ namespace RoguelikeEngine
             var drawZone = Viewport.Bounds;
             drawZone.Inflate(32, 32);
             return drawZone;
+        }
+
+        public Vector2 GetScreenPosition(float xSlide, float ySlide)
+        {
+            Vector2 a = Camera - CameraSize / 2;
+            Vector2 b = Camera - CameraSize / 2 + new Vector2(CameraSize.X, 0);
+            Vector2 c = Camera - CameraSize / 2 + new Vector2(0, CameraSize.Y);
+            Vector2 d = Camera - CameraSize / 2 + new Vector2(CameraSize.X, CameraSize.Y);
+
+            Vector2 ab = Vector2.Lerp(a, b, xSlide);
+            Vector2 cd = Vector2.Lerp(c, d, xSlide);
+
+            return Vector2.Lerp(ab, cd, ySlide);
         }
 
         private IEnumerable<Tile> EnumerateCloseTiles(Map map, int drawX, int drawY, int drawRadius)
