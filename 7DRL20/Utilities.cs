@@ -521,8 +521,13 @@ namespace RoguelikeEngine
 
         public static SpriteReference GetSprite(this PartType[] parts, int index, Material material)
         {
+            return parts.GetSprite(index, material, "content/");
+        }
+
+        public static SpriteReference GetSprite(this PartType[] parts, int index, Material material, string prefix)
+        {
             PartType partType = parts[index];
-            return SpriteLoader.Instance.AddSprite(partType.SpritePrefix+material.Parts[partType].Sprite);
+            return SpriteLoader.Instance.AddSprite(prefix + partType.SpritePrefix + material.Parts[partType].Sprite);
         }
 
         public static Color RotateHue(this Color color, double amount)

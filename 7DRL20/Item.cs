@@ -418,6 +418,11 @@ namespace RoguelikeEngine
             return Parts.GetSprite(part, material);
         }
 
+        public SpriteReference GetPartSprite(int part, Material material, string prefix)
+        {
+            return Parts.GetSprite(part, material, prefix);
+        }
+
         public Material GetMaterial(int part)
         {
             return Materials[part];
@@ -511,9 +516,9 @@ namespace RoguelikeEngine
         public const int GUARD = 1;
         public const int HANDLE = 2;
 
-        public static PartType Blade = new PartType("Blade", "content/blade_", PartShape.Head, 1.0);
-        public static PartType Guard = new PartType("Guard", "content/blade_", PartShape.Extra, 0.5);
-        public static PartType Handle = new PartType("Handle", "content/blade_", PartShape.Handle, 0.5);
+        public static PartType Blade = new PartType("Blade", "blade_", PartShape.Head, 1.0);
+        public static PartType Guard = new PartType("Guard", "blade_", PartShape.Extra, 0.5);
+        public static PartType Handle = new PartType("Handle", "blade_", PartShape.Handle, 0.5);
 
         public static PartType[] Parts = new[] { Blade, Guard, Handle };
 
@@ -563,9 +568,9 @@ namespace RoguelikeEngine
         public const int BINDING = 1;
         public const int HANDLE = 2;
 
-        public static PartType Head = new PartType("Head", "content/adze_", PartShape.Head, 1.0);
-        public static PartType Binding = new PartType("Binding", "content/adze_", PartShape.Extra, 0.25);
-        public static PartType Handle = new PartType("Handle", "content/adze_", PartShape.Handle, 0.5);
+        public static PartType Head = new PartType("Head", "adze_", PartShape.Head, 1.0);
+        public static PartType Binding = new PartType("Binding", "adze_", PartShape.Extra, 0.25);
+        public static PartType Handle = new PartType("Handle", "adze_", PartShape.Handle, 0.5);
 
         public static PartType[] Parts = new[] { Head, Binding, Handle };
 
@@ -615,9 +620,9 @@ namespace RoguelikeEngine
         public const int COMPOSITE = 1;
         public const int TRIM = 2;
 
-        public static PartType Core = new PartType("Core", "content/plate_", PartShape.Head, 3.0);
-        public static PartType Composite = new PartType("Composite", "content/plate_", PartShape.Head, 1.0);
-        public static PartType Trim = new PartType("Trim", "content/plate_", PartShape.Extra, 0.25);
+        public static PartType Core = new PartType("Core", "plate_", PartShape.Head, 3.0);
+        public static PartType Composite = new PartType("Composite", "plate_", PartShape.Head, 1.0);
+        public static PartType Trim = new PartType("Trim", "plate_", PartShape.Extra, 0.25);
 
         public static PartType[] Parts = new[] { Core, Composite, Trim };
 
@@ -658,6 +663,110 @@ namespace RoguelikeEngine
             scene.PopSpriteBatch();
 
             DrawSymbol(scene, position);
+        }
+    }
+
+    class ToolArrow : ToolCore
+    {
+        public const int TIP = 0;
+        public const int LIMB = 1;
+        public const int FLETCHING = 2;
+
+        public static PartType Tip = new PartType("Tip", "arrow_", PartShape.Head, 0.5);
+        public static PartType Limb = new PartType("Limb", "arrow_", PartShape.Handle, 1.0);
+        public static PartType Fletching = new PartType("Fletching", "arrow_", PartShape.Extra, 0.5);
+
+        public static PartType[] Parts = new[] { Tip, Limb, Fletching };
+
+        protected override IEnumerable<EquipSlot> ValidSlots => new[] { EquipSlot.Quiver };
+
+        public ToolArrow(SceneGame world) : base(world, "Arrow", string.Empty, Parts)
+        {
+
+        }
+
+        public static ToolArrow Create(SceneGame world, Material tip, Material limb, Material fletching)
+        {
+            ToolArrow arrow = new ToolArrow(world);
+            arrow.SetMaterial(TIP, tip);
+            arrow.SetMaterial(LIMB, limb);
+            arrow.SetMaterial(FLETCHING, fletching);
+            return arrow;
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            Material tipMaterial = GetMaterial(TIP);
+            Material limbMaterial = GetMaterial(LIMB);
+            Material fletchingMaterial = GetMaterial(FLETCHING);
+
+            var tip = GetPartSprite(TIP, tipMaterial);
+            var limb = GetPartSprite(LIMB, limbMaterial);
+            var fletching = GetPartSprite(FLETCHING, fletchingMaterial);
+
+            PushMaterialBatch(scene, limbMaterial);
+            scene.DrawSprite(limb, 0, position - limb.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, tipMaterial);
+            scene.DrawSprite(tip, 0, position - tip.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, fletchingMaterial);
+            scene.DrawSprite(fletching, 0, position - fletching.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+
+            DrawSymbol(scene, position);
+        }
+
+        public void DrawBullet(SceneGame scene, Vector2 position, float angle)
+        {
+            Material tipMaterial = GetMaterial(TIP);
+            Material limbMaterial = GetMaterial(LIMB);
+            Material fletchingMaterial = GetMaterial(FLETCHING);
+
+            var tip = GetPartSprite(TIP, tipMaterial, "content/bullet_");
+            var limb = GetPartSprite(LIMB, limbMaterial, "content/bullet_");
+            var fletching = GetPartSprite(FLETCHING, fletchingMaterial, "content/bullet_");
+
+            PushMaterialBatch(scene, limbMaterial);
+            scene.DrawSpriteExt(limb, 0, position - limb.Middle, limb.Middle, angle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, tipMaterial);
+            scene.DrawSpriteExt(tip, 0, position - tip.Middle, tip.Middle, angle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+            PushMaterialBatch(scene, fletchingMaterial);
+            scene.DrawSpriteExt(fletching, 0, position - fletching.Middle, fletching.Middle, angle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+
+        internal bool CanCollide(Creature user, Tile tile)
+        {
+            return Skills.Projectile.CollideSolid(user, tile);
+        }
+
+        public IEnumerable<Wait> Impact(Creature user, Tile tile)
+        {
+            Point velocity = user.Facing.ToOffset();
+            List<Wait> waits = new List<Wait>();
+            foreach (Creature creature in tile.Creatures)
+            {
+                user.Attack(creature, velocity.X, velocity.Y, ArrowAttack);
+                waits.Add(creature.CurrentAction);
+            }
+            yield return new WaitAll(waits);
+        }
+
+        internal IEnumerable<Wait> Trail(Creature user, Tile tile)
+        {
+            return Skills.Projectile.NoTrail(user, tile);
+        }
+
+        public Attack ArrowAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(100, 0, 1);
+            attack.ExtraEffects.Add(new AttackWeapon(this));
+            attack.Elements.Add(Element.Pierce, 1.0);
+            return attack;
         }
     }
 }

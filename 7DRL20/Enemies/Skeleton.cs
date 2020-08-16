@@ -31,8 +31,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectTrait(this, Trait.Undead));
             Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
-            Skills.Add(new SkillDrainTouch());
-            Skills.Add(new SkillDrainTouch());
+            Skills.Add(new SkillDrainTouch2());
             Skills.Add(new SkillAttack());
         }
     }
@@ -82,8 +81,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectTrait(this, Trait.Undead));
             Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
-            Skills.Add(new SkillDrainTouch());
-            Skills.Add(new SkillDrainTouch());
+            Skills.Add(new SkillDrainTouch2());
             Skills.Add(new SkillAttack());
         }
     }

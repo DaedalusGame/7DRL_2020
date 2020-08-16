@@ -1356,6 +1356,22 @@ namespace RoguelikeEngine
         }
     }
 
+    class BulletArrow : BulletAngular
+    {
+        ToolArrow Arrow;
+
+        public BulletArrow(SceneGame world, ToolArrow arrow, Vector2 positionStart, ColorMatrix color, int time) : base(world, null, positionStart, color, time)
+        {
+            Arrow = arrow;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            float angle = Util.VectorToAngle(PositionEnd - PositionStart);
+            Arrow.DrawBullet(scene, Position, angle);
+        }
+    }
+
     class BulletTrail : BulletAngular
     {
         Color TrailColor;

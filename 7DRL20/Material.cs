@@ -113,6 +113,9 @@ namespace RoguelikeEngine
             { ToolPlate.Core, "layer1" },
             { ToolPlate.Composite, "layer2" },
             { ToolPlate.Trim, "layer3" },
+            { ToolArrow.Tip, "tip" },
+            { ToolArrow.Limb, "shaft" },
+            { ToolArrow.Fletching, "fletching" },
         };
 
         public ColorMatrix ColorTransform = ColorMatrix.Identity;

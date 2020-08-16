@@ -284,6 +284,12 @@ namespace RoguelikeEngine
                     TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)), true);
                     return;
                 }
+                if (state.IsKeyPressed(Keys.LeftControl))
+                {
+                    var offset = Player.Facing.ToOffset();
+                    TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineShootArrow(offset.X, offset.Y)), true);
+                    return;
+                }
             }
             if (state.IsKeyPressed(Keys.Enter))
             {
@@ -656,9 +662,13 @@ namespace RoguelikeEngine
             {
                 OpenBlueprintMenu("Adze", ToolAdze.Parts, (materials) => ToolAdze.Create(Scene, materials[0], materials[1], materials[2]));
             }));
-            BlueprintMenu.Add(new ActAction("Plate", "Plates can be worn as armor.", () =>
+            BlueprintMenu.Add(new ActAction("Plate", "Plates can be worn as armor or used as shields.", () =>
             {
                 OpenBlueprintMenu("Plate", ToolPlate.Parts, (materials) => ToolPlate.Create(Scene, materials[0], materials[1], materials[2]));
+            }));
+            BlueprintMenu.Add(new ActAction("Arrow", "Arrows can be fired at enemies.", () =>
+            {
+                OpenBlueprintMenu("Arrow", ToolArrow.Parts, (materials) => ToolArrow.Create(Scene, materials[0], materials[1], materials[2]));
             }));
             BlueprintMenu.AddDefault(new ActAction("Cancel", "Closes this menu.", () =>
             {

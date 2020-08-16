@@ -84,6 +84,14 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillDrainTouch2 : SkillDrainTouch
+    {
+        public SkillDrainTouch2()
+        {
+            InstantUses = new Slider(2);
+        }
+    }
+
     class SkillLightningClaw : SkillAttackBase
     {
         public SkillLightningClaw() : base("Lightning Claw", "Attack", 0, 3, float.PositiveInfinity)
@@ -163,10 +171,6 @@ namespace RoguelikeEngine.Skills
 
     abstract class SkillProjectileBase : Skill
     {
-        protected delegate IEnumerable<Wait> TrailDelegate(Creature user, Tile tile);
-        protected delegate bool CanCollideDelegate(Creature user, Tile tile);
-        protected delegate IEnumerable<Wait> ImpactDelegate(Creature user, Tile tile);
-
         public SkillProjectileBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
         {
         }
@@ -174,45 +178,6 @@ namespace RoguelikeEngine.Skills
         public override object GetEnemyTarget(Enemy user)
         {
             return user.Facing;
-        }
-
-        //TODO: Probably add projectile class so we can have stuff like mirror spells
-        protected IEnumerable<Wait> ShootStraight(Creature user, Tile tile, Point velocity, int time, int maxDistance, Bullet bullet, TrailDelegate trail, CanCollideDelegate canCollide, ImpactDelegate impact)
-        {
-            bullet?.Setup(tile.VisualTarget, time * maxDistance);
-            bool impacted = false;
-            List<Wait> waits = new List<Wait>();
-            for(int i = 0; i < maxDistance && !impacted; i++)
-            {
-                Tile nextTile = tile.GetNeighbor(velocity.X, velocity.Y);
-                impacted = canCollide(user, nextTile);
-                bullet?.Move(nextTile.VisualTarget, time);
-                if (impacted)
-                {
-                    if(time > 0)
-                        yield return user.WaitSome(time/2);
-                    bullet?.Destroy();
-                    waits.Add(Scheduler.Instance.RunAndWait(impact(user, nextTile)));
-                }
-                else
-                {
-                    if (time > 0)
-                        yield return user.WaitSome(time);
-                    waits.Add(Scheduler.Instance.RunAndWait(trail(user, nextTile)));
-                }
-                tile = nextTile;
-            }
-            yield return new WaitAll(waits);
-        }
-
-        protected IEnumerable<Wait> NoTrail(Creature user, Tile tile)
-        {
-            return Enumerable.Empty<Wait>();
-        }
-
-        protected bool CollideSolid(Creature user, Tile tile)
-        {
-            return tile.Solid || tile.Creatures.Any(x => x != user);
         }
     }
 
@@ -247,7 +212,8 @@ namespace RoguelikeEngine.Skills
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
             Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.TwoColor(new Color(129, 166, 0), new Color(237, 255, 106)), Color.Red, 0);
-            return ShootStraight(user, tile, velocity, 3, MaxDistance, bullet, NoTrail, CollideSolid, Impact);
+            Projectile projectile = new Projectile(bullet, Projectile.NoTrail, Projectile.CollideSolid, Impact);
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
             //new Color(225, 174, 210)
         }
 
@@ -302,7 +268,8 @@ namespace RoguelikeEngine.Skills
 
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
-            return ShootStraight(user, tile, velocity, 0, MaxDistance, null, NoTrail, CollideSolid, Impact);
+            Projectile projectile = new Projectile(null, Projectile.NoTrail, Projectile.CollideSolid, Impact);
+            return projectile.ShootStraight(user, tile, velocity, 0, MaxDistance);
             //new Color(225, 174, 210)
         }
 
@@ -357,7 +324,8 @@ namespace RoguelikeEngine.Skills
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
             Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.Tint(new Color(225, 174, 210)), Color.Black, 0);
-            return ShootStraight(user, tile, velocity, 3, 10, bullet, NoTrail, CollideSolid, Impact);
+            Projectile projectile = new Projectile(bullet, Projectile.NoTrail, Projectile.CollideSolid, Impact);
+            return projectile.ShootStraight(user, tile, velocity, 3, 10);
         }
 
         public IEnumerable<Wait> Impact(Creature user, Tile tile)

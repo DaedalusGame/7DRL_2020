@@ -631,6 +631,7 @@ namespace RoguelikeEngine
         public Item EquipMainhand => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Mainhand)?.Item;
         public Item EquipOffhand => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Offhand)?.Item;
         public Item EquipBody => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Body)?.Item;
+        public Item EquipQuiver => GetEffects<EffectItemEquipped>().FirstOrDefault(x => x.Slot == EquipSlot.Quiver)?.Item;
 
         public double TurnSpeed => 1;
         public double TurnBuildup { get; set; }
@@ -918,6 +919,27 @@ namespace RoguelikeEngine
             VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
             VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
             yield return new WaitFrames(this,10);
+            yield return new WaitAll(waitForDamage);
+            PopupManager.FinishCollect();
+        }
+
+        public IEnumerable<Wait> RoutineShootArrow(int dx, int dy)
+        {
+            yield return PopupManager.Wait;
+
+            List<Wait> waitForDamage = new List<Wait>();
+            PopupManager.StartCollect();
+            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+            Item quiver = EquipQuiver;
+            if(quiver is ToolArrow arrow)
+            {
+                Bullet bullet = new BulletArrow(World, arrow, Vector2.Zero, ColorMatrix.Identity, 0);
+                var projectile = new Skills.Projectile(bullet, arrow.Trail, arrow.CanCollide, arrow.Impact);
+                waitForDamage.Add(Scheduler.Instance.RunAndWait(projectile.ShootStraight(this, Tile, new Point(dx,dy), 3, 8)));
+            }
+            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
+            VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+            yield return new WaitFrames(this, 10);
             yield return new WaitAll(waitForDamage);
             PopupManager.FinishCollect();
         }
