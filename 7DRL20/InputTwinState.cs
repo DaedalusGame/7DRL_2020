@@ -168,5 +168,29 @@ namespace RoguelikeEngine
         {
             return Next.GamePad.IsButtonUp(button) && Previous.GamePad.IsButtonDown(button);
         }
+
+        public void AddText(ref string text)
+        {
+            StringBuilder builder = new StringBuilder(text);
+            foreach(var chr in Next.InputText)
+            {
+                switch(chr)
+                {
+                    case ('\b'): //Backspace
+                        if (builder.Length > 0)
+                        {
+                            builder.Remove(builder.Length - 1, 1);
+                        }
+                        break;
+                    case ('\t'): //Tab
+                    case ((char)27): //Escape
+                        break;
+                    default:
+                        builder.Append(chr);
+                        break;
+                }
+            }
+            text = builder.ToString();
+        }
     }
 }

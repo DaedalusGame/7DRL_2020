@@ -571,11 +571,12 @@ namespace RoguelikeEngine
                 int tokenWidth = getWidth(token);
                 if (tokenWidth > maxwidth)
                 {
-                    if (token is string s && s.Length > 1 && maxwidth > 0)
+                    if (token is string s && s.Length > 1 && maxwidth - width > 0)
                     {
                         var split = SplitWord(ref s, parameters.Copy(), maxwidth - width);
                         tokens.Push(s);
                         token = split;
+                        tokenWidth = getWidth(token);
                     }
                     else
                     {

@@ -62,9 +62,10 @@ namespace RoguelikeEngine
                 InputState next = new InputState(keyboard, mouse, gamepad, textBuffer.ToString());
                 twinState = new InputTwinState(previous, next, twinState);
                 twinState.HandleRepeats();
+                textBuffer.Clear();
                 yield return twinState;
                 previous = next;
-                textBuffer.Clear();
+               
             }
         }
 
@@ -245,6 +246,13 @@ namespace RoguelikeEngine
             }
 
             return convertedText.ToString();
+        }
+
+        public static string FormatBlinkingCursor(int tick, int frequency)
+        {
+            bool on = (tick % frequency) < (frequency / 2);
+            string format = !on ? $"{FormatColor(Color.Transparent)}{FormatBorder(Color.Transparent)}" : "";
+            return $"{format}_";
         }
 
         public static string FormatIcon(IEffectHolder effectHolder)

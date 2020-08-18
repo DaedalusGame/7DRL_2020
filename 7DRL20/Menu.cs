@@ -509,6 +509,43 @@ namespace RoguelikeEngine
                 }
             }
 
+            class RenameAction : ActAction
+            {
+                MenuCraftingSelection Menu;
+
+                public override string Name
+                {
+                    get
+                    {
+                        if (string.IsNullOrEmpty(Menu.Nickname))
+                            return "No Nickname";
+                        else
+                            return $"\"{Menu.Nickname}\"";
+                    }
+                    set
+                    {
+                        //NOOP
+                    }
+                }
+
+                public RenameAction(MenuCraftingSelection menu) : base(null, null, null, null)
+                {
+                    Menu = menu;
+                    Action = Select;
+                    Enabled = IsEnabled;
+                }
+
+                private void Select()
+                {
+                    Menu.NameInputMenu = new NameInput("Nickname", "Enter a nickname:", new Vector2(Menu.Scene.Viewport.Width / 2, Menu.Scene.Viewport.Height / 2), 200, Menu.Nickname);
+                }
+
+                private bool IsEnabled()
+                {
+                    return true;
+                }
+            }
+
             MenuAnvil MenuAnvil;
             Anvil Anvil => MenuAnvil.Anvil;
             SceneGame Scene => MenuAnvil.Scene;
@@ -525,10 +562,11 @@ namespace RoguelikeEngine
             public Func<Material[], ToolCore> Create;
             public Func<Material[], string> GetBaseName;
             public ToolCore Result;
-            public string Nickname;
+            public string Nickname = string.Empty;
 
             InventoryItemList ItemMenu;
             InfoBox InfoWindow;
+            NameInput NameInputMenu;
 
             public MenuCraftingSelection(MenuAnvil menuAnvil, Vector2 position, string blueprintName, PartType[] parts) : base(blueprintName, position, 256, 8)
             {
@@ -538,7 +576,8 @@ namespace RoguelikeEngine
                 InfoWindow = new InfoBox(() => "Preview", () => GetResultDescription(), new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
                 DefaultSelection = SelectionCount - 1;
 
-                for(int i = 0; i < parts.Length; i++)
+                Actions.Add(new RenameAction(this));
+                for (int i = 0; i < parts.Length; i++)
                 {
                     Actions.Add(new PartAction(this, i));
                 }
@@ -604,13 +643,30 @@ namespace RoguelikeEngine
                 if (ItemMenu != null)
                 {
                     ItemMenu.Update(scene);
-                }  
+                }
+                if (NameInputMenu != null)
+                {
+                    NameInputMenu.Update(scene);
+                }
             }
 
             public override void HandleInput(SceneGame scene)
             {
                 InfoWindow.HandleInput(scene);
-                if (ItemMenu != null)
+                if (NameInputMenu != null)
+                {
+                    NameInputMenu.HandleInput(scene);
+                    if (NameInputMenu.ShouldClose)
+                    {
+                        if(NameInputMenu.HasResult)
+                        {
+                            Nickname = NameInputMenu.NewString.Trim();
+                            Reset();
+                        }
+                        NameInputMenu = null;
+                    }
+                }
+                else if (ItemMenu != null)
                 {
                     ItemMenu.HandleInput(scene);
                     if (ItemMenu.ShouldClose)
@@ -630,6 +686,8 @@ namespace RoguelikeEngine
                     ItemMenu.PreDraw(scene);
                 if (InfoWindow != null)
                     InfoWindow.PreDraw(scene);
+                if (NameInputMenu != null)
+                    NameInputMenu.PreDraw(scene);
             }
 
             public override void Draw(SceneGame scene)
@@ -638,8 +696,9 @@ namespace RoguelikeEngine
 
                 if(ItemMenu != null)
                     ItemMenu.Draw(scene);
-               
                 InfoWindow.Draw(scene);
+                if (NameInputMenu != null)
+                    NameInputMenu.Draw(scene);
             }
 
             public override void DrawLine(SceneGame scene, Vector2 linePos, int e)
@@ -658,7 +717,7 @@ namespace RoguelikeEngine
                     Material material = ore?.Material;
                     if (material != null)
                     {
-                        var partSprite = PartTypes.GetSprite(e, material);
+                        var partSprite = PartTypes.GetSprite(partAction.PartIndex, material);
                         scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
                         {
                             scene.SetupColorMatrix(material.ColorTransform, matrix, projection);
@@ -688,7 +747,7 @@ namespace RoguelikeEngine
 
             private string GetNickname()
             {
-                if (Nickname != null)
+                if (!string.IsNullOrEmpty(Nickname))
                     return Nickname;
                 else
                     return GetBaseName(Parts.OfType<IOre>().Select(x => x.Material).ToArray());
@@ -1322,6 +1381,84 @@ namespace RoguelikeEngine
             }
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, middle - distExterior, scene.Viewport.Width, distDelta), Color.Red);
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(0, middle + distInterior, scene.Viewport.Width, distDelta), Color.Red);
+        }
+    }
+
+    class NameInput : Menu
+    {
+        string Name;
+        string Text;
+        string OldString;
+        public string NewString;
+        public bool HasResult => OldString != NewString.Trim();
+
+        public Vector2 Position;
+
+        public NameInput(string name, string text, Vector2 position, int width, string oldString)
+        {
+            OldString = oldString;
+            NewString = OldString;
+            Name = name;
+            Text = text;
+            Position = position;
+            Width = width;
+        }
+
+        public override int Height
+        {
+            get
+            {
+                return 16 * 3;
+            }
+            set
+            {
+                //NOOP
+            }
+        }
+
+        public override void HandleInput(SceneGame scene)
+        {
+            scene.InputState.AddText(ref NewString);
+            if (scene.InputState.IsKeyPressed(Keys.Enter))
+                Close();
+            if (scene.InputState.IsKeyPressed(Keys.Escape))
+            {
+                NewString = OldString;
+                Close();
+            }
+            base.HandleInput(scene);
+        }
+
+        public override bool IsMouseOver(int x, int y)
+        {
+            return new Rectangle((int)Position.X - Width / 2, (int)Position.Y - Height / 2, Width, Height).Contains(x, y);
+        }
+
+        public override void PreDraw(SceneGame scene)
+        {
+            base.PreDraw(scene);
+            scene.PushSpriteBatch(blendState: scene.NonPremultiplied, samplerState: SamplerState.PointWrap, projection: Projection);
+            scene.GraphicsDevice.Clear(Color.TransparentBlack);
+            scene.DrawText(Text, new Vector2(8, 4), Alignment.Left, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue));
+            scene.DrawText($"{NewString}{Game.FormatBlinkingCursor(Ticks,40)}", new Vector2(8, 4 + 16), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black).SetConstraints(Width - 16 - 16, int.MaxValue));
+            scene.PopSpriteBatch();
+        }
+
+        public override void Draw(SceneGame scene)
+        {
+            SpriteReference textbox = SpriteLoader.Instance.AddSprite("content/ui_box");
+            int x = (int)Position.X - Width / 2;
+            int y = (int)Position.Y - Height / 2;
+            float openCoeff = Math.Min(Ticks / 7f, 1f);
+            float openResize = MathHelper.Lerp(-0.5f, 0.0f, openCoeff);
+            Rectangle rect = new Rectangle(x, y, Width, Height);
+            rect.Inflate(rect.Width * openResize, rect.Height * openResize);
+            if (openCoeff > 0)
+                DrawLabelledUI(scene, textbox, rect, openCoeff >= 1 ? Name : string.Empty);
+            if (openCoeff >= 1)
+            {
+                scene.SpriteBatch.Draw(RenderTarget, new Rectangle(x, y, RenderTarget.Width, RenderTarget.Height), RenderTarget.Bounds, Color.White);
+            }
         }
     }
 
