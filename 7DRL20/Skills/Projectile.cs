@@ -61,7 +61,7 @@ namespace RoguelikeEngine.Skills
 
         public static bool CollideSolid(Creature user, Tile tile)
         {
-            return tile.Solid || tile.Creatures.Any(x => x != user);
+            return tile.Solid || tile.Creatures.Any(x => x != user && x.CurrentHP > 0);
         }
     }
 }

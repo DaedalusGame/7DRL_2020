@@ -277,6 +277,7 @@ namespace RoguelikeEngine
 
         public int ID;
         public string Name;
+        public bool Hidden;
         public double DefaultStat;
         public Symbol Symbol;
         public Func<Creature, double, string> Format = (creature, value) => value.ToString();
@@ -322,23 +323,25 @@ namespace RoguelikeEngine
         };
         public static Stat Attack = new Stat("Attack", 0, 1, SpriteLoader.Instance.AddSprite("content/stat_attack"));
         public static Stat Defense = new Stat("Defense", 0, 2, SpriteLoader.Instance.AddSprite("content/stat_defense"));
-        public static Stat AlchemyPower = new Stat("Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
-        public static Stat Speed = new Stat("Speed", 1, 8, SpriteLoader.Instance.AddSprite("content/stat_speed"));
-
         public static Stat DamageRate = new Stat("Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"))
         {
             Format = FormatRate,
         };
-
+        public static Stat AlchemyPower = new Stat("Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
         public static Stat MiningLevel = new Stat("Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
         public static Stat MiningSpeed = new Stat("Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
+        public static Stat Speed = new Stat("Speed", 1, 8, SpriteLoader.Instance.AddSprite("content/stat_speed"));
 
-        public static Stat Durability = new Stat("Durability", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_durability"));
+        public static Stat ArrowAttack = new Stat("Arrow Attack", 0, 10, SpriteLoader.Instance.AddSprite("content/stat_arrow_attack"));
+        public static Stat ArrowRange = new Stat("Arrow Range", 0, 11, SpriteLoader.Instance.AddSprite("content/stat_arrow_range"));
+        public static Stat ArrowVolley = new Stat("Arrow Volley", 1, 12, SpriteLoader.Instance.AddSprite("content/stat_arrow_volley"));
+
+        public static Stat Durability = new Stat("Durability", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_durability")) { Hidden = true };
         public static Stat Blood = new Stat("Blood", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_blood"));
 
-        public static Stat SlimeHP = new Stat("SlimeHP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
-        public static Stat SlimeAttack = new Stat("SlimeAttack", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_attack"));
-
+        public static Stat SlimeHP = new Stat("Slime HP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
+        public static Stat SlimeAttack = new Stat("Slime Attack", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_attack"));
+        
         public static Flag SwapItem = new Flag("Swap Item", true, SpriteLoader.Instance.AddSprite("content/stat_swap_enabled"));
         public static Flag EquipItem = new Flag("Equip Item", true, SpriteLoader.Instance.AddSprite("content/stat_equip_enabled"));
         public static Flag UnequipItem = new Flag("Unequip Item", true, SpriteLoader.Instance.AddSprite("content/stat_unequip_enabled"));
@@ -931,15 +934,17 @@ namespace RoguelikeEngine
             PopupManager.StartCollect();
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             Item quiver = EquipQuiver;
-            if(quiver is ToolArrow arrow)
+            if (quiver is ToolArrow arrow)
             {
-                Bullet bullet = new BulletArrow(World, arrow, Vector2.Zero, ColorMatrix.Identity, 0);
-                var projectile = new Skills.Projectile(bullet, arrow.Trail, arrow.CanCollide, arrow.Impact);
-                waitForDamage.Add(Scheduler.Instance.RunAndWait(projectile.ShootStraight(this, Tile, new Point(dx,dy), 3, 8)));
+                VisualPosition = Static(pos - new Vector2(dx * 8, dy * 8));
+                VisualPose = Static(CreaturePose.Attack);
+
+                yield return Scheduler.Instance.RunAndWait(arrow.RoutineShoot(this, dx, dy, waitForDamage));
+            
+                VisualPosition = Slide(pos - new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
+                VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+                yield return new WaitFrames(this, 10);
             }
-            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
-            VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
-            yield return new WaitFrames(this, 10);
             yield return new WaitAll(waitForDamage);
             PopupManager.FinishCollect();
         }
@@ -1001,7 +1006,7 @@ namespace RoguelikeEngine
             else
             {
                 attack.ExtraEffects.Add(new AttackWeapon(attacker.EquipMainhand));
-                foreach (var element in attacker.GetElements())
+                foreach (var element in attacker.EquipMainhand.GetElements())
                 {
                     attack.Elements.Add(element.Key, element.Value);
                 }

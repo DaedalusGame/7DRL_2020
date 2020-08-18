@@ -284,7 +284,7 @@ namespace RoguelikeEngine
                     TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineAttack(offset.X, offset.Y, Creature.MeleeAttack)), true);
                     return;
                 }
-                if (state.IsKeyPressed(Keys.LeftControl))
+                if (state.IsKeyPressed(Keys.LeftControl) && Player.EquipQuiver is ToolArrow arrow && arrow.Durability > 0)
                 {
                     var offset = Player.Facing.ToOffset();
                     TakeAction(Scheduler.Instance.RunAndWait(Player.RoutineShootArrow(offset.X, offset.Y)), true);
@@ -337,6 +337,7 @@ namespace RoguelikeEngine
             DrawSlot(scene, new Vector2(48, scene.Viewport.Height - 48), "Offhand", Player.EquipOffhand);
             DrawSlot(scene, new Vector2(96, scene.Viewport.Height - 64), "Body", Player.EquipBody);
             DrawSlot(scene, new Vector2(144, scene.Viewport.Height - 48), "Mainhand", Player.EquipMainhand);
+            DrawSlot(scene, new Vector2(48, scene.Viewport.Height - 48 - 48), "Quiver", Player.EquipQuiver);
 
             if (SubMenu != null)
             {
@@ -365,12 +366,29 @@ namespace RoguelikeEngine
             int y = (int)position.Y;
             SpriteReference uiSlot = SpriteLoader.Instance.AddSprite("content/ui_slot");
             scene.DrawUI(uiSlot, new Rectangle(x - 16, y - 16, 32, 32), Color.White);
-            scene.DrawText(Game.ConvertToSmallPixelText(name), position + new Vector2(0, 20-8), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black));
+            scene.DrawText(Game.ConvertToSmallPixelText(name), position + new Vector2(0, 20 - 8), Alignment.Center, new TextParameters().SetColor(Color.White, Color.Black));
             if (item != null)
             {
                 scene.PushSpriteBatch(transform: Matrix.CreateScale(2, 2, 1));
                 item.DrawIcon(scene, position / 2);
                 scene.PopSpriteBatch();
+            }
+            if (item is ToolCore tool)
+            {
+                Color color;
+                double ratio = tool.Durability / tool.DurabilityMax;
+                if (ratio >= 1)
+                    color = new Color(128, 255, 255);
+                else if (ratio >= 0.2)
+                    color = Color.White;
+                else if (ratio >= 0.1)
+                    color = Color.Orange;
+                else if (ratio > 0.0)
+                    color = Color.Red;
+                else
+                    color = Color.Gray;
+                string durability = tool.Durability.ToString();
+                scene.DrawText(Game.ConvertToSmallPixelText(durability), position + new Vector2(0, 0), Alignment.Center, new TextParameters().SetColor(color, Color.Black));
             }
         }
 
@@ -442,19 +460,72 @@ namespace RoguelikeEngine
     {
         class MenuCraftingSelection : MenuAct, IInventory
         {
+            class PartAction : ActAction
+            {
+                MenuCraftingSelection Menu;
+                public int PartIndex;
+
+                public override string Name
+                {
+                    get
+                    {
+                        IOre ore = Menu.Parts[PartIndex] as IOre;
+                        Material material = ore?.Material;
+                        return $"{material?.Name ?? "No"} {Menu.PartTypes.GetName(PartIndex)}";
+                    }
+                    set
+                    {
+                        //NOOP
+                    }
+                }
+                public override string Description
+                {
+                    get
+                    {
+                        return "";
+                    }
+                    set
+                    {
+                        //NOOP
+                    }
+                }
+
+                public PartAction(MenuCraftingSelection menu, int partIndex) : base(null, null, null, null)
+                {
+                    Menu = menu;
+                    PartIndex = partIndex;
+                    Action = Select;
+                    Enabled = IsEnabled;
+                }
+
+                private void Select()
+                {
+                    Menu.SelectPart(PartIndex);
+                }
+
+                private bool IsEnabled()
+                {
+                    return true;
+                }
+            }
+
             MenuAnvil MenuAnvil;
             Anvil Anvil => MenuAnvil.Anvil;
             SceneGame Scene => MenuAnvil.Scene;
 
-            public override int SelectionCount => Parts.Length + 2;
+            List<ActAction> Actions = new List<ActAction>();
+
+            public override int SelectionCount => Actions.Count;
+
             public Creature Holder => MenuAnvil.Holder;
            
             public Item[] Parts;
             public int CurrentPart;
             public PartType[] PartTypes;
             public Func<Material[], ToolCore> Create;
+            public Func<Material[], string> GetBaseName;
             public ToolCore Result;
-
+            public string Nickname;
 
             InventoryItemList ItemMenu;
             InfoBox InfoWindow;
@@ -466,6 +537,26 @@ namespace RoguelikeEngine
                 Parts = new Item[parts.Length];
                 InfoWindow = new InfoBox(() => "Preview", () => GetResultDescription(), new Vector2(Scene.Viewport.Width * 3 / 4, Scene.Viewport.Height / 2), 256, 20 * 16);
                 DefaultSelection = SelectionCount - 1;
+
+                for(int i = 0; i < parts.Length; i++)
+                {
+                    Actions.Add(new PartAction(this, i));
+                }
+                Actions.Add(new ActAction("Build", "", () => {
+                    Result.MoveTo(Anvil);
+                    foreach (var part in Parts)
+                        part.Destroy();
+                    Close();
+                }));
+                Actions.Add(new ActAction("Cancel", "", () => {
+                    foreach (Item item in Parts)
+                    {
+                        if (item != null)
+                            Holder.Pickup(item);
+                    }
+                    Close();
+                }));
+                DefaultSelection = Actions.Count - 1;
             }
 
             private string GetResultDescription()
@@ -493,6 +584,7 @@ namespace RoguelikeEngine
                 if (Parts.All(x => x is IOre))
                 {
                     Result = Create(Parts.OfType<IOre>().Select(x => x.Material).ToArray());
+                    Result.AddName(GetNickname());
                 }
             }
 
@@ -555,12 +647,16 @@ namespace RoguelikeEngine
                 SpriteReference cursor = SpriteLoader.Instance.AddSprite("content/cursor");
                 if (Selection == e)
                     scene.SpriteBatch.Draw(cursor.Texture, linePos, cursor.GetFrameRect(0), Color.White);
-                if(e < Parts.Length)
+                ActAction action = Actions[e];
+                Color color = Color.White;
+                int offset = 16;
+                if (!action.Enabled())
+                    color = Color.Gray;
+                if (action is PartAction partAction)
                 {
-                    IOre ore = Parts[e] as IOre;
+                    IOre ore = Parts[partAction.PartIndex] as IOre;
                     Material material = ore?.Material;
-                    string partName = $"{material?.Name ?? "No"} {PartTypes.GetName(e)}";
-                    if(material != null)
+                    if (material != null)
                     {
                         var partSprite = PartTypes.GetSprite(e, material);
                         scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
@@ -569,45 +665,46 @@ namespace RoguelikeEngine
                         });
                         scene.DrawSprite(partSprite, 0, linePos + new Vector2(16, 0), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
                         scene.PopSpriteBatch();
-                        
                     }
-                    scene.DrawText(partName, linePos + new Vector2(32, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 48, 16).SetBold(true).SetColor(Color.White, Color.Black));
+                    offset = 32;
                 }
-                else if (e == Parts.Length)
-                {
-                    scene.DrawText("Build", linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
-                }
-                else if (e == Parts.Length + 1)
-                {
-                    scene.DrawText("Cancel", linePos + new Vector2(16, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(Color.White, Color.Black));
-                }
-
+                scene.DrawText(action.Name, linePos + new Vector2(offset, 0), Alignment.Left, new TextParameters().SetConstraints(Width - 32, 16).SetBold(true).SetColor(color, Color.Black));
             }
 
             public override void Select(int selection)
             {
-                if (selection < Parts.Length)
+                if (Actions[selection].Enabled())
+                    Actions[selection].Action();
+            }
+
+            public void SelectPart(int part)
+            {
+                CurrentPart = part;
+                ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 3 / 4), 256, 8)
                 {
-                    CurrentPart = selection;
-                    ItemMenu = new InventoryItemList(this, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 3 / 4), 256, 8) {
-                        Filter = (item) => item is IOre ore && ore.CanUseInAnvil,
-                    };
-                }
-                else if(selection == Parts.Length)
+                    Filter = (item) => item is IOre ore && ore.CanUseInAnvil(PartTypes[CurrentPart]),
+                };
+            }
+
+            private string GetNickname()
+            {
+                if (Nickname != null)
+                    return Nickname;
+                else
+                    return GetBaseName(Parts.OfType<IOre>().Select(x => x.Material).ToArray());
+            }
+
+            public void PickEmptyPart()
+            {
+                for(int i = 0; i < Actions.Count; i++)
                 {
-                    Result.MoveTo(Anvil);
-                    foreach (var part in Parts)
-                        part.Destroy();
-                    Close();
-                }
-                else if(selection == Parts.Length+1)
-                {
-                    foreach(Item item in Parts)
+                    var action = Actions[i];
+                    if(action is PartAction partAction && Parts[partAction.PartIndex] == null)
                     {
-                        if(item != null)
-                            Holder.Pickup(item);
+                        Selection = i;
+                        CurrentPart = partAction.PartIndex;
+                        return;
                     }
-                    Close();
                 }
             }
 
@@ -629,11 +726,16 @@ namespace RoguelikeEngine
                     {
                         partMaterial = ingot.Split(1);
                     }
+                    if (item is OreItem oreItem)
+                    {
+                        partMaterial = oreItem.Split(1);
+                    } 
                     if (partMaterial != null)
                     {
                         Parts[CurrentPart] = partMaterial;
                         Anvil.Container.Add(partMaterial, false);
                     }
+                    PickEmptyPart();
                     Reset();
                 }
                 ItemMenu.Reset();
@@ -656,19 +758,19 @@ namespace RoguelikeEngine
             BlueprintMenu = new MenuTextSelection("Anvil", new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 1 / 4), 256, 8);
             BlueprintMenu.Add(new ActAction("Blade", "Blades do damage to enemies.", () =>
             {
-                OpenBlueprintMenu("Blade", ToolBlade.Parts, (materials) => ToolBlade.Create(Scene, materials[0], materials[1], materials[2]));
+                OpenBlueprintMenu("Blade", ToolBlade.Parts, (materials) => ToolBlade.Create(Scene, materials), ToolBlade.GetNickname);
             }));
             BlueprintMenu.Add(new ActAction("Adze", "Adzes can be used to mine blocks.", () =>
             {
-                OpenBlueprintMenu("Adze", ToolAdze.Parts, (materials) => ToolAdze.Create(Scene, materials[0], materials[1], materials[2]));
+                OpenBlueprintMenu("Adze", ToolAdze.Parts, (materials) => ToolAdze.Create(Scene, materials), ToolAdze.GetNickname);
             }));
             BlueprintMenu.Add(new ActAction("Plate", "Plates can be worn as armor or used as shields.", () =>
             {
-                OpenBlueprintMenu("Plate", ToolPlate.Parts, (materials) => ToolPlate.Create(Scene, materials[0], materials[1], materials[2]));
+                OpenBlueprintMenu("Plate", ToolPlate.Parts, (materials) => ToolPlate.Create(Scene, materials), ToolPlate.GetNickname);
             }));
             BlueprintMenu.Add(new ActAction("Arrow", "Arrows can be fired at enemies.", () =>
             {
-                OpenBlueprintMenu("Arrow", ToolArrow.Parts, (materials) => ToolArrow.Create(Scene, materials[0], materials[1], materials[2]));
+                OpenBlueprintMenu("Arrow", ToolArrow.Parts, (materials) => ToolArrow.Create(Scene, materials), ToolArrow.GetNickname);
             }));
             BlueprintMenu.AddDefault(new ActAction("Cancel", "Closes this menu.", () =>
             {
@@ -676,11 +778,12 @@ namespace RoguelikeEngine
             }));
         }
 
-        private void OpenBlueprintMenu(string name, PartType[] parts, Func<Material[],ToolCore> create)
+        private void OpenBlueprintMenu(string name, PartType[] parts, Func<Material[],ToolCore> create, Func<Material[],string> getNickname)
         {
             CraftingMenu = new MenuCraftingSelection(this, new Vector2(Scene.Viewport.Width * 1 / 4, Scene.Viewport.Height * 2 / 4), name, parts)
             {
                 Create = create,
+                GetBaseName = getNickname,
             };
         }
 
@@ -1396,14 +1499,25 @@ namespace RoguelikeEngine
 
     class ActAction
     {
-        public string Name;
-        public Action Action;
+        public virtual string Name
+        {
+            get;
+            set;
+        }
+        public virtual string Description
+        {
+            get;
+            set;
+        }
+        public Action Action = () => { };
         public Func<bool> Enabled = () => true; 
 
         public ActAction(string name, string description, Action action, Func<bool> enabled = null)
         {
             Name = name;
             Action = action;
+            if (action != null)
+                Action = action;
             if(enabled != null)
                 Enabled = enabled;
         }

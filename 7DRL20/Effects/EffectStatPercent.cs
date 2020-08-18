@@ -52,6 +52,8 @@ namespace RoguelikeEngine.Effects
 
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
+            if (Stat.Hidden)
+                return;
             var percentage = equalityGroup.OfType<EffectStatPercent>().Sum(stat => stat.Percentage);
             if (percentage != 0)
                 statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}%\n";

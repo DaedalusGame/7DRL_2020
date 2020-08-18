@@ -300,6 +300,8 @@ namespace RoguelikeEngine
             Player.Pickup(new Ingot(this, Material.Astrium, 80));
             Player.Pickup(new Ingot(this, Material.Ignitz, 80));
             Player.Pickup(new Ingot(this, Material.Tritonite, 80));
+            Player.Pickup(new ItemFeather(this, 80));
+            Player.Pickup(new ItemHandle(this, 80));
 
             Quest getOre = new TutorialGetOre(this);
             Quest getFuel = new TutorialGetFuel(this, getOre);

@@ -53,6 +53,8 @@ namespace RoguelikeEngine.Effects
 
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
+            if (Stat.Hidden)
+                return;
             var baseStat = equalityGroup.OfType<EffectStat>().Where(stat => stat.Base).Sum(stat => stat.Amount);
             if (baseStat != 0)
                 statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {baseStat.ToString("+0;-#")} Base\n";

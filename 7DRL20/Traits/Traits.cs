@@ -274,7 +274,8 @@ namespace RoguelikeEngine.Traits
             Attack attack = new Attack(user, target);
             attack.SetParameters(force, 0, 1);
             attack.ReactionLevel = reactionLevel;
-            attack.Elements.Add(Element.Steam, 1.0);
+            attack.Elements.Add(Element.Steam, 0.5);
+            attack.Elements.Add(Element.Acid, 0.5);
             return attack;
         }
 

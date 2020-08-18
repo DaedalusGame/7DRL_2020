@@ -77,6 +77,26 @@ namespace RoguelikeEngine
         }
     }
 
+    class AttackProjectile : AttackSpecial
+    {
+        Item ProjectileWeapon;
+
+        public AttackProjectile(Item weapon)
+        {
+            ProjectileWeapon = weapon;
+        }
+
+        public override Wait End(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
     class AttackArmor : AttackSpecial
     {
         IEnumerable<Item> Armors;

@@ -413,6 +413,25 @@ namespace RoguelikeEngine
             return statusEffect?.Stacks ?? 0;
         }
 
+        public static void AddName(this IEffectHolder holder, string name)
+        {
+            var names = holder.GetEffects<EffectName>();
+            double priority = 0;
+            if (names.Any())
+            {
+                priority = names.Max(x => x.Priority) + 1;
+            }
+            Effect.Apply(new EffectName(holder, name, priority));
+        }
+
+        public static string GetName(this IEffectHolder holder, string defaultName)
+        {
+            var effects = holder.GetEffects<EffectName>();
+            if (effects.Any())
+                return effects.WithMax(effect => effect.Priority).Name;
+            return defaultName;
+        }
+
         public static bool HasFlag(this IEffectHolder holder, Flag flag)
         {
             var effects = holder.GetEffects<EffectFlag>().Where(effect => effect.Flag == flag);

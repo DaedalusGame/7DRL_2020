@@ -47,6 +47,7 @@
     <Compile Include="ConnectivityHelper.cs" />
     <Compile Include="Effects\EffectFamily.cs" />
     <Compile Include="Effects\EffectLastHit.cs" />
+    <Compile Include="Effects\EffectName.cs" />
     <Compile Include="Effects\EffectStatDamage.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Effects\OnTurn.cs" />
@@ -199,7 +200,13 @@
     <Content Include="Content\arrow_fletching.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Content\arrow_fork.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Content\arrow_shaft.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\arrow_small.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\arrow_tip.png">
@@ -829,6 +836,9 @@
     <Content Include="Content\item_bone.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Content\item_feather.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Content\item_handle.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1034,6 +1044,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\stat_alchemy.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\stat_arrow_attack.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\stat_arrow_range.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\stat_arrow_volley.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\stat_attack.png">

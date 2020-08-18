@@ -283,6 +283,17 @@ namespace RoguelikeEngine
 
         public override Wait NormalTurn(Turn turn)
         {
+            ProvideEffect();
+
+            Duration--;
+            if (Duration <= 0)
+                this.Destroy();
+
+            return base.NormalTurn(turn);
+        }
+
+        public void ProvideEffect()
+        {
             foreach (Creature creature in Map.Creatures)
             {
                 creature.AddStatusEffect(new Wet()
@@ -291,12 +302,6 @@ namespace RoguelikeEngine
                     Duration = new Slider(10),
                 });
             }
-
-            Duration--;
-            if (Duration <= 0)
-                this.Destroy();
-
-            return base.NormalTurn(turn);
         }
     }
 

@@ -117,6 +117,7 @@ namespace RoguelikeEngine
             { ToolArrow.Limb, "shaft" },
             { ToolArrow.Fletching, "fletching" },
         };
+        public HashSet<PartType> ValidParts;
 
         public ColorMatrix ColorTransform = ColorMatrix.Identity;
 
@@ -125,6 +126,8 @@ namespace RoguelikeEngine
             ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
+            ValidParts = Parts.Keys.ToHashSet();
+            ValidParts.Remove(ToolArrow.Fletching);
         }
 
         public IEnumerable<T> GetEffects<T>() where T : Effect
@@ -149,6 +152,13 @@ namespace RoguelikeEngine
             //effect.Apply();
             Parts[part].AddEffect(effect);
         }
+
+        public void AddItemEffect(PartType part, Effect effect)
+        {
+            //effect.Apply();
+            Parts[part].AddItemEffect(effect);
+        }
+
 
         public void AddEffects(IEnumerable<PartType> parts, Effect effect)
         {
@@ -245,10 +255,17 @@ namespace RoguelikeEngine
             //NOOP;
         }
 
+        public bool IsPartValid(PartType partType)
+        {
+            return ValidParts.Contains(partType);
+        }
+
         public static Material None = new Material("None", string.Empty);
         public static Material Wood = new Wood();
         public static Material Coal = new Coal();
         public static Material Bone = new Bone();
+        public static Material Feather = new Feather();
+
         public static Material Dilithium = new Dilithium(); //Fulminating Silver
         public static Material Tiberium = new Tiberium();
         public static Material Basalt = new Basalt();
@@ -286,6 +303,20 @@ namespace RoguelikeEngine
         }
     }
 
+    class Feather : Material
+    {
+        public Feather() : base("Feather", string.Empty)
+        {
+            MeltingRequired = false;
+            ColorTransform = ColorMatrix.Tint(new Color(255, 255, 255));
+
+            ValidParts = new HashSet<PartType>()
+            {
+                ToolArrow.Fletching,
+            };
+        }
+    }
+
     class Coal : Material
     {
         public Coal() : base("Coal", string.Empty)
@@ -306,17 +337,21 @@ namespace RoguelikeEngine
             Parts[ToolBlade.Handle] = "bone";
             Parts[ToolAdze.Head] = "reap";
             Parts[ToolAdze.Binding] = "grip";
+            Parts[ToolArrow.Tip] = "small";
 
             AddDurability(80, 1.5, 0);
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Slash, 1.0));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddOffensiveToolEffect(new EffectTrait(this, Trait.Splintering));
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddAdzeEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.05));
+
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Dark, 0.5));
 
             AddArmorEffect(new EffectTrait(this, Trait.Undead));
         }
@@ -329,16 +364,20 @@ namespace RoguelikeEngine
             FuelTemperature = 2000;
             MeltingTemperature = 75;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(35*2, 86*2, 79*2), new Color(234, 252, 253));
+            Parts[ToolArrow.Tip] = "small";
 
             AddDurability(50, 0.5, 0.1);
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             //Weapons
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddOffensiveToolEffect(new EffectTrait(this, Trait.Holy));
+
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Holy, 0.5));
 
             //Plate
             AddPlateEffect(new EffectStatPercent(this, Element.Holy.DamageRate, -0.10));
@@ -355,23 +394,29 @@ namespace RoguelikeEngine
         {
             MeltingTemperature = 260;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(92, 156, 65), new Color(238, 251, 77));
+            Parts[ToolArrow.Tip] = "bomb";
 
             AddDurability(50, 0.5, 0.1);
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.2));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddHandleEffect(new EffectStatPercent(this, Element.Thunder.DamageRate, -0.20));
 
             AddPlateEffect(new EffectStatPercent(this, Element.Thunder.DamageRate, -0.20));
             AddPlateEffect(new EffectStatPercent(this, Element.Fire.DamageRate, +0.40));
 
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Bludgeon, 1.0));
+
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 20));
             AddFullEffect(new EffectTrait(this, Trait.Unstable));
+            //Shield: Reactive - Explode on hit, deals damage in facing direction
+            //Arrow: Charge - Arcs to nearby enemies in flight
+            //Arrow: Discharge - Explodes into lightning on impact
         }
     }
 
@@ -387,13 +432,14 @@ namespace RoguelikeEngine
             Parts[ToolBlade.Blade] = "cleave";
             Parts[ToolBlade.Guard] = "binding";
             Parts[ToolAdze.Head] = "sledge";
+            Parts[ToolArrow.Tip] = "bomb";
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.1));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 5));
             AddAdzeEffect(new EffectTrait(this, Trait.Softy));
@@ -415,12 +461,15 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.2));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 5));
             AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Fragile));
+
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Wind, 0.5));
         }
 
         public override void MakeAlloy(Dictionary<Material, int> materials)
@@ -461,15 +510,19 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.5));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.3));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
-
-            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Crumbling));
-            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Pulverizing));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.3));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 15));
 
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 1.0));
+
+            //Sword: Geddon - Extra damage to Man-made targets
+            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Crumbling));
+            AddEffect(ToolAdze.Head, new EffectTrait(this, Trait.Pulverizing));
             AddShieldEffect(new EffectTrait(this, Trait.MeteorBash));
+            //Armor: 
+            //Arrow:
         }
     }
 
@@ -484,18 +537,20 @@ namespace RoguelikeEngine
             Parts[ToolBlade.Guard] = "binding";
             Parts[ToolAdze.Head] = "sledge";
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 0.7));
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Pierce, 0.3));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 0.7));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Pierce, 0.3));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 1));
-            AddEffect(ToolAdze.Head, new EffectStatPercent.Randomized(this, Stat.MiningSpeed, -0.45, 0.9));
+            AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.5));
 
             AddFullEffect(new EffectTrait(this, Trait.Alien));
 
             AddHandleEffect(new EffectStatPercent(this, Element.Fire.DamageRate, -0.10));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
+
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 1.0));
         }
     }
 
@@ -505,12 +560,13 @@ namespace RoguelikeEngine
         {
             MeltingTemperature = 800;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(198, 77, 55), new Color(242, 214, 208));
+            Parts[ToolArrow.Tip] = "fork";
 
             AddDurability(100, 1, 0);
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.7));
@@ -525,9 +581,12 @@ namespace RoguelikeEngine
             AddShieldEffect(new EffectStat(this, Stat.Defense, 5));
             AddShieldEffect(new EffectStat(this, Element.Bludgeon.Resistance, 10));
 
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 1.0));
+
             AddOffensiveEffect(new EffectTrait(this, Trait.Sharp));
             AddArmorEffect(new EffectTrait(this, Trait.Stiff));
             AddShieldEffect(new EffectTrait(this, Trait.BloodShield));
+            //Arrow: Heartripper - Bleed on impact. Deal damage to enemies behind impact location.
         }
     }
 
@@ -537,17 +596,20 @@ namespace RoguelikeEngine
         {
             MeltingTemperature = 700;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(94, 101, 170), new Color(215, 227, 253));
+            Parts[ToolArrow.Tip] = "bomb";
 
             AddDurability(100, 1, 0);
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.5));
 
             AddFullEffect(new EffectStat(this, Element.Slash.Resistance, 5));
+
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddHandleEffect(new EffectStatPercent(this, Stat.Attack, -0.4));
@@ -555,6 +617,10 @@ namespace RoguelikeEngine
 
             
             AddFullEffect(new EffectTrait(this, Trait.Fuming));
+            //Adze: Steam Injection - Extra ore drop for ores that melt at low temperatures
+            //Armor: 
+            //Shield: 
+            //Arrow: Smoke Bolt - Create smoke cloud on impact. Create poison/acid smoke in certain cases.
         }
     }
 
@@ -564,15 +630,16 @@ namespace RoguelikeEngine
         {
             MeltingTemperature = 550;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(105, 142, 64), new Color(208, 251, 121));
+            Parts[ToolArrow.Tip] = "small";
 
             AddDurability(100, 1, 0);
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 2));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 10));
             AddHandleEffect(new EffectStatPercent(this, Stat.HP, -0.2));
@@ -580,9 +647,14 @@ namespace RoguelikeEngine
             AddFullEffect(new EffectStat(this, Element.Pierce.Resistance, 5));
             AddFullEffect(new EffectStatPercent(this, Element.Poison.DamageRate, -0.3));
 
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolArrow.Tip, new EffectElement(this, Element.Poison, 0.5));
+
             AddBladeEffect(new EffectTrait(this, Trait.Poxic));
             AddAdzeEffect(new EffectTrait(this, Trait.SlimeEater));
             AddPlateEffect(new EffectTrait(this, Trait.SludgeArmor));
+            //Shield: 
+            //Arrow: Poison Bolt - Poison on impact
         }
     }
 
@@ -599,8 +671,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 
@@ -621,8 +693,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 
@@ -644,9 +716,9 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
             AddHandleEffect(new EffectStatPercent(this, Stat.Defense, 0.3));
@@ -687,9 +759,9 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Pierce, 0.5));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 0.5));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
             AddHandleEffect(new EffectStatPercent(this, Stat.Defense, 0.3));
@@ -731,12 +803,13 @@ namespace RoguelikeEngine
 
             Parts[ToolBlade.Blade] = "rip";
             Parts[ToolAdze.Head] = "sledge";
+            Parts[ToolArrow.Tip] = "small";
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 
@@ -757,8 +830,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 
@@ -779,8 +852,8 @@ namespace RoguelikeEngine
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 
@@ -797,12 +870,13 @@ namespace RoguelikeEngine
 
             Parts[ToolBlade.Blade] = "rip";
             Parts[ToolAdze.Head] = "sledge";
+            Parts[ToolArrow.Tip] = "bomb";
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 
@@ -819,12 +893,13 @@ namespace RoguelikeEngine
 
             Parts[ToolBlade.Blade] = "rip";
             Parts[ToolAdze.Head] = "sledge";
+            Parts[ToolArrow.Tip] = "fork";
 
             AddEffect(ToolAdze.Head, new EffectStat(this, Stat.MiningLevel, 3));
             AddEffect(ToolAdze.Head, new EffectStatPercent(this, Stat.MiningSpeed, 0.3));
 
-            AddEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
-            AddEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
+            AddItemEffect(ToolBlade.Blade, new EffectElement(this, Element.Slash, 1.0));
+            AddItemEffect(ToolAdze.Head, new EffectElement(this, Element.Bludgeon, 1.0));
 
             AddHandleEffect(new EffectStatPercent(this, Stat.MiningSpeed, 0.15));
 

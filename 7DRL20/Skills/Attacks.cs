@@ -849,6 +849,7 @@ namespace RoguelikeEngine.Skills
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
             yield return user.WaitSome(50);
             var rain = user.Map.AddCloud(map => new WeatherRain(map));
+            rain.ProvideEffect();
             rain.Duration = Math.Max(20, rain.Duration);
             yield return user.WaitSome(20);
         }

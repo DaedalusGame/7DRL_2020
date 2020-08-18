@@ -52,6 +52,8 @@ namespace RoguelikeEngine.Effects
 
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
+            if (Stat.Hidden)
+                return;
             var multiplier = equalityGroup.OfType<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
             if (multiplier != 1)
                 statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} x{Math.Round(multiplier, 2)}\n";

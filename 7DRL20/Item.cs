@@ -38,12 +38,13 @@ namespace RoguelikeEngine
         }
         public Map Map => Tile?.Map;
 
-        public virtual string Name
+        public virtual string BaseName
         {
             get;
             set;
         }
-        public virtual string InventoryName => Name;
+        public virtual string Name => this.GetName(BaseName);
+        public virtual string InventoryName => BaseName;
         public string Description;
 
         List<Effect> EquipEffects = new List<Effect>();
@@ -53,7 +54,7 @@ namespace RoguelikeEngine
             World = world;
             World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
-            Name = name;
+            BaseName = name;
             Description = description;
         }
 
@@ -108,7 +109,7 @@ namespace RoguelikeEngine
 
         public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
-            selection.Add(new ActAction($"Pick up {Game.FormatIcon(this)}{Name}", "Picks up the item and stores it in your inventory.", () =>
+            selection.Add(new ActAction($"Pick up {Game.FormatIcon(this)}{BaseName}", "Picks up the item and stores it in your inventory.", () =>
             {
                 player.Pickup(this);
                 selection.Close();
@@ -173,10 +174,8 @@ namespace RoguelikeEngine
         {
             get;
         }
-        bool CanUseInAnvil
-        {
-            get;
-        }
+
+        bool CanUseInAnvil(PartType partType);
 
         int Reduce(int amount);
     }
@@ -199,7 +198,7 @@ namespace RoguelikeEngine
 
     class Ore : Item, IOre, IFuel
     {
-        public override string Name { get => $"{Material.Name} Ore"; set {} }
+        public override string BaseName { get => $"{Material.Name} Ore"; set {} }
         public override string InventoryName => $"{Name} [{Amount}]";
 
         public Material Material
@@ -212,13 +211,17 @@ namespace RoguelikeEngine
             get;
             set;
         }
-        public bool CanUseInAnvil => !Material.MeltingRequired;
         public double FuelTemperature => Material.FuelTemperature;
 
         public Ore(SceneGame world, Material material, int amount) : base(world, "Ore", string.Empty)
         {
             Material = material;
             Amount = amount;
+        }
+
+        public bool CanUseInAnvil(PartType partType)
+        {
+            return !Material.MeltingRequired && Material.IsPartValid(partType);
         }
 
         public override void AddStatBlock(ref string statBlock)
@@ -265,9 +268,125 @@ namespace RoguelikeEngine
         }
     }
 
+    abstract class OreItem : Item, IOre
+    {
+        public override string InventoryName => $"{Name} [{Count}]";
+
+        public Material Material
+        {
+            get;
+            set;
+        }
+        public int Amount
+        {
+            get
+            {
+                return Count * AmountPerItem;
+            }
+            set
+            {
+                //NOOP
+            }
+        }
+
+        public int Count;
+        public int AmountPerItem = 0;
+
+        protected OreItem(SceneGame world, string name, int count) : base(world, name, string.Empty)
+        {
+            Count = count;
+        }
+
+        public virtual bool CanUseInAnvil(PartType partType)
+        {
+            return Material.IsPartValid(partType);
+        }
+
+        public override bool Merge(Item item)
+        {
+            if (item != this && item is OreItem ore && item.GetType() == GetType())
+            {
+                Count += ore.Count;
+                return true;
+            }
+            return false;
+        }
+
+        public override Item Split(int count)
+        {
+            count = Math.Min(count, Count);
+            Count -= count;
+            if (Amount <= 0)
+                this.Destroy();
+            return CopyWithCount(count);
+        }
+
+        public abstract Item CopyWithCount(int count);
+
+        public int Reduce(int amount)
+        {
+            Count -= Amount / amount;
+            return Amount;
+        }
+    }
+
+    class ItemHandle : OreItem
+    {
+        static HashSet<PartType> ValidParts = new HashSet<PartType>()
+        {
+            ToolBlade.Guard,
+            ToolBlade.Handle,
+            ToolAdze.Binding,
+            ToolAdze.Handle,
+            ToolArrow.Limb,
+        };
+
+        public ItemHandle(SceneGame world, int count) : base(world, "Wooden Handle", count)
+        {
+            Material = Material.Wood;
+            AmountPerItem = 200;
+        }
+
+        public override bool CanUseInAnvil(PartType partType)
+        {
+            return base.CanUseInAnvil(partType) && ValidParts.Contains(partType);
+        }
+
+        public override Item CopyWithCount(int count)
+        {
+            return new ItemHandle(World, count);
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            var ingot = SpriteLoader.Instance.AddSprite("content/item_handle");
+            scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+    }
+
+    class ItemFeather : OreItem
+    {
+        public ItemFeather(SceneGame world, int count) : base(world, "Feather", count)
+        {
+            Material = Material.Feather;
+            AmountPerItem = 200;
+        }
+
+        public override Item CopyWithCount(int count)
+        {
+            return new ItemFeather(World, count);
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            var ingot = SpriteLoader.Instance.AddSprite("content/item_feather");
+            scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+    }
+
     class Ingot : Item, IOre, IFuel
     {
-        public override string Name { get => $"{Material.Name} Ingot"; set { } }
+        public override string BaseName { get => $"{Material.Name} Ingot"; set { } }
         public override string InventoryName => $"{Name} [{Count}]";
 
         public Material Material
@@ -277,13 +396,17 @@ namespace RoguelikeEngine
         }
         public int Count;
         public int Amount => Count * 200;
-        public bool CanUseInAnvil => true;
         public double FuelTemperature => Material.FuelTemperature;
 
         public Ingot(SceneGame world, Material material, int count) : base(world, "Ingot", string.Empty)
         {
             Material = material;
             Count = count;
+        }
+
+        public bool CanUseInAnvil(PartType partType)
+        {
+            return Material.IsPartValid(partType);
         }
 
         public override bool Merge(Item item)
@@ -356,8 +479,8 @@ namespace RoguelikeEngine
             get;
         }
 
-        public double DurabilityMax => this.GetStat(Stat.Durability);
-        public double Durability => DurabilityMax - this.GetTotalDamage();
+        public double DurabilityMax => Math.Floor(this.GetStat(Stat.Durability));
+        public double Durability => Math.Max(0, Math.Floor(DurabilityMax - this.GetTotalDamage()));
 
         public ToolCore(SceneGame world, string name, string description, PartType[] parts) : base(world, name, description)
         {
@@ -464,6 +587,9 @@ namespace RoguelikeEngine
             //    statBlock += $" {Game.FORMAT_BOLD}{GetPartName(i)}:{Game.FORMAT_BOLD} {GetMaterial(i).Name}\n";
             statBlock += "\n";
             statBlock += $"{Game.FormatStat(Stat.Durability)} Durability: {Durability}/{DurabilityMax}\n";
+            var itemBlock = GetEffects<Effect>();
+            AddStatBlock(ref statBlock, itemBlock);
+
             var validSlots = ValidSlots;
             var generalBlock = GetEquipEffects();
             var blocks = validSlots.ToDictionary(slot => slot, slot => GetEquipEffects(slot).Where(effect => !generalBlock.Contains(effect)));
@@ -529,13 +655,38 @@ namespace RoguelikeEngine
             
         }
 
-        public static ToolBlade Create(SceneGame world, Material blade, Material guard, Material handle)
+        public static ToolBlade Create(SceneGame world, params Material[] materials)
         {
             ToolBlade tool = new ToolBlade(world);
-            tool.SetMaterial(BLADE, blade);
-            tool.SetMaterial(GUARD, guard);
-            tool.SetMaterial(HANDLE, handle);
+            tool.SetMaterial(BLADE, materials[0]);
+            tool.SetMaterial(GUARD, materials[1]);
+            tool.SetMaterial(HANDLE, materials[2]);
             return tool;
+        }
+
+        public static string GetNickname(params Material[] materials)
+        {
+            string typeName;
+            Material bladeMaterial = materials[0];
+            switch(bladeMaterial.Parts[Blade].Sprite)
+            {
+                case ("cleave"):
+                    typeName = "Cleaver";
+                    break;
+                case ("rip"):
+                    typeName = "Ripper";
+                    break;
+                case ("disembowel"):
+                    typeName = "Scalpel";
+                    break;
+                case ("flat"):
+                    typeName = "Sword";
+                    break;
+                default:
+                    typeName = "Blade";
+                    break;
+            }
+            return $"{bladeMaterial.Name} {typeName}";
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)
@@ -581,13 +732,38 @@ namespace RoguelikeEngine
 
         }
 
-        public static ToolAdze Create(SceneGame world, Material head, Material binding, Material handle)
+        public static ToolAdze Create(SceneGame world, params Material[] materials)
         {
             ToolAdze tool = new ToolAdze(world);
-            tool.SetMaterial(HEAD, head);
-            tool.SetMaterial(BINDING, binding);
-            tool.SetMaterial(HANDLE, handle);
+            tool.SetMaterial(HEAD, materials[0]);
+            tool.SetMaterial(BINDING, materials[1]);
+            tool.SetMaterial(HANDLE, materials[2]);
             return tool;
+        }
+
+        public static string GetNickname(params Material[] materials)
+        {
+            string typeName;
+            Material headMaterial = materials[0];
+            switch (headMaterial.Parts[Head].Sprite)
+            {
+                case ("fork"):
+                    typeName = "Trident";
+                    break;
+                case ("pick"):
+                    typeName = "Mattock";
+                    break;
+                case ("sledge"):
+                    typeName = "Sledge";
+                    break;
+                case ("reap"):
+                    typeName = "Reaper";
+                    break;
+                default:
+                    typeName = "Adze";
+                    break;
+            }
+            return $"{headMaterial.Name} {typeName}";
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)
@@ -633,13 +809,26 @@ namespace RoguelikeEngine
 
         }
 
-        public static ToolPlate Create(SceneGame world, Material core, Material composite, Material trim)
+        public static ToolPlate Create(SceneGame world, params Material[] materials)
         {
             ToolPlate tool = new ToolPlate(world);
-            tool.SetMaterial(CORE, core);
-            tool.SetMaterial(COMPOSITE, composite);
-            tool.SetMaterial(TRIM, trim);
+            tool.SetMaterial(CORE, materials[0]);
+            tool.SetMaterial(COMPOSITE, materials[1]);
+            tool.SetMaterial(TRIM, materials[2]);
             return tool;
+        }
+
+        public static string GetNickname(params Material[] materials)
+        {
+            string typeName;
+            Material compositeMaterial = materials[0];
+            switch (compositeMaterial.Parts[Composite].Sprite)
+            {
+                default:
+                    typeName = "Plate";
+                    break;
+            }
+            return $"{compositeMaterial.Name} {typeName}";
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)
@@ -685,13 +874,38 @@ namespace RoguelikeEngine
 
         }
 
-        public static ToolArrow Create(SceneGame world, Material tip, Material limb, Material fletching)
+        public static ToolArrow Create(SceneGame world, params Material[] materials)
         {
             ToolArrow arrow = new ToolArrow(world);
-            arrow.SetMaterial(TIP, tip);
-            arrow.SetMaterial(LIMB, limb);
-            arrow.SetMaterial(FLETCHING, fletching);
+            arrow.SetMaterial(TIP, materials[0]);
+            arrow.SetMaterial(LIMB, materials[1]);
+            arrow.SetMaterial(FLETCHING, materials[2]);
             return arrow;
+        }
+
+        public static string GetNickname(params Material[] materials)
+        {
+            string typeName;
+            Material tipMaterial = materials[0];
+            switch (tipMaterial.Parts[Tip].Sprite)
+            {
+                case ("bomb"):
+                    typeName = "Bomb Arrow";
+                    break;
+                case ("fork"):
+                    typeName = "Pronged Arrow";
+                    break;
+                case ("small"):
+                    typeName = "Bolt";
+                    break;
+                case ("tip"):
+                    typeName = "Broadhead Arrow";
+                    break;
+                default:
+                    typeName = "Arrow";
+                    break;
+            }
+            return $"{tipMaterial.Name} {typeName}";
         }
 
         public override void DrawIcon(SceneGame scene, Vector2 position)
@@ -764,9 +978,28 @@ namespace RoguelikeEngine
         {
             Attack attack = new Attack(attacker, defender);
             attack.SetParameters(100, 0, 1);
-            attack.ExtraEffects.Add(new AttackWeapon(this));
-            attack.Elements.Add(Element.Pierce, 1.0);
+            attack.ExtraEffects.Add(new AttackProjectile(this));
+            foreach (var element in this.GetElements())
+            {
+                attack.Elements.Add(element.Key, element.Value);
+            }
             return attack;
+        }
+
+        public IEnumerable<Wait> RoutineShoot(Creature creature, int dx, int dy, List<Wait> waitForDamage)
+        {
+            double volley = Math.Max(1,creature.GetStat(Stat.ArrowVolley));
+            volley = 5;
+            int distance = Math.Max(1, (int)creature.GetStat(Stat.ArrowRange));
+            distance = 8;
+            for (int i = 0; i < volley; i++)
+            {
+                Bullet bullet = new BulletArrow(creature.World, this, Vector2.Zero, ColorMatrix.Identity, 0);
+                var projectile = new Skills.Projectile(bullet, Trail, CanCollide, Impact);
+                waitForDamage.Add(Scheduler.Instance.RunAndWait(projectile.ShootStraight(creature, creature.Tile, new Point(dx, dy), 3, distance)));
+                this.TakeDamage(1, Element.Bludgeon, true);
+                yield return new WaitTime(5);
+            }
         }
     }
 }
