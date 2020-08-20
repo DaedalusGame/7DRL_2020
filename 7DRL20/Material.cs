@@ -414,6 +414,8 @@ namespace RoguelikeEngine
 
             AddOffensiveToolEffect(new EffectStat(this, Stat.Attack, 20));
             AddFullEffect(new EffectTrait(this, Trait.Unstable));
+            AddEffect(ToolArrow.Tip, new EffectTrait(this, Trait.Discharge));
+            AddEffect(ToolArrow.Limb, new EffectTrait(this, Trait.Charged));
             //Shield: Reactive - Explode on hit, deals damage in facing direction
             //Arrow: Charge - Arcs to nearby enemies in flight
             //Arrow: Discharge - Explodes into lightning on impact

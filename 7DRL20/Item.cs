@@ -963,8 +963,8 @@ namespace RoguelikeEngine
             List<Wait> waits = new List<Wait>();
             foreach (Creature creature in tile.Creatures)
             {
-                projectile.Shooter.Attack(creature, new Vector2(velocity.X, velocity.Y), ArrowAttack);
-                waits.Add(creature.CurrentAction);
+                var wait = projectile.Shooter.Attack(creature, new Vector2(velocity.X, velocity.Y), ArrowAttack);
+                waits.Add(wait);
             }
             yield return new WaitAll(waits);
         }
@@ -984,7 +984,7 @@ namespace RoguelikeEngine
         public IEnumerable<Wait> RoutineShoot(Creature creature, int dx, int dy, List<Wait> waitForDamage)
         {
             double volley = Math.Max(1,creature.GetStat(Stat.ArrowVolley));
-            volley = 5;
+            volley = 1;
             int distance = Math.Max(1, (int)creature.GetStat(Stat.ArrowRange));
             distance = 8;
             for (int i = 0; i < volley; i++)
@@ -993,6 +993,7 @@ namespace RoguelikeEngine
                 var projectile = new Skills.Projectile(bullet);
                 projectile.ExtraEffects.Add(new Skills.ProjectileImpactAttack(ArrowAttack));
                 projectile.ExtraEffects.Add(new Skills.ProjectileCollideSolid());
+                creature.OnShoot(new ShootEvent(projectile, creature, creature.Tile));
                 waitForDamage.Add(Scheduler.Instance.RunAndWait(projectile.ShootStraight(creature, creature.Tile, new Point(dx, dy), 3, distance)));
                 this.TakeDamage(1, Element.Bludgeon, true);
                 yield return new WaitTime(5);

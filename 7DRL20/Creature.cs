@@ -640,8 +640,11 @@ namespace RoguelikeEngine
         public double TurnBuildup { get; set; }
         public bool TurnReady => TurnBuildup > 1;
         public bool RemoveFromQueue => Destroyed;
-        public Wait CurrentAction = Wait.NoWait;
+
+        public WaitGameObject CurrentActions;
+        public WaitGameObject CurrentHits;
         public Wait CurrentPopups => PopupManager.Wait;
+        public Wait DeadWait = Wait.NoWait;
 
         public CreatureRender Render;
         public Func<Facing> VisualFacing = () => Facing.South;
@@ -656,7 +659,7 @@ namespace RoguelikeEngine
 
         public double CurrentHP => Math.Max(0,this.GetStat(Stat.HP) - this.GetTotalDamage());
         public bool Dead;
-        public Wait DeadWait = Wait.NoWait;
+        
         public TurnTaker Control;
 
         Vector2 IHasPosition.VisualPosition => VisualPosition();
@@ -668,6 +671,8 @@ namespace RoguelikeEngine
             World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
             VisualFacing = () => Facing;
+            CurrentActions = new WaitGameObject(this);
+            CurrentHits = new WaitGameObject(this);
         }
 
         public void OnDestroy()
@@ -776,6 +781,7 @@ namespace RoguelikeEngine
         public virtual void Update()
         {
             Frame++;
+            CurrentActions.Update();
         }
 
         public void CheckDead(Vector2 dir)
@@ -911,9 +917,9 @@ namespace RoguelikeEngine
                 }
                 else
                 {
-                    foreach (var creature in tile.Creatures) { 
-                        Attack(creature, new Vector2(dx, dy), attackGenerator);
-                        waitForDamage.Add(creature.CurrentAction);
+                    foreach (var creature in tile.Creatures) {
+                        var wait = Attack(creature, new Vector2(dx, dy), attackGenerator);
+                        waitForDamage.Add(wait);
                     }
                 }
             }
@@ -959,7 +965,6 @@ namespace RoguelikeEngine
                 yield return new WaitFrames(this, 10);
             }
             yield return CurrentPopups;
-            CheckDead(dir);
         }
 
         public virtual IEnumerable<Wait> RoutineDie(Vector2 dir)
@@ -1018,19 +1023,24 @@ namespace RoguelikeEngine
             return attack;
         }
 
-        public Attack Attack(Creature target, Vector2 dir, Func<Creature, IEffectHolder, Attack> attackGenerator)
+        public Wait Attack(Creature target, Vector2 dir, Func<Creature, IEffectHolder, Attack> attackGenerator)
         {
             Attack attack = attackGenerator(this, target);
+            attack.HitDirection = dir;
             var waitAttack = Scheduler.Instance.RunAndWait(attack.RoutineStart());
             var waitHit = Scheduler.Instance.RunAndWait(target.RoutineHit(dir));
-            target.CurrentAction = new WaitAll(new[] { waitAttack, waitHit });
-            return attack;
+            var wait = new WaitAll(new[] { waitAttack, waitHit });
+            target.CurrentActions.Add(wait);
+            target.CurrentHits.Add(wait);
+            return wait;
         }
 
-        public IEnumerable<Wait> AttackSelf(Attack attack)
+        public Wait AttackSelf(Attack attack)
         {
-            yield return Scheduler.Instance.RunAndWait(attack.RoutineStart());
+            var waitAttack =  Scheduler.Instance.RunAndWait(attack.RoutineStart());
             Scheduler.Instance.RunAndWait(RoutineHit(Vector2.Zero));
+
+            return waitAttack;
         }
 
         public Wait WaitSome(int frames)

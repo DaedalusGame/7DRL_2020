@@ -267,7 +267,7 @@ namespace RoguelikeEngine.Skills
 
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            yield return user.CurrentAction;
+            yield return user.CurrentHits;
             Consume();
             Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
             new WaterSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 12);
@@ -303,7 +303,7 @@ namespace RoguelikeEngine.Skills
         {
             if (target is Creature targetCreature)
             {
-                yield return user.CurrentAction;
+                yield return user.CurrentHits;
                 Consume();
                 user.VisualColor = user.Flick(user.Flash(user.Static(Color.Transparent), user.Static(Color.White), 2, 2), user.Static(Color.White), 20);
                 yield return user.WaitSome(20);
@@ -352,7 +352,7 @@ namespace RoguelikeEngine.Skills
         {
             if (target is Creature targetCreature)
             {
-                yield return user.CurrentAction;
+                yield return user.CurrentHits;
                 Consume();
                 new ChaosSplash(user.World, new Vector2(user.X * 16 + 8, user.Y * 16 + 8), Vector2.Zero, 0, 15);
                 user.VisualColor = user.Static(Color.Transparent);

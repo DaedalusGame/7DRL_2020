@@ -38,6 +38,8 @@ namespace RoguelikeEngine.Traits
         public static Trait Holy = new TraitHoly();
         public static Trait Spotlight = new TraitSpotlight();
         public static Trait Unstable = new TraitUnstable();
+        public static Trait Charged = new TraitCharged();
+        public static Trait Discharge = new TraitDischarge();
         public static Trait Softy = new TraitSofty();
         public static Trait FrothingBlast = new TraitFrothingBlast();
         public static Trait Fragile = new TraitFragile();
@@ -97,8 +99,8 @@ namespace RoguelikeEngine.Traits
                 foreach (var target in targets)
                 {
                     double splinterDamage = traitLvl * 0.2 * attack.FinalDamage.Sum(x => x.Value);
-                    attack.Attacker.Attack(target, Vector2.Normalize(target.VisualTarget - attack.Attacker.VisualTarget), (a,b) => SplinterAttack(a, b, splinterDamage));
-                    waitForDamage.Add(target.CurrentAction);
+                    var wait = attack.Attacker.Attack(target, Vector2.Normalize(target.VisualTarget - attack.Attacker.VisualTarget), (a,b) => SplinterAttack(a, b, splinterDamage));
+                    waitForDamage.Add(wait);
                 }
                 yield return new WaitAll(waitForDamage);
             }
@@ -195,6 +197,69 @@ namespace RoguelikeEngine.Traits
         }
     }
 
+    class TraitCharged : Trait
+    {
+        public TraitCharged() : base("Charged", "Arcs to nearby enemies in flight.", new Color(192, 255, 16))
+        {
+            Effect.Apply(new OnShoot(this, ShootArrow));
+        }
+
+        private IEnumerable<Wait> ShootArrow(ShootEvent shoot)
+        {
+            shoot.Projectile.ExtraEffects.Add(new Skills.ProjectileArc(ArcAttack, 4));
+            return Enumerable.Empty<Wait>();
+        }
+
+        public Attack ArcAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(20, 0, 1);
+            attack.Elements.Add(Element.Thunder, 1.0);
+            return attack;
+        }
+    }
+
+    class TraitDischarge : Trait
+    {
+        Random Random = new Random();
+
+        public TraitDischarge() : base("Discharge", "Detonates on impact.", new Color(192, 255, 16))
+        {
+            Effect.Apply(new OnShoot(this, ShootArrow));
+        }
+
+        private IEnumerable<Wait> ShootArrow(ShootEvent shoot)
+        {
+            shoot.Projectile.ExtraEffects.Add(new Skills.ProjectileImpactExplosion(ExplosionAttack, 2));
+            shoot.Projectile.ExtraEffects.Add(new Skills.ProjectileImpactFunction(ImpactExplosion));
+            return Enumerable.Empty<Wait>();
+        }
+
+        private IEnumerable<Wait> ImpactExplosion(Skills.Projectile projectile, Tile tile)
+        {
+            int n = 12;
+            new FireExplosion(tile.World, tile.VisualTarget, Vector2.Zero, 0, 20);
+            yield return new WaitTime(5);
+            new ScreenShakeRandom(tile.World, 8, 20, LerpHelper.Linear);
+            for (int i = 0; i < n; i++)
+            {
+                float angle = i * MathHelper.TwoPi / n;
+                Vector2 offset = Util.AngleToVector(angle) * 24;
+
+                new LightningExplosion(tile.World, tile.VisualTarget + offset, Vector2.Zero, angle, 10 + Random.Next(5));
+            }
+        }
+
+        public Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(400, 0, 1);
+            attack.Elements.Add(Element.Thunder, 0.5);
+            attack.Elements.Add(Element.Fire, 0.5);
+            return attack;
+        }
+    }
+
     class TraitSofty : Trait
     {
         public TraitSofty() : base("Softy", "Breaking rock restores some HP.", new Color(207, 179, 160))
@@ -238,19 +303,19 @@ namespace RoguelikeEngine.Traits
 
                 new SteamExplosion(creature.World, creature.VisualTarget + offset, Vector2.Zero, angle, 10 + Random.Next(5));
             }
-            int radius = 2 * 16;
-            int dryRadius = 1 * 16;
+            int radius = 2;
+            int dryRadius = 1;
             HashSet<Tile> dryArea = new HashSet<Tile>(creature.Tiles);
             List<Creature> damageTargets = new List<Creature>();
 
             foreach(var tile in creature.Tile.GetNearby(creature.Mask.GetRectangle(creature.X, creature.Y), radius))
             {
                 var distance = (tile.VisualTarget - creature.VisualTarget).LengthSquared();
-                if (distance <= (radius + 8) * (radius + 8))
+                if (distance <= (radius * 16 + 8) * (radius * 16 + 8))
                 {
                     damageTargets.AddRange(tile.Creatures);
                 }
-                if (distance <= (dryRadius + 8) * (dryRadius + 8))
+                if (distance <= (dryRadius * 16 + 8) * (dryRadius * 16 + 8))
                 {
                     dryArea.Add(tile);
                 }
@@ -265,8 +330,8 @@ namespace RoguelikeEngine.Traits
             List<Wait> waitForDamage = new List<Wait>();
             foreach(var target in damageTargets.Distinct().Shuffle(Random))
             {
-                creature.Attack(target, Vector2.Normalize(target.VisualTarget - creature.VisualTarget), (a,b) => ExplosionAttack(a,b,force,reactionLevel));
-                waitForDamage.Add(target.CurrentAction);
+                var wait = creature.Attack(target, Vector2.Normalize(target.VisualTarget - creature.VisualTarget), (a,b) => ExplosionAttack(a,b,force,reactionLevel));
+                waitForDamage.Add(wait);
             }
             yield return new WaitAll(waitForDamage);
         }
@@ -396,8 +461,8 @@ namespace RoguelikeEngine.Traits
                 yield return attack.Attacker.WaitSome(10);
                 new FireExplosion(targetCreature.World, targetCreature.VisualTarget, Vector2.Zero, 0, 20);
                 Point offset = attack.Attacker.Facing.ToOffset();
-                attack.Attacker.Attack(targetCreature, new Vector2(offset.X, offset.Y), MeteorAttack);
-                yield return targetCreature.CurrentAction;
+                var wait = attack.Attacker.Attack(targetCreature, new Vector2(offset.X, offset.Y), MeteorAttack);
+                yield return wait;
             }
 
             yield return Wait.NoWait;
@@ -670,8 +735,8 @@ namespace RoguelikeEngine.Traits
                 {
                     double sparkDamage = traitLvl * 20;
                     new LightningSpark(attack.Attacker.World, lightning, attack.Attacker.VisualPosition() + attack.Attacker.Mask.GetRandomPixel(Random), target.VisualPosition() + target.Mask.GetRandomPixel(Random), 5);
-                    attack.Attacker.Attack(target, Vector2.Normalize(target.VisualTarget - attack.Attacker.VisualTarget), (a, b) => SparkAttack(a, b, sparkDamage));
-                    waitForDamage.Add(target.CurrentAction);
+                    var wait = attack.Attacker.Attack(target, Vector2.Normalize(target.VisualTarget - attack.Attacker.VisualTarget), (a, b) => SparkAttack(a, b, sparkDamage));
+                    waitForDamage.Add(wait);
                 }
                 yield return new WaitAll(waitForDamage);
             }

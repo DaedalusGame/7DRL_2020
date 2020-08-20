@@ -189,8 +189,8 @@ namespace RoguelikeEngine.Attacks
                 yield return user.WaitSome(30);
                 new RockTremor(user.World, targetCreature, 30);
                 yield return new WaitBullet(bullet);
-                user.Attack(targetCreature, Vector2.Normalize(targetCreature.VisualTarget - user.VisualTarget), AttackDelta);
-                yield return targetCreature.CurrentAction;
+                var wait = user.Attack(targetCreature, Vector2.Normalize(targetCreature.VisualTarget - user.VisualTarget), AttackDelta);
+                yield return wait;
             }
         }
 

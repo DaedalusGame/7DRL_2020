@@ -45,8 +45,8 @@ namespace RoguelikeEngine.Skills
             List<Wait> waits = new List<Wait>();
             foreach (Creature creature in tile.Creatures)
             {
-                projectile.Shooter.Attack(creature, new Vector2(velocity.X, velocity.Y), AttackGenerator);
-                waits.Add(creature.CurrentAction);
+                var wait = projectile.Shooter.Attack(creature, new Vector2(velocity.X, velocity.Y), AttackGenerator);
+                waits.Add(wait);
             }
             return new WaitAll(waits);
         }
@@ -64,6 +64,73 @@ namespace RoguelikeEngine.Skills
         public override Wait Impact(Projectile projectile, Tile tile)
         {
             return Scheduler.Instance.RunAndWait(Function(projectile, tile));
+        }
+    }
+
+    class ProjectileArc : ProjectileSpecial
+    {
+        Random Random = new Random();
+
+        Func<Creature, IEffectHolder, Attack> AttackGenerator;
+        int Radius;
+
+        HashSet<Creature> Targets = new HashSet<Creature>();
+
+        public ProjectileArc(Func<Creature, IEffectHolder, Attack> attackGenerator, int radius)
+        {
+            AttackGenerator = attackGenerator;
+            Radius = radius;
+        }
+
+        public override Wait Trail(Projectile projectile, Tile tile)
+        {
+            var lightning = SpriteLoader.Instance.AddSprite("content/lightning");
+            List<Creature> validTargets = tile.GetNearby(Radius).Where(t => InRadius(tile, t, Radius)).SelectMany(t => t.Creatures).Where(c => c != projectile.Shooter).ToList();
+            if(validTargets.Any())
+            {
+                Creature targetCreature = validTargets.Pick(Random);
+                new LightningSpark(targetCreature.World, lightning, projectile.Bullet.Position, targetCreature.VisualPosition() + targetCreature.Mask.GetRandomPixel(Random), Random.Next(1,4));
+                Targets.Add(targetCreature);
+                var wait = projectile.Shooter.Attack(targetCreature, Vector2.Zero, AttackGenerator);
+                return wait;
+            }
+            return Wait.NoWait;
+        }
+
+        private bool InRadius(Tile origin, Tile tile, int radius)
+        {
+            var distance = (tile.VisualTarget - tile.VisualTarget).LengthSquared();
+            return distance <= (radius * 16 + 8) * (radius * 16 + 8);
+        }
+    }
+
+    class ProjectileImpactExplosion : ProjectileSpecial
+    {
+        Func<Creature, IEffectHolder, Attack> AttackGenerator;
+        int Radius;
+
+        public ProjectileImpactExplosion(Func<Creature, IEffectHolder, Attack> attackGenerator, int radius)
+        {
+            AttackGenerator = attackGenerator;
+            Radius = radius;
+        }
+
+        public override Wait Impact(Projectile projectile, Tile tile)
+        {
+            List<Creature> validTargets = tile.GetNearby(Radius).Where(t => InRadius(tile, t, Radius)).SelectMany(t => t.Creatures).ToList();
+            List<Wait> waitForDamage = new List<Wait>();
+            foreach(var targetCreature in validTargets.Distinct())
+            {
+                var wait = projectile.Shooter.Attack(targetCreature, Vector2.Zero, AttackGenerator);
+                waitForDamage.Add(wait);
+            }
+            return new WaitAll(waitForDamage);
+        }
+
+        private bool InRadius(Tile origin, Tile tile, int radius)
+        {
+            var distance = (tile.VisualTarget - tile.VisualTarget).LengthSquared();
+            return distance <= (radius * 16 + 8) * (radius * 16 + 8);
         }
     }
 

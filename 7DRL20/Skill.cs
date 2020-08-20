@@ -176,7 +176,7 @@ namespace RoguelikeEngine
 
         protected Wait GetCurrentAction(Creature creature)
         {
-            return creature.CurrentAction;
+            return creature.CurrentActions;
         }
 
         public abstract object GetEnemyTarget(Enemy user);

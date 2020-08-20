@@ -111,13 +111,13 @@ namespace RoguelikeEngine.Enemies
             if (usableSkill != null)
             {
                 var target = usableSkill.GetEnemyTarget(this);
-                CurrentAction = Scheduler.Instance.RunAndWait(RoutineUseSkill(usableSkill, target));
-                wait = usableSkill.WaitUse ? CurrentAction : Wait.NoWait;
+                CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineUseSkill(usableSkill, target)));
+                wait = usableSkill.WaitUse ? CurrentActions : Wait.NoWait;
             }
             else
             {
                 var move = new[] { Facing.North, Facing.East, Facing.South, Facing.West }.Pick(Random).ToOffset();
-                CurrentAction = Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y));
+                CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y)));
                 //wait = CurrentAction;
             }
             return wait;

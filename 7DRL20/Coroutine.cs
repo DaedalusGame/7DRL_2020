@@ -80,6 +80,20 @@ namespace RoguelikeEngine
         }
     }
 
+    class WaitGameObject : WaitWorld
+    {
+        IGameObject GameObject;
+
+        public override bool Done => GameObject.Destroyed || base.Done;
+
+        public WaitGameObject(IGameObject gameObject)
+        {
+            GameObject = gameObject;
+        }
+
+        
+    }
+
     public class WaitForInput : Wait
     {
         public override bool Done => false;

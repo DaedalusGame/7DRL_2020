@@ -1,4 +1,5 @@
-﻿using RoguelikeEngine.Effects;
+﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -139,6 +140,9 @@ namespace RoguelikeEngine
         public double Damage;
         public Dictionary<Element, double> FinalDamage = new Dictionary<Element, double>();
 
+        public bool CheckDeath = true;
+        public Vector2 HitDirection;
+
         List<Wait> Waits = new List<Wait>();
 
         public Attack(Creature attacker, IEffectHolder defender)
@@ -194,6 +198,9 @@ namespace RoguelikeEngine
             yield return Defender.OnDefend(this);
 
             yield return new WaitAll(Waits);
+
+            if(CheckDeath && Defender is Creature targetCreature)
+                targetCreature.CheckDead(HitDirection);
         }
 
         private void CalculateArmor()

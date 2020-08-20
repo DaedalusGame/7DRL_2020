@@ -119,7 +119,7 @@ namespace RoguelikeEngine
 
         public override void Update(SceneGame scene)
         {
-            if (Player.Dead && Player.CurrentAction.Done)
+            if (Player.Dead && Player.CurrentActions.Done)
             {
                 GameOver += 1;
             }
@@ -172,9 +172,9 @@ namespace RoguelikeEngine
 
         public void TakeAction(Wait wait, bool shouldBlock)
         {
-            Player.CurrentAction = wait;
+            Player.CurrentActions.Add(wait);
             if(shouldBlock)
-                Scene.Wait.Add(Player.CurrentAction);
+                Scene.Wait.Add(wait);
             Turn.End();
         }
 
@@ -187,7 +187,7 @@ namespace RoguelikeEngine
             if (GameOverMenu != null)
                 GameOverMenu.HandleInput(scene);
 
-            if (Player.Dead && Player.CurrentAction.Done)
+            if (Player.Dead && Player.CurrentActions.Done)
             {
                 if(GameOver.Done && GameOverMenu == null)
                 {
@@ -212,7 +212,7 @@ namespace RoguelikeEngine
                 return;
             }
 
-            if (Player.CurrentAction.Done)
+            if (Player.CurrentActions.Done)
             {
                 if (state.IsKeyPressed(Keys.W, 15, 5))
                 {
@@ -586,7 +586,7 @@ namespace RoguelikeEngine
                     foreach (var part in Parts)
                         part.Destroy();
                     Close();
-                }));
+                }, () => Result != null));
                 Actions.Add(new ActAction("Cancel", "", () => {
                     foreach (Item item in Parts)
                     {

@@ -406,8 +406,8 @@ namespace RoguelikeEngine.Skills
                     {
                         foreach (var creature in tile.Creatures)
                         {
-                            user.Attack(creature, new Vector2(offset.X, offset.Y), RamAttack);
-                            waitForDamage.Add(creature.CurrentAction);
+                            var wait = user.Attack(creature, new Vector2(offset.X, offset.Y), RamAttack);
+                            waitForDamage.Add(wait);
                             creatureHits++;
                         }
                         if (tile.Solid)
@@ -516,10 +516,10 @@ namespace RoguelikeEngine.Skills
                 {
                     if (multihit || !targets.Contains(target))
                     {
-                        user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attack);
+                        var wait = user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attack);
+                        waits.Add(wait);
                     }
                     targets.Add(target);
-                    waits.Add(target.CurrentAction);
                 }
             }
             yield return new WaitAll(waits);
@@ -662,8 +662,8 @@ namespace RoguelikeEngine.Skills
                     continue;
                 foreach(var target in attackTile.Tile.Creatures)
                 {
-                    user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attackTile.Attack);
-                    waits.Add(target.CurrentAction);
+                    var wait = user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attackTile.Attack);
+                    waits.Add(wait);
                 }
             }
             yield return new WaitAll(waits);
@@ -815,8 +815,8 @@ namespace RoguelikeEngine.Skills
 
             foreach (var chainTarget in shootTile.Creatures)
             {
-                user.Attack(chainTarget, Vector2.Normalize(chainTarget.VisualTarget - user.VisualTarget), ThunderAttack);
-                yield return chainTarget.CurrentAction;
+                var wait = user.Attack(chainTarget, Vector2.Normalize(chainTarget.VisualTarget - user.VisualTarget), ThunderAttack);
+                yield return wait;
                 break;
             }
         }

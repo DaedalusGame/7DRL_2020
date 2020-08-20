@@ -46,10 +46,16 @@ namespace RoguelikeEngine.Traits
         {
             Creature creature = turn.Creature;
 
-            creature.TakeDamage(10, Element.Fire);
-            creature.CheckDead(Vector2.Zero);
+            Attack attack = new Attack(creature, creature);
+            attack.SetParameters(10, 0, 1);
+            attack.Elements.Add(Element.Fire, 1);
+            attack.StatusEffects.Add(new Aflame()
+            {
+                Buildup = 1,
+                Duration = new Slider(20),
+            });
 
-            yield return Wait.NoWait;
+            yield return creature.AttackSelf(attack);
         }
     }
 
@@ -69,10 +75,16 @@ namespace RoguelikeEngine.Traits
         {
             Creature creature = turn.Creature;
 
-            creature.TakeDamage(20, Element.Fire);
-            creature.CheckDead(Vector2.Zero);
+            Attack attack = new Attack(creature, creature);
+            attack.SetParameters(20, 0, 1);
+            attack.Elements.Add(Element.Fire, 1);
+            attack.StatusEffects.Add(new Aflame()
+            {
+                Buildup = 1,
+                Duration = new Slider(20),
+            });
 
-            yield return Wait.NoWait;
+            yield return creature.AttackSelf(attack);
         }
     }
 
@@ -107,7 +119,7 @@ namespace RoguelikeEngine.Traits
                 Duration = new Slider(15),
             });
 
-            yield return Scheduler.Instance.RunAndWait(creature.AttackSelf(attack));
+            yield return creature.AttackSelf(attack);
         }
     }
 
