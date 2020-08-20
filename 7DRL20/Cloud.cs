@@ -382,7 +382,7 @@ namespace RoguelikeEngine
             foreach(var target in targets)
             {
                 target.TakeDamage(10, Element.Ice);
-                target.CheckDead(0, 0);
+                target.CheckDead(Vector2.Zero);
             }
 
             Drift(0, 1, Parts.Count / 2);

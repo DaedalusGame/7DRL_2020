@@ -39,7 +39,8 @@ namespace RoguelikeEngine.Effects
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
             statBlock += $"{Game.FORMAT_BOLD}{Game.FormatColor(Trait.Color)}{Trait.Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
-            statBlock += $"- {Trait.Description}\n";
+            string description = string.Join(string.Empty, Trait.Description.Split('\n').Select(str => $"- {str}\n"));
+            statBlock += description;
         }
 
         public IEnumerable<T> GetSubEffects<T>() where T : Effect

@@ -30,10 +30,35 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillFireBreath());
-            Skills.Add(new SkillIceBreath());
             Skills.Add(new SkillAttack());
 
             Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
+        }
+    }
+
+    class WhiteDragon : Enemy
+    {
+        public WhiteDragon(SceneGame world) : base(world)
+        {
+            Name = "Pale Dragon";
+            Description = "White out";
+
+            Render = new CreatureDragonRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/dragon_white")
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 800));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 50));
+            Effect.Apply(new EffectStatMultiply(this, Element.Ice.DamageRate, -1));
+
+            Effect.Apply(new EffectFamily(this, Family.Dragon));
+
+            Skills.Add(new SkillIceBreath());
+            Skills.Add(new SkillAttack());
+
+            //Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
         }
     }
 
@@ -56,8 +81,31 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectFamily(this, Family.Dragon));
 
-            Skills.Add(new SkillLightning());
             Skills.Add(new SkillAttack());
+            Skills.Add(new SkillLightning());
+        }
+    }
+
+    class GreenDragon : Enemy
+    {
+        public GreenDragon(SceneGame world) : base(world)
+        {
+            Name = "Verdant Dragon";
+            Description = "Has deadly halitosis";
+
+            Render = new CreatureDragonRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/dragon_green")
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.Apply(new EffectStat(this, Stat.HP, 670));
+            Effect.Apply(new EffectStat(this, Stat.Attack, 20));
+
+            Effect.Apply(new EffectFamily(this, Family.Dragon));
+
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillViperBite());
         }
     }
 
@@ -80,7 +128,7 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
-            Skills.Add(new SkillAcidTouch());
+            Skills.Add(new SkillRendingClaw());
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillIronMaiden());
         }

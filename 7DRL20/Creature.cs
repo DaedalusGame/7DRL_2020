@@ -778,13 +778,13 @@ namespace RoguelikeEngine
             Frame++;
         }
 
-        public void CheckDead(int dx, int dy)
+        public void CheckDead(Vector2 dir)
         {
             if(CurrentHP <= 0 && !Dead && !Destroyed)
             {
                 Dead = true;
                 World.Wait.Add(this.OnDeath(new DeathEvent(this)));
-                Scheduler.Instance.Run(RoutineDie(dx, dy));
+                Scheduler.Instance.Run(RoutineDie(dir));
             }
         }
 
@@ -912,7 +912,7 @@ namespace RoguelikeEngine
                 else
                 {
                     foreach (var creature in tile.Creatures) { 
-                        Attack(creature, dx, dy, attackGenerator);
+                        Attack(creature, new Vector2(dx, dy), attackGenerator);
                         waitForDamage.Add(creature.CurrentAction);
                     }
                 }
@@ -949,20 +949,23 @@ namespace RoguelikeEngine
             PopupManager.FinishCollect();
         }
 
-        public IEnumerable<Wait> RoutineHit(int dx, int dy, Attack attack)
+        public IEnumerable<Wait> RoutineHit(Vector2 dir)
         {
-            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
-            VisualPose = Static(CreaturePose.Stand);
-            yield return new WaitFrames(this, 10);
+            if (dir.X != 0 || dir.Y != 0)
+            {
+                var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+                VisualPosition = Slide(pos + new Vector2(dir.X * 8, dir.Y * 8), pos, LerpHelper.Linear, 10);
+                VisualPose = Static(CreaturePose.Stand);
+                yield return new WaitFrames(this, 10);
+            }
             yield return CurrentPopups;
-            CheckDead(dx, dy);
+            CheckDead(dir);
         }
 
-        public virtual IEnumerable<Wait> RoutineDie(int dx, int dy)
+        public virtual IEnumerable<Wait> RoutineDie(Vector2 dir)
         {
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-            VisualPosition = Slide(pos, pos + new Vector2(dx * 8, dy * 8), LerpHelper.Linear, 20);
+            VisualPosition = Slide(pos, pos + new Vector2(dir.X * 8, dir.Y * 8), LerpHelper.Linear, 20);
             VisualPose = Static(CreaturePose.Stand);
             VisualColor = Flash(() => ColorMatrix.Identity, () => ColorMatrix.Tint(Color.Transparent), 2, 2);
             DeadWait = new WaitTime(60);
@@ -1015,13 +1018,19 @@ namespace RoguelikeEngine
             return attack;
         }
 
-        public Attack Attack(Creature target, int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
+        public Attack Attack(Creature target, Vector2 dir, Func<Creature, IEffectHolder, Attack> attackGenerator)
         {
             Attack attack = attackGenerator(this, target);
             var waitAttack = Scheduler.Instance.RunAndWait(attack.RoutineStart());
-            var waitHit = Scheduler.Instance.RunAndWait(target.RoutineHit(dx, dy, attack));
+            var waitHit = Scheduler.Instance.RunAndWait(target.RoutineHit(dir));
             target.CurrentAction = new WaitAll(new[] { waitAttack, waitHit });
             return attack;
+        }
+
+        public IEnumerable<Wait> AttackSelf(Attack attack)
+        {
+            yield return Scheduler.Instance.RunAndWait(attack.RoutineStart());
+            Scheduler.Instance.RunAndWait(RoutineHit(Vector2.Zero));
         }
 
         public Wait WaitSome(int frames)

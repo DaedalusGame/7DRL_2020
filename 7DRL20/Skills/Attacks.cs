@@ -108,6 +108,43 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillRendingClaw : SkillAttackBase
+    {
+        public SkillRendingClaw() : base("Rending Claw", "Attack", 0, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Slash, 1.0);
+            //TODO: Durability damage
+            return attack;
+        }
+    }
+
+    class SkillViperBite : SkillAttackBase
+    {
+        public SkillViperBite() : base("Viper Bite", "Attack", 0, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Slash, 0.5);
+            attack.Elements.Add(Element.Pierce, 0.5);
+            attack.StatusEffects.Add(new Poison()
+            {
+                Buildup = 1.0,
+                Duration = new Slider(40),
+            });
+            return attack;
+        }
+    }
+
     class SkillAcidTouch : SkillAttackBase
     {
         public SkillAcidTouch() : base("Acid Touch", "Attack", 0, 1, float.PositiveInfinity)
@@ -212,21 +249,11 @@ namespace RoguelikeEngine.Skills
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
             Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.TwoColor(new Color(129, 166, 0), new Color(237, 255, 106)), Color.Red, 0);
-            Projectile projectile = new Projectile(bullet, Projectile.NoTrail, Projectile.CollideSolid, Impact);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
             return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
             //new Color(225, 174, 210)
-        }
-
-        public IEnumerable<Wait> Impact(Creature user, Tile tile)
-        {
-            Point velocity = user.Facing.ToOffset();
-            List<Wait> waits = new List<Wait>();
-            foreach (Creature creature in tile.Creatures)
-            {
-                user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-                waits.Add(creature.CurrentAction);
-            }
-            yield return new WaitAll(waits);
         }
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
@@ -268,22 +295,18 @@ namespace RoguelikeEngine.Skills
 
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
-            Projectile projectile = new Projectile(null, Projectile.NoTrail, Projectile.CollideSolid, Impact);
+            Projectile projectile = new Projectile(null);
+            projectile.ExtraEffects.Add(new ProjectileImpactFunction(Impact));
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
             return projectile.ShootStraight(user, tile, velocity, 0, MaxDistance);
             //new Color(225, 174, 210)
         }
 
-        public IEnumerable<Wait> Impact(Creature user, Tile tile)
+        private IEnumerable<Wait> Impact(Projectile projectile, Tile tile)
         {
-            Point velocity = user.Facing.ToOffset();
-            new FireExplosion(user.World, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8), Vector2.Zero, 0, 15);
-            List<Wait> waits = new List<Wait>();
-            foreach (Creature creature in tile.Creatures)
-            {
-                user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-                waits.Add(creature.CurrentAction);
-            }
-            yield return new WaitAll(waits);
+            new FireExplosion(tile.World, tile.VisualTarget, Vector2.Zero, 0, 15);
+            return Enumerable.Empty<Wait>();
         }
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
@@ -324,20 +347,10 @@ namespace RoguelikeEngine.Skills
         private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
             Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_sword"), Vector2.Zero, ColorMatrix.Tint(new Color(225, 174, 210)), Color.Black, 0);
-            Projectile projectile = new Projectile(bullet, Projectile.NoTrail, Projectile.CollideSolid, Impact);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
             return projectile.ShootStraight(user, tile, velocity, 3, 10);
-        }
-
-        public IEnumerable<Wait> Impact(Creature user, Tile tile)
-        {
-            Point velocity = user.Facing.ToOffset();
-            List<Wait> waits = new List<Wait>();
-            foreach (Creature creature in tile.Creatures)
-            {
-                user.Attack(creature, velocity.X, velocity.Y, BulletAttack);
-                waits.Add(creature.CurrentAction);
-            }
-            yield return user.WaitSome(0);
         }
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
@@ -393,7 +406,7 @@ namespace RoguelikeEngine.Skills
                     {
                         foreach (var creature in tile.Creatures)
                         {
-                            user.Attack(creature, offset.X, offset.Y, RamAttack);
+                            user.Attack(creature, new Vector2(offset.X, offset.Y), RamAttack);
                             waitForDamage.Add(creature.CurrentAction);
                             creatureHits++;
                         }
@@ -503,7 +516,7 @@ namespace RoguelikeEngine.Skills
                 {
                     if (multihit || !targets.Contains(target))
                     {
-                        user.Attack(target, 0, 0, attack);
+                        user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attack);
                     }
                     targets.Add(target);
                     waits.Add(target.CurrentAction);
@@ -649,7 +662,7 @@ namespace RoguelikeEngine.Skills
                     continue;
                 foreach(var target in attackTile.Tile.Creatures)
                 {
-                    user.Attack(target, 0, 0, attackTile.Attack);
+                    user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attackTile.Attack);
                     waits.Add(target.CurrentAction);
                 }
             }
@@ -802,7 +815,7 @@ namespace RoguelikeEngine.Skills
 
             foreach (var chainTarget in shootTile.Creatures)
             {
-                user.Attack(chainTarget, 0, 0, ThunderAttack);
+                user.Attack(chainTarget, Vector2.Normalize(chainTarget.VisualTarget - user.VisualTarget), ThunderAttack);
                 yield return chainTarget.CurrentAction;
                 break;
             }

@@ -1264,6 +1264,7 @@ namespace RoguelikeEngine
 
         public SuperLava() : base("Super Lava")
         {
+            Effect.Apply(new EffectTrait(this, Trait.SuperLava));
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -1304,6 +1305,7 @@ namespace RoguelikeEngine
 
         public HyperLava() : base("Hyper Lava")
         {
+            Effect.Apply(new EffectTrait(this, Trait.HyperLava));
         }
 
         public override void AddTooltip(ref string tooltip)

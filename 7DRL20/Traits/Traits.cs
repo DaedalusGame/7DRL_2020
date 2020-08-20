@@ -62,6 +62,8 @@ namespace RoguelikeEngine.Traits
 
         public static Trait Water = new TraitWater();
         public static Trait Lava = new TraitLava();
+        public static Trait SuperLava = new TraitSuperLava();
+        public static Trait HyperLava = new TraitHyperLava();
         public static Trait Acid = new TraitAcid();
     }
 
@@ -95,7 +97,7 @@ namespace RoguelikeEngine.Traits
                 foreach (var target in targets)
                 {
                     double splinterDamage = traitLvl * 0.2 * attack.FinalDamage.Sum(x => x.Value);
-                    attack.Attacker.Attack(target, 0, 0, (a,b) => SplinterAttack(a, b, splinterDamage));
+                    attack.Attacker.Attack(target, Vector2.Normalize(target.VisualTarget - attack.Attacker.VisualTarget), (a,b) => SplinterAttack(a, b, splinterDamage));
                     waitForDamage.Add(target.CurrentAction);
                 }
                 yield return new WaitAll(waitForDamage);
@@ -263,7 +265,7 @@ namespace RoguelikeEngine.Traits
             List<Wait> waitForDamage = new List<Wait>();
             foreach(var target in damageTargets.Distinct().Shuffle(Random))
             {
-                creature.Attack(target, 0, 0, (a,b) => ExplosionAttack(a,b,force,reactionLevel));
+                creature.Attack(target, Vector2.Normalize(target.VisualTarget - creature.VisualTarget), (a,b) => ExplosionAttack(a,b,force,reactionLevel));
                 waitForDamage.Add(target.CurrentAction);
             }
             yield return new WaitAll(waitForDamage);
@@ -394,7 +396,7 @@ namespace RoguelikeEngine.Traits
                 yield return attack.Attacker.WaitSome(10);
                 new FireExplosion(targetCreature.World, targetCreature.VisualTarget, Vector2.Zero, 0, 20);
                 Point offset = attack.Attacker.Facing.ToOffset();
-                attack.Attacker.Attack(targetCreature, offset.X, offset.Y, MeteorAttack);
+                attack.Attacker.Attack(targetCreature, new Vector2(offset.X, offset.Y), MeteorAttack);
                 yield return targetCreature.CurrentAction;
             }
 
@@ -668,7 +670,7 @@ namespace RoguelikeEngine.Traits
                 {
                     double sparkDamage = traitLvl * 20;
                     new LightningSpark(attack.Attacker.World, lightning, attack.Attacker.VisualPosition() + attack.Attacker.Mask.GetRandomPixel(Random), target.VisualPosition() + target.Mask.GetRandomPixel(Random), 5);
-                    attack.Attacker.Attack(target, 0, 0, (a, b) => SparkAttack(a, b, sparkDamage));
+                    attack.Attacker.Attack(target, Vector2.Normalize(target.VisualTarget - attack.Attacker.VisualTarget), (a, b) => SparkAttack(a, b, sparkDamage));
                     waitForDamage.Add(target.CurrentAction);
                 }
                 yield return new WaitAll(waitForDamage);

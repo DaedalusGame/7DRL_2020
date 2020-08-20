@@ -66,7 +66,7 @@ namespace RoguelikeEngine.Attacks
             var bullet = new MissileHand(user.World, emitPos, target.VisualTarget, velocity, ColorMatrix.Tint(Color.Goldenrod), moveTime, moveTime);
             yield return new WaitBullet(bullet);
             if (hits % 3 >= 2)
-                user.Attack(target, 0, 0, AttackSlap);
+                user.Attack(target, Vector2.Zero, AttackSlap);
         }
 
         private Attack AttackSlap(Creature attacker, IEffectHolder defender)
@@ -149,7 +149,7 @@ namespace RoguelikeEngine.Attacks
             var bullet = new BulletSpeed(user.World, SpriteLoader.Instance.AddSprite("content/highspeed"), target.VisualTarget + offset, ColorMatrix.Tint(Color.Black), 6);
             bullet.Move(target.VisualTarget, 6);
             yield return new WaitBullet(bullet);
-            user.Attack(target, 0, 0, AttackSlap);
+            user.Attack(target, Vector2.Zero, AttackSlap);
         }
 
         private Attack AttackSlap(Creature attacker, IEffectHolder defender)
@@ -189,7 +189,7 @@ namespace RoguelikeEngine.Attacks
                 yield return user.WaitSome(30);
                 new RockTremor(user.World, targetCreature, 30);
                 yield return new WaitBullet(bullet);
-                user.Attack(targetCreature, 0, 0, AttackDelta);
+                user.Attack(targetCreature, Vector2.Normalize(targetCreature.VisualTarget - user.VisualTarget), AttackDelta);
                 yield return targetCreature.CurrentAction;
             }
         }

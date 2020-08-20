@@ -39,6 +39,7 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillPuddleStomp());
             Skills.Add(new SkillRainDance());
             Skills.Add(new SkillPrance(3, 5));
+            Skills.Add(new SkillPounce(0, 5));
         }
     }
 
@@ -74,6 +75,7 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillLightningDance());
             Skills.Add(new SkillRainDance());
             Skills.Add(new SkillPrance(3, 5));
+            Skills.Add(new SkillPounce(0, 5));
         }
     }
 
@@ -227,10 +229,10 @@ namespace RoguelikeEngine.Enemies
             WingOpen = Static(0f);
         }
 
-        public override IEnumerable<Wait> RoutineDie(int dx, int dy)
+        public override IEnumerable<Wait> RoutineDie(Vector2 dir)
         {
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-            VisualPosition = Slide(pos, pos + new Vector2(dx * 8, dy * 8), LerpHelper.Linear, 20);
+            VisualPosition = Slide(pos, pos + new Vector2(dir.X * 8, dir.Y * 8), LerpHelper.Linear, 20);
             VisualPose = Static(CreaturePose.Stand);
             VisualColor = SoftFlash(ColorMatrix.Identity, ColorMatrix.Flat(Color.White), LerpHelper.QuadraticOut, 10);
             DeadWait = new WaitTime(200);

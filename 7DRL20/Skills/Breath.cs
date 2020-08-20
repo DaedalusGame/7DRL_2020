@@ -132,7 +132,7 @@ namespace RoguelikeEngine.Skills
             {
                 foreach (Creature target in tile.Creatures)
                 {
-                    user.Attack(target, 0, 0, ExplosionAttack);
+                    user.Attack(target, Vector2.Zero, ExplosionAttack);
                 }
             }
         }
@@ -216,7 +216,7 @@ namespace RoguelikeEngine.Skills
                 cloud.Add(tile, 20);
                 foreach (Creature target in tile.Creatures)
                 {
-                    user.Attack(target, 0, 0, ExplosionAttack);
+                    user.Attack(target, Vector2.Zero, ExplosionAttack);
                 }
             }
         }

@@ -85,7 +85,7 @@ namespace RoguelikeEngine.Skills
 
             for (int y = yTop; y <= yBottom; y++)
             {
-                for (int x = 0; x < dist; x++)
+                for (int x = -1; x < dist; x++)
                 {
                     int left = xLeft - userRectangle.Width - x;
                     int right = xRight + userRectangle.Width + x;
@@ -97,7 +97,7 @@ namespace RoguelikeEngine.Skills
 
             for (int x = yTop; x <= yBottom; x++)
             {
-                for (int y = 0; y < dist; y++)
+                for (int y = -1; y < dist; y++)
                 {
                     int top = yTop - userRectangle.Height - y;
                     int bottom = yBottom + userRectangle.Height + y;
@@ -108,6 +108,40 @@ namespace RoguelikeEngine.Skills
             }
 
             return tiles;
+        }
+    }
+
+    class SkillBackJump : SkillJumpBase
+    {
+        int Distance;
+        int JumpDistance;
+
+        public SkillBackJump(int distance, int jumpDistance) : base("Back Step", "Move to tile aligned with enemy", 2, 3, float.PositiveInfinity)
+        {
+            Distance = distance;
+            JumpDistance = jumpDistance;
+        }
+
+        protected override IEnumerable<TileDirection> GetPossibleTiles(Creature user, Creature target)
+        {
+            if (target == null || target.Tile == null)
+                return Enumerable.Empty<TileDirection>();
+
+            Rectangle userRectangle = user.Mask.GetRectangle();
+            Rectangle targetRectangle = target.Mask.GetRectangle();
+
+            Facing back = user.Facing.Mirror();
+
+            return GetAlignedTiles(target.Tile, userRectangle, targetRectangle, Distance)
+                .Where(tile => tile.Facing == back)
+                .Where(tile => GetSquareDistance(tile.Tile, user.Tile) < JumpDistance * JumpDistance)
+                .Where(tile => CanLand(user, tile.Tile))
+                .Shuffle(Random);
+        }
+
+        protected override void Land(Creature user)
+        {
+            new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
         }
     }
 
@@ -167,6 +201,40 @@ namespace RoguelikeEngine.Skills
             Rectangle targetRectangle = target.Mask.GetRectangle();
 
             return GetAlignedTiles(target.Tile, userRectangle, targetRectangle, Distance)
+                .Where(tile => GetSquareDistance(tile.Tile, user.Tile) < JumpDistance * JumpDistance)
+                .Where(tile => CanLand(user, tile.Tile))
+                .Shuffle(Random);
+        }
+
+        protected override void Land(Creature user)
+        {
+            new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
+        }
+    }
+
+    class SkillPounce : SkillJumpBase
+    {
+        int Distance;
+        int JumpDistance;
+
+        public SkillPounce(int distance, int jumpDistance) : base("Pounce", "Move to tile in front of enemy", 2, 3, float.PositiveInfinity)
+        {
+            Distance = distance;
+            JumpDistance = jumpDistance;
+        }
+
+        protected override IEnumerable<TileDirection> GetPossibleTiles(Creature user, Creature target)
+        {
+            if (target == null || target.Tile == null)
+                return Enumerable.Empty<TileDirection>();
+
+            Rectangle userRectangle = user.Mask.GetRectangle();
+            Rectangle targetRectangle = target.Mask.GetRectangle();
+
+            Facing front = user.Facing;
+
+            return GetAlignedTiles(target.Tile, userRectangle, targetRectangle, Distance)
+                .Where(tile => tile.Facing == front)
                 .Where(tile => GetSquareDistance(tile.Tile, user.Tile) < JumpDistance * JumpDistance)
                 .Where(tile => CanLand(user, tile.Tile))
                 .Shuffle(Random);
@@ -312,7 +380,7 @@ namespace RoguelikeEngine.Skills
                     yield return user.WaitSome(emitTime + ballTime);
                 foreach (var blastTarget in targets)
                 {
-                    user.Attack(blastTarget, 0, 0, ExplosionAttack);
+                    user.Attack(blastTarget, Vector2.Normalize(blastTarget.VisualTarget - user.VisualTarget), ExplosionAttack);
                     EmitFlare(blastTarget, 10);
                 }
                 foreach (var targetTile in targetTiles)

@@ -318,7 +318,65 @@ namespace RoguelikeEngine
         {
             base.Update();
             if (Stacks >= 1)
-                Creature.TakeDamage(Math.Pow(2, Stacks - 1), Element.Poison);
+                Creature.TakeDamage(Math.Pow(2, Stacks - 1) * 5, Element.Poison);
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class Aflame : StatusEffect
+    {
+        public override string Name => $"Aflame";
+        public override string Description => $"Take fire damage every turn.";
+
+        public override int MaxStacks => 1;
+
+        public Aflame() : base()
+        {
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Aflame;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Stacks >= 1)
+                Creature.TakeDamage(Math.Pow(2, Stacks - 1) * 5, Element.Fire);
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class Incinerate : StatusEffect
+    {
+        public override string Name => $"Incinerate";
+        public override string Description => $"Instant Death at {MaxStacks} stacks.";
+
+        public override int MaxStacks => 5;
+
+        public Incinerate() : base()
+        {
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Incinerate;
+        }
+
+        //TODO: Instant Death
+
+        public override void Update()
+        {
+            base.Update();
         }
 
         public override string ToString()

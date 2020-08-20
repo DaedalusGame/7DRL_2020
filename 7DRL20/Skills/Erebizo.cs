@@ -148,7 +148,7 @@ namespace RoguelikeEngine.Skills
                 new ScreenShakeRandom(user.World, 8, 80, LerpHelper.QuarticIn);
                 //new BigExplosion(user.World, () => target.VisualTarget, (pos, time) => new EnderExplosion(user.World, pos, Vector2.Zero, time));
                 yield return user.WaitSome(10);
-                user.Attack(targetCreature, 0, 0, FlareAttack);
+                user.Attack(targetCreature, Vector2.Normalize(targetCreature.VisualTarget - user.VisualTarget), FlareAttack);
                 yield return targetCreature.CurrentAction;
                 yield return user.WaitSome(20);
             }
@@ -334,7 +334,7 @@ namespace RoguelikeEngine.Skills
             {
                 foreach (Creature creature in tile.Creatures)
                 {
-                    user.Attack(creature, 0, 0, AttackQuake);
+                    user.Attack(creature, Vector2.Zero, AttackQuake);
                 }
             }
         }

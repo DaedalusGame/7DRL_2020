@@ -952,26 +952,21 @@ namespace RoguelikeEngine
             scene.PopSpriteBatch();
         }
 
-        internal bool CanCollide(Creature user, Tile tile)
+        internal bool CanCollide(Skills.Projectile projectile, Tile tile)
         {
-            return Skills.Projectile.CollideSolid(user, tile);
+            return Skills.Projectile.CollideSolid(projectile, tile);
         }
 
-        public IEnumerable<Wait> Impact(Creature user, Tile tile)
+        public IEnumerable<Wait> Impact(Skills.Projectile projectile, Tile tile)
         {
-            Point velocity = user.Facing.ToOffset();
+            Point velocity = projectile.Shooter.Facing.ToOffset();
             List<Wait> waits = new List<Wait>();
             foreach (Creature creature in tile.Creatures)
             {
-                user.Attack(creature, velocity.X, velocity.Y, ArrowAttack);
+                projectile.Shooter.Attack(creature, new Vector2(velocity.X, velocity.Y), ArrowAttack);
                 waits.Add(creature.CurrentAction);
             }
             yield return new WaitAll(waits);
-        }
-
-        internal IEnumerable<Wait> Trail(Creature user, Tile tile)
-        {
-            return Skills.Projectile.NoTrail(user, tile);
         }
 
         public Attack ArrowAttack(Creature attacker, IEffectHolder defender)
@@ -995,7 +990,9 @@ namespace RoguelikeEngine
             for (int i = 0; i < volley; i++)
             {
                 Bullet bullet = new BulletArrow(creature.World, this, Vector2.Zero, ColorMatrix.Identity, 0);
-                var projectile = new Skills.Projectile(bullet, Trail, CanCollide, Impact);
+                var projectile = new Skills.Projectile(bullet);
+                projectile.ExtraEffects.Add(new Skills.ProjectileImpactAttack(ArrowAttack));
+                projectile.ExtraEffects.Add(new Skills.ProjectileCollideSolid());
                 waitForDamage.Add(Scheduler.Instance.RunAndWait(projectile.ShootStraight(creature, creature.Tile, new Point(dx, dy), 3, distance)));
                 this.TakeDamage(1, Element.Bludgeon, true);
                 yield return new WaitTime(5);
