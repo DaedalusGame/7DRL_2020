@@ -229,7 +229,7 @@ namespace RoguelikeEngine
         public static int GetTrait(this IEffectHolder holder, Trait trait)
         {
             var effects = holder.GetEffects<EffectTrait>().Where(effect => effect.Trait == trait);
-            return effects.Count();
+            return effects.Sum(x => x.Level);
         }
 
         public static double CalculateStat(IEffectHolder holder, IEnumerable<Effect> effects, double defaultStat)

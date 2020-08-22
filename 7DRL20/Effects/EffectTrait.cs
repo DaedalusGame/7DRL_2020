@@ -12,13 +12,15 @@ namespace RoguelikeEngine.Effects
     {
         public IEffectHolder Holder;
         public Trait Trait;
+        public int Level;
 
         public override double VisualPriority => 1000;
 
-        public EffectTrait(IEffectHolder holder, Trait trait)
+        public EffectTrait(IEffectHolder holder, Trait trait, int level = 1)
         {
             Holder = holder;
             Trait = trait;
+            Level = level;
         }
 
         public override void Apply()
@@ -38,7 +40,7 @@ namespace RoguelikeEngine.Effects
 
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
-            statBlock += $"{Game.FORMAT_BOLD}{Game.FormatColor(Trait.Color)}{Trait.Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD} Lv{equalityGroup.Count()}\n";
+            statBlock += $"{Game.FORMAT_BOLD}{Game.FormatColor(Trait.Color)}{Trait.Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD} Lv{equalityGroup.OfType<EffectTrait>().Sum(trait => trait.Level)}\n";
             string description = string.Join(string.Empty, Trait.Description.Split('\n').Select(str => $"- {str}\n"));
             statBlock += description;
         }
