@@ -269,7 +269,7 @@ namespace RoguelikeEngine.Skills
     {
         int MaxDistance = 8;
 
-        public SkillCannonShot() : base("Cannon", "Ranged Fire Attack", 2, 3, float.PositiveInfinity)
+        public SkillCannonShot() : base("Cannon", $"Ranged {Element.Fire.FormatString} Attack", 2, 3, float.PositiveInfinity)
         {
         }
 
@@ -320,7 +320,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillDeathSword : SkillProjectileBase
     {
-        public SkillDeathSword() : base("Death Blade", "Wide-range slashing attack", 1, 3, float.PositiveInfinity)
+        public SkillDeathSword() : base("Death Blade", $"Wide-range {Element.Slash.FormatString} attack", 1, 3, float.PositiveInfinity)
         {
         }
 
@@ -507,7 +507,7 @@ namespace RoguelikeEngine.Skills
 
         public abstract IEnumerable<Wait> RoutineDamage(Creature user, HashSet<Creature> targets, int n);
 
-        public IEnumerable<Wait> RoutineDamageSurrounding(Creature user, HashSet<Creature> targets, bool multihit, Func<Creature, IEffectHolder, Attack> attack)
+        public IEnumerable<Wait> RoutineDamageSurrounding(Creature user, HashSet<Creature> targets, bool multihit, AttackDelegate attack)
         {
             List<Wait> waits = new List<Wait>();
             foreach (var tile in user.Mask.GetFullFrontier().Select(o => user.Tile.GetNeighbor(o.X, o.Y)))
@@ -620,9 +620,9 @@ namespace RoguelikeEngine.Skills
         struct AttackTile
         {
             public Tile Tile;
-            public Func<Creature,IEffectHolder,Attack> Attack;
+            public AttackDelegate Attack;
 
-            public AttackTile(Tile tile, Func<Creature, IEffectHolder, Attack> attack)
+            public AttackTile(Tile tile, AttackDelegate attack)
             {
                 Tile = tile;
                 Attack = attack;
@@ -646,7 +646,7 @@ namespace RoguelikeEngine.Skills
             List<AttackTile> attackTiles = new List<AttackTile>();
             foreach(var tile in user.Tiles)
             {
-                Func<Creature, IEffectHolder, Attack> attack = GetAttack(user, tile);
+                AttackDelegate attack = GetAttack(user, tile);
                 if (attack != null)
                 {
                     attackTiles.AddRange(tile.GetAllNeighbors().Select(target => new AttackTile(target, attack)));
@@ -669,7 +669,7 @@ namespace RoguelikeEngine.Skills
             yield return new WaitAll(waits);
         }
 
-        private Func<Creature, IEffectHolder, Attack> GetAttack(Creature user, Tile tile)
+        private AttackDelegate GetAttack(Creature user, Tile tile)
         {
             if(tile is Water)
             {
@@ -756,7 +756,7 @@ namespace RoguelikeEngine.Skills
     {
         public int Bolts = 1;
 
-        public SkillLightning() : base("Lightning", "Ranged Thunder Attack", 2, 5, float.PositiveInfinity)
+        public SkillLightning() : base("Lightning", $"Ranged {Element.Thunder.FormatString} Attack", 2, 5, float.PositiveInfinity)
         {
         }
 
@@ -870,7 +870,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillIronMaiden : Skill
     {
-        public SkillIronMaiden() : base("Iron Maiden", "Lowers enemy defense.", 4, 10, float.PositiveInfinity)
+        public SkillIronMaiden() : base("Iron Maiden", $"Lowers enemy {Stat.Defense.FormatString}.", 4, 10, float.PositiveInfinity)
         {
         }
 
@@ -941,7 +941,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillOblivion : Skill
     {
-        public SkillOblivion() : base("Oblivion", "Immense Dark damage.", 16, 15, float.PositiveInfinity)
+        public SkillOblivion() : base("Oblivion", $"Immense {Element.Dark.FormatString} damage.", 16, 15, float.PositiveInfinity)
         {
             Priority = 10;
         }

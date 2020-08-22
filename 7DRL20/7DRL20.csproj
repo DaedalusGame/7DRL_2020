@@ -133,6 +133,7 @@
     <Compile Include="Scheduler.cs" />
     <Compile Include="Skill.cs" />
     <Compile Include="Skills\Attacks.cs" />
+    <Compile Include="SkillUtil.cs" />
     <Compile Include="Slider.cs" />
     <Compile Include="SpriteLoader.cs" />
     <Compile Include="StatusEffect.cs" />

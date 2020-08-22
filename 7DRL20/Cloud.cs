@@ -350,7 +350,7 @@ namespace RoguelikeEngine
         public CloudIce(Map map) : base(map)
         {
             Name = "Blizzard";
-            Description = "Deals ice damage every turn.";
+            Description = $"Deals {Element.Ice.FormatString} damage every turn.";
         }
 
         public override void Update()
@@ -381,6 +381,7 @@ namespace RoguelikeEngine
 
             foreach(var target in targets)
             {
+                target.AttackSelf(IceAttack);
                 target.TakeDamage(10, Element.Ice);
                 target.CheckDead(Vector2.Zero);
             }
@@ -391,6 +392,13 @@ namespace RoguelikeEngine
             Drift(-1, 0, Parts.Count / 2);
 
             return base.NormalTurn(turn);
+        }
+
+        private Attack IceAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+
+            return attack;
         }
     }
 }

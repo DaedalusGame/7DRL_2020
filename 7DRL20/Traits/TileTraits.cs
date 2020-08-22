@@ -46,7 +46,12 @@ namespace RoguelikeEngine.Traits
         {
             Creature creature = turn.Creature;
 
-            Attack attack = new Attack(creature, creature);
+            yield return creature.AttackSelf(LavaAttack);
+        }
+
+        private Attack LavaAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
             attack.SetParameters(10, 0, 1);
             attack.Elements.Add(Element.Fire, 1);
             attack.StatusEffects.Add(new Aflame()
@@ -54,8 +59,7 @@ namespace RoguelikeEngine.Traits
                 Buildup = 1,
                 Duration = new Slider(20),
             });
-
-            yield return creature.AttackSelf(attack);
+            return attack;
         }
     }
 
@@ -75,7 +79,12 @@ namespace RoguelikeEngine.Traits
         {
             Creature creature = turn.Creature;
 
-            Attack attack = new Attack(creature, creature);
+            yield return creature.AttackSelf(LavaAttack);
+        }
+
+        private Attack LavaAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
             attack.SetParameters(20, 0, 1);
             attack.Elements.Add(Element.Fire, 1);
             attack.StatusEffects.Add(new Aflame()
@@ -83,8 +92,7 @@ namespace RoguelikeEngine.Traits
                 Buildup = 1,
                 Duration = new Slider(20),
             });
-
-            yield return creature.AttackSelf(attack);
+            return attack;
         }
     }
 
@@ -105,7 +113,12 @@ namespace RoguelikeEngine.Traits
         {
             Creature creature = turn.Creature;
 
-            Attack attack = new Attack(creature, creature);
+            yield return creature.AttackSelf(LavaAttack);
+        }
+
+        private Attack LavaAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
             attack.SetParameters(40, 0, 1);
             attack.Elements.Add(Element.Magma, 1);
             attack.StatusEffects.Add(new Aflame()
@@ -118,8 +131,7 @@ namespace RoguelikeEngine.Traits
                 Buildup = 0.2,
                 Duration = new Slider(15),
             });
-
-            yield return creature.AttackSelf(attack);
+            return attack;
         }
     }
 

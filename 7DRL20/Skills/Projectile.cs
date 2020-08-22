@@ -32,9 +32,9 @@ namespace RoguelikeEngine.Skills
 
     class ProjectileImpactAttack : ProjectileSpecial
     {
-        Func<Creature, IEffectHolder, Attack> AttackGenerator;
+        AttackDelegate AttackGenerator;
 
-        public ProjectileImpactAttack(Func<Creature, IEffectHolder, Attack> attackGenerator)
+        public ProjectileImpactAttack(AttackDelegate attackGenerator)
         {
             AttackGenerator = attackGenerator;
         }
@@ -71,12 +71,12 @@ namespace RoguelikeEngine.Skills
     {
         Random Random = new Random();
 
-        Func<Creature, IEffectHolder, Attack> AttackGenerator;
+        AttackDelegate AttackGenerator;
         int Radius;
 
         HashSet<Creature> Targets = new HashSet<Creature>();
 
-        public ProjectileArc(Func<Creature, IEffectHolder, Attack> attackGenerator, int radius)
+        public ProjectileArc(AttackDelegate attackGenerator, int radius)
         {
             AttackGenerator = attackGenerator;
             Radius = radius;
@@ -106,10 +106,10 @@ namespace RoguelikeEngine.Skills
 
     class ProjectileImpactExplosion : ProjectileSpecial
     {
-        Func<Creature, IEffectHolder, Attack> AttackGenerator;
+        AttackDelegate AttackGenerator;
         int Radius;
 
-        public ProjectileImpactExplosion(Func<Creature, IEffectHolder, Attack> attackGenerator, int radius)
+        public ProjectileImpactExplosion(AttackDelegate attackGenerator, int radius)
         {
             AttackGenerator = attackGenerator;
             Radius = radius;

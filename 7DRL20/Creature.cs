@@ -35,6 +35,8 @@ namespace RoguelikeEngine
 
         public double Priority;
 
+        public string FormatString => $"{Game.FormatElement(this)}{Name}";
+
         public Element(string name, Symbol symbol)
         {
             ID = AllElements.Count;
@@ -281,6 +283,8 @@ namespace RoguelikeEngine
         public double DefaultStat;
         public Symbol Symbol;
         public Func<Creature, double, string> Format = (creature, value) => value.ToString();
+
+        public string FormatString => $"{Game.FormatStat(this)}{Name}";
 
         public double Priority;
         public virtual double EffectivePriority => Priority;
@@ -574,6 +578,8 @@ namespace RoguelikeEngine
             scene.PopSpriteBatch();
         }
     }
+
+    delegate Attack AttackDelegate(Creature attacker, IEffectHolder defender);
 
     abstract class Creature : IEffectHolder, IGameObject, IHasPosition
     {
@@ -903,7 +909,7 @@ namespace RoguelikeEngine
             yield return new WaitFrames(this, 10);
         }
 
-        public IEnumerable<Wait> RoutineAttack(int dx, int dy, Func<Creature, IEffectHolder, Attack> attackGenerator)
+        public IEnumerable<Wait> RoutineAttack(int dx, int dy, AttackDelegate attackGenerator)
         {
             yield return PopupManager.Wait;
             var frontier = Mask.GetFrontier(dx, dy);
@@ -1023,7 +1029,7 @@ namespace RoguelikeEngine
             return attack;
         }
 
-        public Wait Attack(Creature target, Vector2 dir, Func<Creature, IEffectHolder, Attack> attackGenerator)
+        public Wait Attack(Creature target, Vector2 dir, AttackDelegate attackGenerator)
         {
             Attack attack = attackGenerator(this, target);
             attack.HitDirection = dir;
@@ -1033,6 +1039,11 @@ namespace RoguelikeEngine
             target.CurrentActions.Add(wait);
             target.CurrentHits.Add(wait);
             return wait;
+        }
+
+        public Wait AttackSelf(AttackDelegate attackGenerator)
+        {
+            return AttackSelf(attackGenerator(this, this));
         }
 
         public Wait AttackSelf(Attack attack)

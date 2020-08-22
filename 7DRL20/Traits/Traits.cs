@@ -139,7 +139,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSpotlight : Trait
     {
-        public TraitSpotlight() : base("Spotlight", "Attacking undead take holy damage.", new Color(155, 255, 242))
+        public TraitSpotlight() : base("Spotlight", $"Attacking undead take {Element.Holy.FormatString} damage.", new Color(155, 255, 242))
         {
             Effect.Apply(new OnDefend(this, OnDefend));
         }
@@ -284,7 +284,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitFrothingBlast() : base("Frothing Blast", "Create acid explosion on contact with water.", new Color(164, 247, 236))
+        public TraitFrothingBlast() : base("Frothing Blast", $"Create acid explosion on contact with water.\nExplosion does half {Element.Acid.FormatString}, half {Element.Steam.FormatString} damage.", new Color(164, 247, 236))
         {
             Effect.Apply(new OnDefend(this, FrothingAttack));
             Effect.Apply(new OnTurn(this, FrothingTurn));
@@ -446,7 +446,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitMeteorBash : Trait
     {
-        public TraitMeteorBash() : base("Meteor Bash", "Extra attack with shield, deals damage based on defense.", new Color(194, 172, 172))
+        public TraitMeteorBash() : base("Meteor Bash", $"Extra attack with shield, deals damage based on {Stat.Defense.FormatString}.", new Color(194, 172, 172))
         {
             Effect.Apply(new OnAttack(this, MeteorBash));
         }
@@ -526,7 +526,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitBloodShield : Trait
     {
-        public TraitBloodShield() : base("Blood Shield", "Attackers take pierce damage and start bleeding.", new Color(192, 0, 0))
+        public TraitBloodShield() : base("Blood Shield", $"Attackers take {Element.Pierce.FormatString} damage and start bleeding.", new Color(192, 0, 0))
         {
             Effect.Apply(new OnStartDefend(this, Stiff));
         }
@@ -698,7 +698,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitUndead() : base("Undead", "Healing causes damage.", new Color(128, 112, 128))
+        public TraitUndead() : base("Undead", $"{Element.Healing.FormatString} causes damage.", new Color(128, 112, 128))
         {
             Effect.Apply(new EffectFamily(this, Family.Undead));
             Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
@@ -709,7 +709,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitSparking() : base("Sparking", "Spark to adjacent tiles, dealing Thunder damage.", new Color(128, 112, 128))
+        public TraitSparking() : base("Sparking", $"Spark to adjacent tiles, dealing {Element.Thunder.FormatString} damage.", new Color(128, 112, 128))
         {
             Effect.Apply(new OnAttack(this, Spark));
         }

@@ -10,7 +10,7 @@ namespace RoguelikeEngine.Attacks
 {
     class SkillPhalange : Skill
     {
-        public SkillPhalange() : base("Phalange", "Ranged Physical damage.", 0, 3, float.PositiveInfinity)
+        public SkillPhalange() : base("Phalange", $"Ranged {Element.Bludgeon.FormatString} damage.", 0, 3, float.PositiveInfinity)
         {
             InstantUses = new Slider(2);
         }
@@ -79,7 +79,7 @@ namespace RoguelikeEngine.Attacks
 
     class SkillHeptablast : Skill
     {
-        public SkillHeptablast() : base("Heptablast", "Physical damage to 10 random targets. -5 Chirality stacks.", 9, 0, float.PositiveInfinity)
+        public SkillHeptablast() : base("Heptablast", $"{Element.Bludgeon.FormatString} damage to 10 random targets. -5 Chirality stacks.", 9, 0, float.PositiveInfinity)
         {
             Priority = 5;
         }
@@ -162,7 +162,7 @@ namespace RoguelikeEngine.Attacks
 
     class SkillDeltaAttack : Skill
     {
-        public SkillDeltaAttack() : base("Delta Attack", "Ranged Earth damage.", 3, 3, float.PositiveInfinity)
+        public SkillDeltaAttack() : base("Delta Attack", $"Ranged {Element.Earth.FormatString} damage.", 3, 3, float.PositiveInfinity)
         {
         }
 

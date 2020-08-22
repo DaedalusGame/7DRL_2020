@@ -322,7 +322,7 @@ namespace RoguelikeEngine.Skills
         public override bool Hidden(Creature user) => true;
         public override bool WaitUse => true;
 
-        public SkillChaosJaunt() : base("Chaos Jaunt", "Move to chase enemy, deal chaos damage to surrounding tiles.", 0, 2, float.PositiveInfinity)
+        public SkillChaosJaunt() : base("Chaos Jaunt", $"Move to chase enemy, deal {Element.Chaos.FormatString} damage to surrounding tiles.", 0, 2, float.PositiveInfinity)
         {
         }
 

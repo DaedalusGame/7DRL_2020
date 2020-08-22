@@ -174,7 +174,7 @@ namespace RoguelikeEngine
     class BleedGreater : StatusEffect
     {
         public override string Name => $"Greater Bleed";
-        public override string Description => $"Sudden HP damage on each buildup.";
+        public override string Description => $"Sudden {Element.Bleed.FormatString} damage on each buildup.";
 
         public BleedGreater() : base()
         {
@@ -259,7 +259,7 @@ namespace RoguelikeEngine
     class DefenseDown : StatusEffect
     {
         public override string Name => $"Defense Down";
-        public override string Description => $"Defense is reduced by {Stacks * 10}% + {Stacks * 3}";
+        public override string Description => $"{Stat.Defense.FormatString} is reduced by {Stacks * 10}% + {Stacks * 3}";
 
         public override int MaxStacks => 15;
 
@@ -278,7 +278,7 @@ namespace RoguelikeEngine
     class DefenseUp : StatusEffect
     {
         public override string Name => $"Defense Up";
-        public override string Description => $"Defense is increased by {Stacks * 10}% + {Stacks * 3}";
+        public override string Description => $"{Stat.Defense.FormatString} is increased by {Stacks * 10}% + {Stacks * 3}";
 
         public override int MaxStacks => 10;
 
@@ -302,7 +302,7 @@ namespace RoguelikeEngine
     class Poison : StatusEffect
     {
         public override string Name => $"Poison";
-        public override string Description => $"Periodic damage based on buildup.";
+        public override string Description => $"Periodic {Element.Poison.FormatString} damage based on buildup.";
 
         public Poison() : base()
         {
@@ -330,7 +330,7 @@ namespace RoguelikeEngine
     class Aflame : StatusEffect
     {
         public override string Name => $"Aflame";
-        public override string Description => $"Take fire damage every turn.";
+        public override string Description => $"Take {Element.Fire.FormatString} damage every turn.";
 
         public override int MaxStacks => 1;
 
@@ -388,7 +388,7 @@ namespace RoguelikeEngine
     class Wet : StatusEffect
     {
         public override string Name => $"Wet";
-        public override string Description => $"Extra damage from thunder attacks. Reduces fire damage.";
+        public override string Description => $"Extra damage from {Element.Thunder.FormatString} attacks. Reduces {Element.Fire.FormatString} damage.";
 
         public override int MaxStacks => 1;
 
@@ -452,7 +452,7 @@ namespace RoguelikeEngine
     class Slimed : StatusEffect
     {
         public override string Name => $"Slimed";
-        public override string Description => $"On buildup, enemy health turns into green slime.";
+        public override string Description => $"On buildup, enemy {Stat.HP.FormatString} turns into green slime.";
 
         public override int MaxStacks => 1;
 
@@ -519,7 +519,7 @@ namespace RoguelikeEngine
     class Undead : StatusEffect
     {
         public override string Name => $"Undead";
-        public override string Description => $"Subject is undead. Healing causes damage.";
+        public override string Description => $"Subject is undead. {Element.Healing.FormatString} causes damage.";
 
         public override int MaxStacks => 1;
 
@@ -567,7 +567,7 @@ namespace RoguelikeEngine
     class DeltaMark : StatusEffect
     {
         public override string Name => $"Delta Mark";
-        public override string Description => $"Increases earth damage by 20% and triples Chirality buildup.";
+        public override string Description => $"Increases {Element.Earth.FormatString} damage by 20% and triples Chirality buildup.";
 
         public override int MaxStacks => 1;
 

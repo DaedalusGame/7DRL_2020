@@ -21,7 +21,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitDeathThroesCrimson : TraitDeathThroes
     {
-        public TraitDeathThroesCrimson() : base("Crimson Throes", "Explodes on death if slashed, dealing dark and fire damage.", new Color(192,0,0))
+        public TraitDeathThroesCrimson() : base("Crimson Throes", $"Explodes on death if slashed, dealing {Element.Dark.FormatString} and {Element.Fire.FormatString} damage.", new Color(192,0,0))
         {
         }
 

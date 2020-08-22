@@ -26,7 +26,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderRam : SkillRamBase
     {
-        public SkillEnderRam() : base("Ender Ram", "Physical The End attack. Destroys terrain.", 1, 5, float.PositiveInfinity)
+        public SkillEnderRam() : base("Ender Ram", $"Physical {Element.TheEnd.FormatString} attack. Destroys terrain.", 1, 5, float.PositiveInfinity)
         {
             MaxDistance = 9;
             MaxTotalHits = 6;
@@ -48,7 +48,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillEnderMow : SkillRamBase
     {
-        public SkillEnderMow() : base("Ender Mow", "Physical The End attack", 1, 3, float.PositiveInfinity)
+        public SkillEnderMow() : base("Ender Mow", $"Physical {Element.TheEnd.FormatString} attack", 1, 3, float.PositiveInfinity)
         {
             MaxDistance = 3;
             MaxTotalHits = 2;
@@ -111,7 +111,7 @@ namespace RoguelikeEngine.Skills
     {
         public override bool Hidden(Creature user) => !user.HasStatusEffect<PoweredUp>();
 
-        public SkillEnderFlare() : base("Ender Flare", "Ranged The End Attack.", 3, 10, float.PositiveInfinity)
+        public SkillEnderFlare() : base("Ender Flare", $"Ranged {Element.TheEnd.FormatString} Attack.", 3, 10, float.PositiveInfinity)
         {
         }
 
@@ -261,7 +261,7 @@ namespace RoguelikeEngine.Skills
     {
         public override bool Hidden(Creature user) => !user.HasStatusEffect<PoweredUp>();
 
-        public SkillEnderQuake() : base("Ender Quake", "Ranged The End Attack.", 3, 10, float.PositiveInfinity)
+        public SkillEnderQuake() : base("Ender Quake", $"Ranged {Element.TheEnd.FormatString} Attack.", 3, 10, float.PositiveInfinity)
         {
         }
 
