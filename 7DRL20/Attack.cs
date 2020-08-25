@@ -136,6 +136,7 @@ namespace RoguelikeEngine
         public double AttackModifier = 1;
         public double DefenseModifier = 1;
 
+        public IEffectHolder Fault;
         public int ReactionLevel;
         public double Damage;
         public Dictionary<Element, double> FinalDamage = new Dictionary<Element, double>();

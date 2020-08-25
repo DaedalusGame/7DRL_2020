@@ -29,8 +29,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectFamily(this, Family.Dragon));
 
-            Skills.Add(new SkillFireBreath());
             Skills.Add(new SkillAttack());
+            Skills.Add(new SkillFireBreath());
 
             Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
         }
@@ -55,8 +55,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectFamily(this, Family.Dragon));
 
-            Skills.Add(new SkillIceBreath());
             Skills.Add(new SkillAttack());
+            Skills.Add(new SkillIceBreath());
 
             //Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
         }
@@ -91,7 +91,7 @@ namespace RoguelikeEngine.Enemies
         public GreenDragon(SceneGame world) : base(world)
         {
             Name = "Verdant Dragon";
-            Description = "Has deadly halitosis";
+            Description = "Deadly halitosis";
 
             Render = new CreatureDragonRender()
             {

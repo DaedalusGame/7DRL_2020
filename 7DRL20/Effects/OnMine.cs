@@ -20,6 +20,7 @@ namespace RoguelikeEngine.Effects
 
         public double Force;
 
+        public IEffectHolder Fault;
         public int ReactionLevel;
         public bool Success;
 

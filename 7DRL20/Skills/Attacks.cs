@@ -516,7 +516,7 @@ namespace RoguelikeEngine.Skills
                 {
                     if (multihit || !targets.Contains(target))
                     {
-                        var wait = user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attack);
+                        var wait = user.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - user.VisualTarget), attack);
                         waits.Add(wait);
                     }
                     targets.Add(target);
@@ -635,7 +635,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && InFrontier(user, user.IsHostile) && user.Tiles.Any(tile => GetAttack(user,tile) != null);
+            return base.CanEnemyUse(user) && InFrontier(user, user.IsHostile) && user.Tiles.Any(tile => SkillUtil.GetTerrainAttack(user,tile) != null);
         }
 
         public override IEnumerable<Wait> RoutineImpact(Creature user)
@@ -646,7 +646,7 @@ namespace RoguelikeEngine.Skills
             List<AttackTile> attackTiles = new List<AttackTile>();
             foreach(var tile in user.Tiles)
             {
-                AttackDelegate attack = GetAttack(user, tile);
+                AttackDelegate attack = SkillUtil.GetTerrainAttack(user, tile);
                 if (attack != null)
                 {
                     attackTiles.AddRange(tile.GetAllNeighbors().Select(target => new AttackTile(target, attack)));
@@ -662,46 +662,11 @@ namespace RoguelikeEngine.Skills
                     continue;
                 foreach(var target in attackTile.Tile.Creatures)
                 {
-                    var wait = user.Attack(target, Vector2.Normalize(target.VisualTarget - user.VisualTarget), attackTile.Attack);
+                    var wait = user.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - user.VisualTarget), attackTile.Attack);
                     waits.Add(wait);
                 }
             }
             yield return new WaitAll(waits);
-        }
-
-        private AttackDelegate GetAttack(Creature user, Tile tile)
-        {
-            if(tile is Water)
-            {
-                return WaterAttack;
-            }
-            if(tile is Lava)
-            {
-                return LavaAttack;
-            }
-
-            return null;
-        }
-
-        private Attack WaterAttack(Creature attacker, IEffectHolder defender)
-        {
-            Attack attack = new Attack(attacker, defender);
-            attack.SetParameters(25, 1, 1);
-            attack.Elements.Add(Element.Water, 1.0);
-            attack.StatusEffects.Add(new Wet()
-            {
-                Duration = new Slider(10),
-                Buildup = 1,
-            });
-            return attack;
-        }
-
-        private Attack LavaAttack(Creature attacker, IEffectHolder defender)
-        {
-            Attack attack = new Attack(attacker, defender);
-            attack.SetParameters(50, 1, 1);
-            attack.Elements.Add(Element.Fire, 1.0);
-            return attack;
         }
     }
 
@@ -815,7 +780,7 @@ namespace RoguelikeEngine.Skills
 
             foreach (var chainTarget in shootTile.Creatures)
             {
-                var wait = user.Attack(chainTarget, Vector2.Normalize(chainTarget.VisualTarget - user.VisualTarget), ThunderAttack);
+                var wait = user.Attack(chainTarget, SkillUtil.SafeNormalize(chainTarget.VisualTarget - user.VisualTarget), ThunderAttack);
                 yield return wait;
                 break;
             }

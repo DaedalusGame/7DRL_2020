@@ -209,7 +209,7 @@ namespace RoguelikeEngine
             return new Color(Vector4.Transform(color.ToVector4(),Matrix.Transpose(Matrix))+Add);
         }
 
-        internal static ColorMatrix Ender()
+        public static ColorMatrix Ender()
         {
             var color = ColorMatrix.Greyscale();
             color *= ColorMatrix.Translate(new Color(50, 50, 50));
@@ -219,7 +219,7 @@ namespace RoguelikeEngine
             return color;
         }
 
-        internal static ColorMatrix Chaos()
+        public static ColorMatrix Chaos()
         {
             ColorMatrix chaos = new ColorMatrix(new Matrix(
                     1, 0, 0, 0,
@@ -230,7 +230,7 @@ namespace RoguelikeEngine
             return chaos;
         }
 
-        internal static ColorMatrix Sun()
+        public static ColorMatrix Sun()
         {
             var color = ColorMatrix.Greyscale();
             color *= ColorMatrix.Translate(new Color(50, 50, 50));
@@ -238,6 +238,17 @@ namespace RoguelikeEngine
             color = ColorMatrix.Lerp(color, ColorMatrix.Identity, 0.33f);
             //color *= ColorMatrix.Scale(2);
             return color;
+        }
+
+        public static ColorMatrix Glow(float slide)
+        {
+            ColorMatrix glow = new ColorMatrix(new Matrix(
+                     slide, 0, 0, 0,
+                     0, slide, 0, 0,
+                     0, 0, slide, 0,
+                     0, 0, 0, slide),
+                     new Vector4(0, 0, 0, 0));
+            return glow;
         }
     }
 }

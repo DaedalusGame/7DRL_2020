@@ -148,7 +148,7 @@ namespace RoguelikeEngine.Skills
                 new ScreenShakeRandom(user.World, 8, 80, LerpHelper.QuarticIn);
                 //new BigExplosion(user.World, () => target.VisualTarget, (pos, time) => new EnderExplosion(user.World, pos, Vector2.Zero, time));
                 yield return user.WaitSome(10);
-                var wait = user.Attack(targetCreature, Vector2.Normalize(targetCreature.VisualTarget - user.VisualTarget), FlareAttack);
+                var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), FlareAttack);
                 yield return wait;
                 yield return user.WaitSome(20);
             }

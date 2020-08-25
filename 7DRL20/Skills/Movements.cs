@@ -380,7 +380,7 @@ namespace RoguelikeEngine.Skills
                     yield return user.WaitSome(emitTime + ballTime);
                 foreach (var blastTarget in targets)
                 {
-                    user.Attack(blastTarget, Vector2.Normalize(blastTarget.VisualTarget - user.VisualTarget), ExplosionAttack);
+                    user.Attack(blastTarget, SkillUtil.SafeNormalize(blastTarget.VisualTarget - user.VisualTarget), ExplosionAttack);
                     EmitFlare(blastTarget, 10);
                 }
                 foreach (var targetTile in targetTiles)
