@@ -237,7 +237,7 @@ namespace RoguelikeEngine.Enemies
             VisualColor = SoftFlash(ColorMatrix.Identity, ColorMatrix.Flat(Color.White), LerpHelper.QuadraticOut, 10);
             DeadWait = new WaitTime(200);
             yield return Scheduler.Instance.RunAndWait(RoutineOpenWing(0.8f, 50, LerpHelper.Quadratic));
-            new BossExplosion(World, this, (position, velocity, time) => new FireExplosion(World, position, velocity, 0, time));
+            new BossExplosion(World, this, (position, velocity, angle, time) => new FireExplosion(World, position, velocity, angle, time));
         }
 
         public override IEnumerable<Wait> RoutineDestroy()

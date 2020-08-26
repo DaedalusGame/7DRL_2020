@@ -117,20 +117,9 @@ namespace RoguelikeEngine.Skills
 
         public override Wait Impact(Projectile projectile, Tile tile)
         {
-            List<Creature> validTargets = tile.GetNearby(Radius).Where(t => InRadius(tile, t, Radius)).SelectMany(t => t.Creatures).ToList();
-            List<Wait> waitForDamage = new List<Wait>();
-            foreach(var targetCreature in validTargets.Distinct())
-            {
-                var wait = projectile.Shooter.Attack(targetCreature, Vector2.Zero, AttackGenerator);
-                waitForDamage.Add(wait);
-            }
-            return new WaitAll(waitForDamage);
-        }
-
-        private bool InRadius(Tile origin, Tile tile, int radius)
-        {
-            var distance = (tile.VisualTarget - tile.VisualTarget).LengthSquared();
-            return distance <= (radius * 16 + 8) * (radius * 16 + 8);
+            Explosion explosion = new Explosion(projectile.Shooter, SkillUtil.GetCircularArea(tile, Radius), tile.VisualTarget);
+            explosion.Attack = AttackGenerator;
+            return explosion.Run();
         }
     }
 

@@ -34,11 +34,23 @@ namespace RoguelikeEngine.Traits
                 new ScreenShakeRandom(creature.World, 5, 15, LerpHelper.Linear);
                 new FireExplosion(creature.World, creature.VisualTarget, Vector2.Zero, 0, 30);
                 yield return creature.WaitSome(4);
-                new BloodExplosion(creature.World, creature.VisualTarget + new Vector2(0, 16), Vector2.Zero, 0, 15);
-                new BloodExplosion(creature.World, creature.VisualTarget + new Vector2(0, -16), Vector2.Zero, 0, 15);
-                new BloodExplosion(creature.World, creature.VisualTarget + new Vector2(-16, 0), Vector2.Zero, 0, 15);
-                new BloodExplosion(creature.World, creature.VisualTarget + new Vector2(16, 0), Vector2.Zero, 0, 15);
+
+                new RingExplosion(creature.World, creature.VisualTarget, (pos, vel, angle, time) => new BloodExplosion(creature.World, pos, vel, angle, time), 12, 24, 10);
+                var explosion = new Skills.Explosion(creature, SkillUtil.GetCircularArea(creature, 2), creature.VisualTarget);
+                explosion.Attack = ExplosionAttack;
+                explosion.Fault = this;
+                yield return explosion.Run();
             }
+        }
+
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Fault = this;
+            attack.SetParameters(attacker.GetStat(Stat.HP) * 0.5, 0, 1);
+            attack.Elements.Add(Element.Fire, 0.5);
+            attack.Elements.Add(Element.Dark, 0.5);
+            return attack;
         }
     }
 

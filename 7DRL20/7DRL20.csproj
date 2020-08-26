@@ -70,6 +70,7 @@
     <Compile Include="MapGeneration\Spreads.cs" />
     <Compile Include="Skills\Breath.cs" />
     <Compile Include="Skills\Erebizo.cs" />
+    <Compile Include="Skills\Explosion.cs" />
     <Compile Include="Skills\Movements.cs" />
     <Compile Include="Skills\Projectile.cs" />
     <Compile Include="Skills\Wallhach.cs" />

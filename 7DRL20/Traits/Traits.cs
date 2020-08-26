@@ -171,8 +171,10 @@ namespace RoguelikeEngine.Traits
         {
             var attacker = attack.Attacker;
             var defender = attack.Defender;
-            int traitLvl = attacker.GetTrait(this) + defender.GetTrait(this);
-            if (attack.Fault != this && Random.NextDouble() < traitLvl * 0.3 && attack.IsWeaponAttack() && attack.ReactionLevel < traitLvl)
+            int attackerLvl = attacker.GetTrait(this);
+            int defenderLvl = defender.GetTrait(this);
+            int traitLvl = attackerLvl + defenderLvl;
+            if (attack.Fault != this && Random.NextDouble() < traitLvl * 0.3 && attack.IsWeaponAttack() && attack.ReactionLevel < Math.Max(attackerLvl, defenderLvl))
             {
                 IEnumerable<Tile> targetTiles = GetExplosionTiles(attacker);
                 if (targetTiles.Any())
@@ -189,8 +191,10 @@ namespace RoguelikeEngine.Traits
         {
             var attacker = attack.Attacker;
             var defender = attack.Defender;
-            int traitLvl = attacker.GetTrait(this) + defender.GetTrait(this);
-            if (Random.NextDouble() < traitLvl * 0.3 && (attack.HasElement(Element.Fire) || attack.Fault != this) && attack.ReactionLevel < traitLvl)
+            int attackerLvl = attacker.GetTrait(this);
+            int defenderLvl = defender.GetTrait(this);
+            int traitLvl = attackerLvl + defenderLvl;
+            if (Random.NextDouble() < traitLvl * 0.3 && (attack.HasElement(Element.Fire) || attack.Fault != this) && attack.ReactionLevel < Math.Max(attackerLvl,defenderLvl))
             {
                 IEnumerable<Tile> targetTiles = GetExplosionTiles(attacker);
                 if (targetTiles.Any())
@@ -224,24 +228,12 @@ namespace RoguelikeEngine.Traits
             yield return new WaitTime(5 + Random.Next(5));
             new FireExplosion(attacker.World, explosionTarget.VisualTarget, Vector2.Zero, 0, 15);
             new ScreenShakeRandom(attacker.World, 6, 30, LerpHelper.Linear);
-            var waitForDamage = new List<Wait>();
-            foreach (var explosionTile in SkillUtil.GetCircularArea(explosionTarget, radius))
-            {
-                foreach (var targetCreature in explosionTile.Creatures)
-                {
-                    waitForDamage.Add(attacker.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - explosionTarget.VisualTarget), (a, b) => ExplosionAttack(a, b, reactionLevel + 1)));
-                }
-                if (explosionTile is IMineable mineable)
-                {
-                    MineEvent fracture = new MineEvent(attacker, null, 100)
-                    {
-                        Fault = this,
-                        ReactionLevel = reactionLevel + 1
-                    };
-                    waitForDamage.Add(mineable.Mine(fracture));
-                }
-            }
-            yield return new WaitAll(waitForDamage);
+            var explosion = new Skills.Explosion(attacker, SkillUtil.GetCircularArea(explosionTarget, radius), explosionTarget.VisualTarget);
+            explosion.Attack = (a, b) => ExplosionAttack(a, b, reactionLevel + 1);
+            explosion.Fault = this;
+            explosion.ReactionLevel = reactionLevel + 1;
+            explosion.MiningPower = 100;
+            yield return explosion.Run();
         }
 
         private Attack ExplosionAttack(Creature attacker, IEffectHolder defender, int reactionLevel)
@@ -380,17 +372,10 @@ namespace RoguelikeEngine.Traits
 
         private IEnumerable<Wait> ImpactExplosion(Skills.Projectile projectile, Tile tile)
         {
-            int n = 12;
             new FireExplosion(tile.World, tile.VisualTarget, Vector2.Zero, 0, 20);
             yield return new WaitTime(5);
             new ScreenShakeRandom(tile.World, 8, 20, LerpHelper.Linear);
-            for (int i = 0; i < n; i++)
-            {
-                float angle = i * MathHelper.TwoPi / n;
-                Vector2 offset = Util.AngleToVector(angle) * 24;
-
-                new LightningExplosion(tile.World, tile.VisualTarget + offset, Vector2.Zero, angle, 10 + Random.Next(5));
-            }
+            new RingExplosion(tile.World, tile.VisualTarget, (pos, vel, angle, time) => new LightningExplosion(tile.World, pos, vel, angle, time), 12, 24, 10);
         }
 
         public Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
@@ -435,34 +420,14 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> RoutineExplosion(Creature creature, double force, int reactionLevel)
         {
-            int n = 12;
             new AcidExplosion(creature.World, creature.VisualTarget, Vector2.Zero, 0, 20);
             yield return creature.WaitSome(10);
             new ScreenShakeRandom(creature.World, 5, 20, LerpHelper.Linear);
-            for(int i = 0; i < n; i++)
-            {
-                float angle = i * MathHelper.TwoPi / n;
-                Vector2 offset = Util.AngleToVector(angle) * 24;
-
-                new SteamExplosion(creature.World, creature.VisualTarget + offset, Vector2.Zero, angle, 10 + Random.Next(5));
-            }
+            new RingExplosion(creature.World, creature.VisualTarget, (pos, vel, angle, time) => new SteamExplosion(creature.World, pos, vel, angle, time), 12, 24, 10);
             int radius = 2;
             int dryRadius = 1;
-            HashSet<Tile> dryArea = new HashSet<Tile>(creature.Tiles);
-            List<Creature> damageTargets = new List<Creature>();
-
-            foreach(var tile in creature.Tile.GetNearby(creature.Mask.GetRectangle(creature.X, creature.Y), radius))
-            {
-                var distance = (tile.VisualTarget - creature.VisualTarget).LengthSquared();
-                if (distance <= (radius * 16 + 8) * (radius * 16 + 8))
-                {
-                    damageTargets.AddRange(tile.Creatures);
-                }
-                if (distance <= (dryRadius * 16 + 8) * (dryRadius * 16 + 8))
-                {
-                    dryArea.Add(tile);
-                }
-            }
+            IEnumerable<Tile> dryArea = SkillUtil.GetCircularArea(creature, dryRadius);
+            IEnumerable<Tile> explosionArea = SkillUtil.GetCircularArea(creature, radius);
 
             foreach(var tile in dryArea)
             {
@@ -470,13 +435,11 @@ namespace RoguelikeEngine.Traits
                     tile.Replace(new FloorCave());
             }
 
-            List<Wait> waitForDamage = new List<Wait>();
-            foreach(var target in damageTargets.Distinct().Shuffle(Random))
-            {
-                var wait = creature.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - creature.VisualTarget), (a,b) => ExplosionAttack(a,b,force,reactionLevel));
-                waitForDamage.Add(wait);
-            }
-            yield return new WaitAll(waitForDamage);
+            var explosion = new Skills.Explosion(creature, explosionArea, creature.VisualTarget);
+            explosion.Fault = this;
+            explosion.ReactionLevel = reactionLevel;
+            explosion.Attack = (a, b) => ExplosionAttack(a, b, force, reactionLevel);
+            yield return explosion.Run();
         }
 
         private static Attack ExplosionAttack(Creature user, IEffectHolder target, double force, int reactionLevel)
@@ -528,7 +491,7 @@ namespace RoguelikeEngine.Traits
         public IEnumerable<Wait> Fracture(MineEvent mine)
         {
             int traitLvl = mine.Miner.GetTrait(this);
-            if (mine.Mineable is Tile tile && mine.ReactionLevel <= 3 + (traitLvl - 1) && mine.Success)
+            if (mine.Mineable is Tile tile && mine.ReactionLevel <= (traitLvl - 1) && mine.Success)
             {
                 yield return new WaitTime(3);
                 new SeismSmall(mine.Miner.World, tile, 15);

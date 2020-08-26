@@ -538,7 +538,7 @@ namespace RoguelikeEngine
         }
     }
 
-    delegate Explosion ExplosionGenerator(Vector2 position, Vector2 velocity, int time);
+    delegate Explosion ExplosionGenerator(Vector2 position, Vector2 velocity, float angle, int time);
 
     class BigExplosion : VisualEffect
     {
@@ -561,15 +561,59 @@ namespace RoguelikeEngine
             var position = Anchor();
             if (Frame.Time == 1)
             {
-                Generator(position + new Vector2(0, 0), Vector2.Zero, 30);
+                Generator(position + new Vector2(0, 0), Vector2.Zero, 0, 30);
             }
             if (Frame.Time == 5)
             {
-                Generator(position + new Vector2(16, 0), Vector2.Zero, 15);
-                Generator(position + new Vector2(0, 16), Vector2.Zero, 15);
-                Generator(position + new Vector2(-16, 0), Vector2.Zero, 15);
-                Generator(position + new Vector2(0, -16), Vector2.Zero, 15);
+                Generator(position + new Vector2(16, 0), Vector2.Zero, 0, 15);
+                Generator(position + new Vector2(0, 16), Vector2.Zero, 0, 15);
+                Generator(position + new Vector2(-16, 0), Vector2.Zero, 0, 15);
+                Generator(position + new Vector2(0, -16), Vector2.Zero, 0, 15);
             }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class RingExplosion : VisualEffect
+    {
+        Vector2 Position;
+        ExplosionGenerator Generator;
+        int Count;
+        float Distance;
+        int Time;
+
+        public RingExplosion(SceneGame world, Vector2 position, ExplosionGenerator generator, int count, float distance, int time) : base(world)
+        {
+            Position = position;
+            Generator = generator;
+            Count = count;
+            Distance = distance;
+            Time = time;
+            Frame = new Slider(1);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            for (int i = 0; i < Count; i++)
+            {
+                float angle = i * MathHelper.TwoPi / Count;
+                Vector2 offset = Util.AngleToVector(angle) * Distance;
+
+                Generator(Position + offset, Vector2.Zero, angle, Time + Random.Next(5));
+            }
+
+            this.Destroy();
         }
 
         public override void Draw(SceneGame scene, DrawPass pass)
@@ -606,7 +650,7 @@ namespace RoguelikeEngine
             var position = Anchor();
             if ((Frame.EndTime - Frame.Time) % 10 == 0)
             {
-                Generator(position, Velocity, 30);
+                Generator(position, Velocity, 0, 30);
             }
         }
 
@@ -620,7 +664,6 @@ namespace RoguelikeEngine
             return Enumerable.Empty<DrawPass>();
         }
     }
-
 
     class BossExplosion : VisualEffect
     {
@@ -643,7 +686,7 @@ namespace RoguelikeEngine
             if ((Frame.EndTime - Frame.Time) % 20 == 0)
             {
                 Vector2 emitPos = Anchor.VisualPosition() + Anchor.Mask.GetRandomPixel(Random);
-                Generator(emitPos, Vector2.Zero, 15);
+                Generator(emitPos, Vector2.Zero, 0, 15);
                 new ScreenShakeRandom(World, 3, 15, LerpHelper.Linear);
             }
         }
