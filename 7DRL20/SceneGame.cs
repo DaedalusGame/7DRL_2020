@@ -313,6 +313,13 @@ namespace RoguelikeEngine
             Quests.Add(buildAdze);
 
             Spawner = new EnemySpawner(this, 60);
+
+            PushObjects();
+
+            var mapJson = MapHome.WriteJson();
+            var strJson = mapJson.ToString();
+            var testMap = new Map(this, 0, 0);
+            testMap.ReadJson(mapJson);
         }
 
         private void BuildSmelterRoom(Tile center, GeneratorGroup group)
@@ -427,19 +434,15 @@ namespace RoguelikeEngine
             SeenBosses.RemoveWhere(x => x.Destroyed);
 
             CameraFocus.Update();
-            if(CameraFocus.Dead)
+            if (CameraFocus.Dead)
             {
                 CameraFocus = CameraFocus.MoveNext(Player, 30);
             }
             InputTwinState state = Game.InputState;
-
-            while(ToAdd.Count > 0)
-            {
-                GameObjects.Add(ToAdd.Dequeue());
-            }
+            PushObjects();
             Menu.Update(this);
 
-            if(Player.Dead)
+            if (Player.Dead)
                 Menu.HandleInput(this);
 
             PopupManager.Update(this);
@@ -450,11 +453,11 @@ namespace RoguelikeEngine
             {
                 var corpses = Entities.Where(x => x.Dead);
                 List<Wait> waitForDestruction = new List<Wait>();
-                foreach(var corpse in corpses)
+                foreach (var corpse in corpses)
                 {
                     waitForDestruction.Add(Scheduler.Instance.RunAndWait(corpse.RoutineDestroy()));
                 }
-                if(waitForDestruction.Any())
+                if (waitForDestruction.Any())
                     Wait.Add(new WaitAll(waitForDestruction));
 
                 Enemy foundBoss = Spawner.Bosses.Find(x => !x.Dead && IsBossVisible(x) && !SeenBosses.Contains(x));
@@ -499,13 +502,13 @@ namespace RoguelikeEngine
 
             foreach (var quest in Quests)
             {
-                if(!quest.Completed && quest.PrerequisitesCompleted)
+                if (!quest.Completed && quest.PrerequisitesCompleted)
                     quest.Completed = quest.CheckCompletion();
             }
 
             Vector2 worldPos = Vector2.Transform(new Vector2(InputState.MouseX, InputState.MouseY), Matrix.Invert(WorldTransform));
-            int tileX = Util.FloorDiv((int)worldPos.X,16);
-            int tileY = Util.FloorDiv((int)worldPos.Y,16);
+            int tileX = Util.FloorDiv((int)worldPos.X, 16);
+            int tileY = Util.FloorDiv((int)worldPos.Y, 16);
 
             TileCursor = new Point(tileX, tileY);
             if (Menu.IsMouseOver(InputState.MouseX, InputState.MouseY))
@@ -515,10 +518,18 @@ namespace RoguelikeEngine
             if (TileCursor.HasValue && CameraMap != null)
             {
                 Tile tile = CameraMap.GetTile(TileCursor.Value.X, TileCursor.Value.Y);
-                if(tile != null && tile.IsVisible())
+                if (tile != null && tile.IsVisible())
                     tile.AddTooltip(ref Tooltip);
             }
             Tooltip = Tooltip.Trim();
+        }
+
+        private void PushObjects()
+        {
+            while (ToAdd.Count > 0)
+            {
+                GameObjects.Add(ToAdd.Dequeue());
+            }
         }
 
         public void DrawLava(Rectangle rectangle, Color color)

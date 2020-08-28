@@ -33,7 +33,11 @@ namespace RoguelikeEngine
         public ReusableID ObjectID { get; private set; }
 
         protected Random Random = new Random();
-        protected Map Map;
+        public Map Map
+        {
+            get;
+            set;
+        }
         protected List<CloudPart> Parts = new List<CloudPart>();
 
         public string Name;

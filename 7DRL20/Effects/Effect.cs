@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,7 @@ namespace RoguelikeEngine.Effects
 
         public static IEqualityComparer<Effect> StatEquality = new StatEqualityComparer();
 
+        public bool Innate = false;
         public bool Removed = false;
         public virtual double VisualPriority => 0;
 
@@ -38,6 +40,12 @@ namespace RoguelikeEngine.Effects
             effect.Apply();
         }
 
+        public static void ApplyInnate(Effect effect)
+        {
+            effect.Innate = true;
+            effect.Apply();
+        }
+
         public virtual bool StatEquals(Effect other)
         {
             return false;
@@ -49,6 +57,18 @@ namespace RoguelikeEngine.Effects
         }
 
         public virtual void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
+        {
+            //NOOP
+        }
+
+        //TODO: Mark abstract so I can't make mistakes
+        public virtual JToken WriteJson()
+        {
+            return null;
+        }
+
+        //TODO: Mark abstract so I can't make mistakes
+        public virtual void ReadJson()
         {
             //NOOP
         }

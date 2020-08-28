@@ -81,6 +81,7 @@ namespace RoguelikeEngine
 
             SpriteLoader.Init(GraphicsDevice);
             Scheduler.Init();
+            Serializer.Init();
 
             RenderTarget2D pixel = new RenderTarget2D(GraphicsDevice, 1, 1);
             GraphicsDevice.SetRenderTarget(pixel);

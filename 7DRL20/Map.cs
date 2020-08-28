@@ -1,4 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
+using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -87,19 +89,25 @@ namespace RoguelikeEngine
         public int Height;
         MapTile[,] Tiles;
         public MapTile Outside;
+        public IEnumerable<IGameObject> GameObjects => World.GameObjects.Where(gameObj => gameObj.Map == this);
         public IEnumerable<Creature> Creatures => World.Entities.Where(creature => creature.Map == this);
-        public List<Cloud> Clouds = new List<Cloud>();
+        public IEnumerable<Cloud> Clouds => World.GameObjects.OfType<Cloud>().Where(cloud => cloud.Map == this);
 
         public LevelFeelingSet Feelings = new LevelFeelingSet();
 
         public Map(SceneGame world, int width, int height)
         {
             World = world;
-            Width = width;
-            Height = height;
-            Tiles = new MapTile[width, height];
+            SetSize(width, height);
             Init((x, y) => new FloorCave());
             Outside = new MapTile.FakeOutside(this, -1, -1);
+        }
+
+        private void SetSize(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            Tiles = new MapTile[Width, Height];
         }
 
         public void Init(Func<int,int,Tile> generator)
@@ -124,7 +132,7 @@ namespace RoguelikeEngine
 
         public T GetCloud<T>() where T : Cloud
         {
-            return (T)Clouds.Find(x => !x.Destroyed && x.GetType() == typeof(T));
+            return (T)Clouds.FirstOrDefault(x => !x.Destroyed && x.GetType() == typeof(T));
         }
 
         public T AddCloud<T>(Func<Map, T> constructor) where T : Cloud
@@ -133,7 +141,6 @@ namespace RoguelikeEngine
             if(cloud == null)
             {
                 cloud = constructor(this);
-                Clouds.Add(cloud);
             }
             return cloud;
         }
@@ -168,6 +175,111 @@ namespace RoguelikeEngine
         public bool InBounds(int x, int y)
         {
             return x >= 1 && y >= 1 && x < Width-1 && y < Height-1;
+        }
+
+        public JToken WriteJson()
+        {
+            Context context = new Context();
+            List<IEffectHolder> effectHolders = new List<IEffectHolder>();
+
+            JObject json = new JObject();
+            JArray glowing = new JArray();
+            JArray tilesAbove = new JArray();
+            JArray tilesUnder = new JArray();
+            json["width"] = Width;
+            json["height"] = Height;
+            for (int y = 0; y < Height; y++)
+            {
+                for(int x = 0; x < Width; x++)
+                {
+                    var tile = Tiles[x, y];
+                    glowing.Add(new JValue(tile.Glowing));
+                    tilesAbove.Add(tile.Tile?.WriteJson());
+                    tilesUnder.Add(tile.UnderTile?.WriteJson());
+                    effectHolders.Add(tile);
+                    if(tile.Tile != null)
+                        effectHolders.Add(tile.Tile);
+                    if(tile.UnderTile != null)
+                        effectHolders.Add(tile.UnderTile);
+                }
+            }
+            json["glowMap"] = glowing;
+            json["tileMap"] = tilesAbove;
+            json["tileMapUnder"] = tilesUnder;
+
+            JArray effectsArray = new JArray();
+            JArray entitiesArray = new JArray();
+
+            effectHolders.AddRange(GameObjects.OfType<IEffectHolder>());
+            foreach(var entity in GameObjects.OfType<IJsonSerializable>())
+            {
+                entitiesArray.Add(entity.WriteJson(context));
+            }
+            json["entities"] = entitiesArray;
+           
+            var effects = effectHolders.SelectMany(holder => EffectManager.GetEffects<Effect>(holder, false)).Distinct().ToList();
+            foreach(var effect in effects)
+            {
+                if(!effect.Innate)
+                    effectsArray.Add(effect.WriteJson());
+            }
+            json["effects"] = effectsArray;
+            return json;
+        }
+
+        public void ReadJson(JToken json)
+        {
+            var width = json["width"].Value<int>();
+            var height = json["height"].Value<int>();
+
+            JArray glowing = json["glowMap"] as JArray;
+            JArray tilesAbove = json["tileMap"] as JArray;
+            JArray tilesUnder = json["tileMapUnder"] as JArray;
+
+            SetSize(width, height);
+            var enumeratorGlowing = glowing.GetEnumerator();
+            var enumeratorTiles = tilesAbove.GetEnumerator();
+            var enumeratorTilesUnder = tilesUnder.GetEnumerator();
+
+            Tile readTile(JToken tileJson)
+            {
+                string id = GetID(tileJson);
+                Tile tile = Serializer.Create<Tile>(id);
+                if (tile != null)
+                {
+                    tile.ReadJson(tileJson);
+                }
+                return tile;
+            }
+
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    enumeratorGlowing.MoveNext();
+                    enumeratorTiles.MoveNext();
+                    enumeratorTilesUnder.MoveNext();
+                    var glowJson = enumeratorGlowing.Current;
+                    var tileJson = enumeratorTiles.Current;
+                    var tileUnderJson = enumeratorTilesUnder.Current;
+
+                    var mapTile = Tiles[x, y] = new MapTile(this, x, y);
+                    mapTile.Glowing = glowJson.Value<bool>();
+                    mapTile.Tile = readTile(tileJson);
+                    mapTile.UnderTile = readTile(tileUnderJson);
+                }
+            }
+        }
+
+        private string GetID(JToken json)
+        {
+            string id = null;
+            if (json is JValue)
+                id = json.Value<string>();
+            else if (json is JObject)
+                id = json["id"].Value<string>();
+
+            return id;
         }
     }
 }

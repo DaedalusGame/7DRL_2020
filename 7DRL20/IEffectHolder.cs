@@ -1,4 +1,5 @@
-﻿using RoguelikeEngine.Effects;
+﻿using Newtonsoft.Json.Linq;
+using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;

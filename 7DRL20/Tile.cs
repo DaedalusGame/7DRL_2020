@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.MapGeneration;
 using RoguelikeEngine.Traits;
@@ -382,6 +383,16 @@ namespace RoguelikeEngine
             int frame = Math.Min((int)(slide * (cracks.SubImageCount)), cracks.SubImageCount-1);
             scene.DrawSprite(cracks, frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color, 0);
         }
+
+        public JToken WriteJson()
+        {
+            return Serializer.GetID(this);
+        }
+
+        public void ReadJson(JToken token)
+        {
+            //NOOP
+        }
     }
 
     struct TileColor
@@ -637,10 +648,17 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("floor_cave")]
     class FloorCave : Tile
     {
         public FloorCave() : base("Cave Floor")
         {
+        }
+
+        [Construct]
+        public static FloorCave Construct()
+        {
+            return new FloorCave();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -655,10 +673,17 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("floor_tiles")]
     class FloorTiles : Tile
     {
         public FloorTiles() : base("Tiled Floor")
         {
+        }
+
+        [Construct]
+        public static FloorTiles Construct()
+        {
+            return new FloorTiles();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -768,7 +793,7 @@ namespace RoguelikeEngine
         }
     }
 
-
+    [SerializeInfo("wall_cave")]
     class WallCave : Tile, IMineable
     {
         public override double Durability => 100;
@@ -777,6 +802,12 @@ namespace RoguelikeEngine
         {
             Solid = true;
             Opaque = true;
+        }
+
+        [Construct]
+        public static WallCave Construct()
+        {
+            return new WallCave();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)

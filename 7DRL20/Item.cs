@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
@@ -9,13 +10,18 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
-    abstract class Item : IEffectHolder, IGameObject
+    abstract class Item : IEffectHolder, IGameObject, IJsonSerializable
     {
         public SceneGame World { get; set; }
         public double DrawOrder => 0;
         bool IGameObject.Destroyed { get; set; }
 
         public ReusableID ObjectID
+        {
+            get;
+            private set;
+        }
+        public Guid GlobalID
         {
             get;
             private set;
@@ -36,7 +42,17 @@ namespace RoguelikeEngine
                 return null;
             }
         }
-        public Map Map => Tile?.Map;
+        public Map Map
+        {
+            get
+            {
+                return Tile?.Map;
+            }
+            set
+            {
+                //NOOP
+            }
+        }
 
         public virtual string BaseName
         {
@@ -45,6 +61,7 @@ namespace RoguelikeEngine
         }
         public virtual string Name => this.GetName(BaseName);
         public virtual string InventoryName => BaseName;
+
         public string Description;
 
         List<Effect> EquipEffects = new List<Effect>();
@@ -54,6 +71,7 @@ namespace RoguelikeEngine
             World = world;
             World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
+            GlobalID = Guid.NewGuid();
             BaseName = name;
             Description = description;
         }
@@ -162,6 +180,19 @@ namespace RoguelikeEngine
         {
             return $"Item {ObjectID.ID}";
         }
+
+        public virtual JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["objectId"] = Serializer.GetHolderID(this);
+            return json;
+        }
+
+        public virtual void ReadJson(JToken json, Context context)
+        {
+            //NOOP
+        }
     }
 
     interface IOre
@@ -196,6 +227,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("ore")]
     class Ore : Item, IOre, IFuel
     {
         public override string BaseName { get => $"{Material.Name} Ore"; set {} }
@@ -217,6 +249,12 @@ namespace RoguelikeEngine
         {
             Material = material;
             Amount = amount;
+        }
+
+        [Construct]
+        public static Ore Construct()
+        {
+            return null;
         }
 
         public bool CanUseInAnvil(PartType partType)
@@ -265,6 +303,19 @@ namespace RoguelikeEngine
         {
             Amount -= amount;
             return Amount;
+        }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            json["material"] = Serializer.GetHolderID(Material);
+            json["amount"] = Amount;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
         }
     }
 

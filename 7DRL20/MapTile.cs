@@ -45,12 +45,16 @@ namespace RoguelikeEngine
         public GeneratorGroup Group;
         public bool Glowing;
 
-        public MapTile(Map map, int x, int y, Tile tile)
+        public MapTile(Map map, int x, int y)
         {
             ObjectID = EffectManager.NewID(this);
             Map = map;
             X = x;
             Y = y;
+        }
+
+        public MapTile(Map map, int x, int y, Tile tile) : this(map,x,y)
+        {
             Set(tile);
         }
 

@@ -15,6 +15,7 @@ namespace RoguelikeEngine
         public static Random Random = new Random();
 
         public SceneGame World { get; set; }
+        public Map Map { get; set; }
         public double DrawOrder => 0;
         public bool Destroyed { get; set; }
 
