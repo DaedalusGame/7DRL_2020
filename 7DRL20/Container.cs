@@ -19,7 +19,7 @@ namespace RoguelikeEngine
 
         public Container()
         {
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
         }
 
         public void Add(Item item, bool tryMerge)

@@ -47,7 +47,7 @@ namespace RoguelikeEngine
         {
             World = map.World;
             World.ToAdd.Enqueue(this);
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
             Map = map;
             AddNormalTurn();
         }

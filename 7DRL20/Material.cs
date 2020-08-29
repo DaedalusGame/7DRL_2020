@@ -128,7 +128,7 @@ namespace RoguelikeEngine
         {
             ID = id;
             Materials.Add(ID, this);
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
             Name = name;
             Description = description;
             ValidParts = Parts.Keys.ToHashSet();

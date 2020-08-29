@@ -60,7 +60,7 @@ namespace RoguelikeEngine
 
         public StatusEffect()
         {
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
         }
 
         public virtual void Update()

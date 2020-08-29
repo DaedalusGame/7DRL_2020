@@ -33,6 +33,130 @@ namespace RoguelikeEngine
         }
     }
 
+    class EffectHolderRegistry
+    {
+        ReusableID CurrentID = new ReusableID();
+        Queue<ReusableID> ReusableIDs = new Queue<ReusableID>();
+        BiDictionary<int, ReusableID> IntToID = new BiDictionary<int, ReusableID>();
+        BiDictionary<Guid, ReusableID> GlobalIDToID = new BiDictionary<Guid, ReusableID>();
+        Dictionary<ReusableID, WeakReference<IEffectHolder>> Holders = new Dictionary<ReusableID, WeakReference<IEffectHolder>>();
+
+        public ReusableID SetID(IEffectHolder holder)
+        {
+            var id = NewID();
+            Holders.Add(id, new WeakReference<IEffectHolder>(holder));
+            IntToID.Add(id.ID, id);
+            return id;
+        }
+
+        public Guid SetGlobalID(IEffectHolder holder)
+        {
+            if (holder is IJsonSerializable serializable) {
+                Guid globalId = Guid.NewGuid();
+                GlobalIDToID.Remove(serializable.GlobalID);
+                GlobalIDToID.Add(globalId, holder.ObjectID);
+                return globalId;
+            }
+            return Guid.Empty;
+        }
+
+        public Guid SetGlobalID(IEffectHolder holder, Guid globalId)
+        {
+            if (holder is IJsonSerializable serializable)
+            {
+                //TODO: Handle Guid collisions (yeah right...)
+                GlobalIDToID.Remove(serializable.GlobalID);
+                GlobalIDToID.Add(globalId, holder.ObjectID);
+                return globalId;
+            }
+            return Guid.Empty;
+        }
+
+        public bool Has(ReusableID id)
+        {
+            WeakReference<IEffectHolder> weakref;
+            if(Holders.TryGetValue(id, out weakref))
+            {
+                IEffectHolder holder;
+                if (weakref.TryGetTarget(out holder))
+                    return true;
+                else
+                    Remove(id);
+            }
+            return false;
+        }
+
+        public bool Has(int id)
+        {
+            return Has(IntToID.Forward[id]);
+        }
+
+        public IEffectHolder Get(ReusableID id)
+        {
+            WeakReference<IEffectHolder> weakref;
+            if (Holders.TryGetValue(id, out weakref))
+            {
+                IEffectHolder holder;
+                if (weakref.TryGetTarget(out holder))
+                    return holder;
+                else
+                    Remove(id);
+            }
+            return null;
+        }
+
+        public IEffectHolder Get(int id)
+        {
+            return Get(IntToID.Forward[id]);
+        }
+
+        public IEffectHolder Get(Guid globalId)
+        {
+            return Get(GlobalIDToID.Forward[globalId]);
+        }
+
+        public void Remove(IEffectHolder holder)
+        {
+            Remove(holder.ObjectID);
+        }
+
+        public void Remove(ReusableID id)
+        {
+            ReturnID(id);
+            IntToID.Remove(id);
+            GlobalIDToID.Remove(id);
+            Holders.Remove(id);
+        }
+
+        private ReusableID NewID()
+        {
+            if (ReusableIDs.Count > 0)
+            {
+                Console.WriteLine("Reusing ID");
+                return ReusableIDs.Dequeue();
+            }
+            CurrentID = CurrentID.Next;
+            return CurrentID;
+        }
+
+        private void ReturnID(ReusableID id)
+        {
+            Debug.Assert(!ReusableIDs.Contains(id.NextGeneration));
+            if (id == ReusableID.Null)
+                return;
+            ReusableIDs.Enqueue(id.NextGeneration);
+        }
+
+        public void Clear()
+        {
+            CurrentID = new ReusableID();
+            ReusableIDs.Clear();
+            IntToID.Clear();
+            GlobalIDToID.Clear();
+            Holders.Clear();
+        }
+    }
+
     static class EffectManager
     {
         class EffectList : List<Effect>
@@ -132,14 +256,12 @@ namespace RoguelikeEngine
             }
         }
 
-        static ReusableID CurrentID = new ReusableID();
-        static Queue<ReusableID> ReusableIDs = new Queue<ReusableID>();
+        
         static Dictionary<Type, Drawer> Drawers = new Dictionary<Type, Drawer>();
-        static Dictionary<int, IEffectHolder> Holders = new Dictionary<int, IEffectHolder>();
+        static EffectHolderRegistry Holders = new EffectHolderRegistry();
 
         static EffectManager()
         {
-
         }
 
         public static IEnumerable<T> GetEffects<T>(IEffectHolder holder, bool split = true) where T : Effect
@@ -174,8 +296,6 @@ namespace RoguelikeEngine
 
         public static void Reset()
         {
-            CurrentID = new ReusableID();
-            ReusableIDs.Clear();
             Drawers.Clear();
             Holders.Clear();
         }
@@ -467,44 +587,40 @@ namespace RoguelikeEngine
             }
         }
 
-        private static ReusableID NewID()
+        public static ReusableID SetID(IEffectHolder holder)
         {
-            if (ReusableIDs.Count > 0)
-            {
-                Console.WriteLine("Reusing ID");
-                return ReusableIDs.Dequeue();
-            }
-            CurrentID = CurrentID.Next;
-            return CurrentID;
+            return Holders.SetID(holder);
         }
 
-        public static ReusableID NewID(IEffectHolder holder)
+        public static Guid SetGlobalID(IEffectHolder holder)
         {
-            ReusableID objectID = NewID();
-            Holders.Add(objectID, holder);
-            return objectID;
+            return Holders.SetGlobalID(holder);
         }
+
+        public static Guid SetGlobalID(IEffectHolder holder, Guid globalId)
+        {
+            return Holders.SetGlobalID(holder, globalId);
+        }
+
 
         public static bool HasHolder(int id)
         {
-            IEffectHolder holder;
-            return Holders.TryGetValue(id, out holder);
+            return Holders.Has(id);
         }
 
         public static IEffectHolder GetHolder(int id)
         {
-            IEffectHolder holder;
-            Holders.TryGetValue(id, out holder);
-            return holder;
+            return Holders.Get(id);
+        }
+
+        public static IEffectHolder GetHolder(Guid globalId)
+        {
+            return Holders.Get(globalId);
         }
 
         public static void DeleteHolder(IEffectHolder holder)
         {
-            Debug.Assert(!ReusableIDs.Contains(holder.ObjectID.NextGeneration));
-            if (holder.ObjectID == ReusableID.Null)
-                return;
-            ReusableIDs.Enqueue(holder.ObjectID.NextGeneration);
-            Holders.Remove(holder.ObjectID);
+            Holders.Remove(holder);
         }
     }
 }

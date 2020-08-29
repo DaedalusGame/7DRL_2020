@@ -47,7 +47,7 @@ namespace RoguelikeEngine
 
         public MapTile(Map map, int x, int y)
         {
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
             Map = map;
             X = x;
             Y = y;

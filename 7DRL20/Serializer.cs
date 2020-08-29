@@ -148,8 +148,7 @@ namespace RoguelikeEngine
             else if (json is JValue value && value.Type == JTokenType.Integer) //It's a global id
             {
                 Guid globalId = Guid.Parse(value.Value<string>());
-                //TODO: find holder by global id
-                return null;
+                return EffectManager.GetHolder(globalId);
             }
             else
             {

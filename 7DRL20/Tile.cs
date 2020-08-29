@@ -140,7 +140,7 @@ namespace RoguelikeEngine
 
         public Tile(string name)
         {
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
             Name = name;
         }
 

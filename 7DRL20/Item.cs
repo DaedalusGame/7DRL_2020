@@ -85,8 +85,8 @@ namespace RoguelikeEngine
         {
             World = world;
             World.ToAdd.Enqueue(this);
-            ObjectID = EffectManager.NewID(this);
-            GlobalID = Guid.NewGuid();
+            ObjectID = EffectManager.SetID(this);
+            GlobalID = EffectManager.SetGlobalID(this);
             BaseName = name;
             Description = description;
         }
@@ -206,7 +206,8 @@ namespace RoguelikeEngine
 
         public virtual void ReadJson(JToken json, Context context)
         {
-            //NOOP
+            Guid globalId = Guid.Parse(json["objectId"].Value<string>());
+            GlobalID = EffectManager.SetGlobalID(this, globalId);
         }
     }
 

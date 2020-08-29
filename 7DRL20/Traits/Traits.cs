@@ -23,7 +23,7 @@ namespace RoguelikeEngine.Traits
 
         public Trait(string name, string description, Color color)
         {
-            ObjectID = EffectManager.NewID(this);
+            ObjectID = EffectManager.SetID(this);
             Name = name;
             Description = description;
             Color = color;
