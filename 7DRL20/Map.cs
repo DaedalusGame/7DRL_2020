@@ -87,9 +87,8 @@ namespace RoguelikeEngine
         public SceneGame World;
         public int Width;
         public int Height;
-        MapTile[,] Tiles;
+        public MapTile[,] Tiles;
         public MapTile Outside;
-        public IEnumerable<IGameObject> GameObjects => World.GameObjects.Where(gameObj => gameObj.Map == this);
         public IEnumerable<Creature> Creatures => World.Entities.Where(creature => creature.Map == this);
         public IEnumerable<Cloud> Clouds => World.GameObjects.OfType<Cloud>().Where(cloud => cloud.Map == this);
 
@@ -179,7 +178,7 @@ namespace RoguelikeEngine
 
         public JToken WriteJson()
         {
-            Context context = new Context();
+            Context context = new Context(this);
             List<IEffectHolder> effectHolders = new List<IEffectHolder>();
 
             JObject json = new JObject();
@@ -210,12 +209,12 @@ namespace RoguelikeEngine
             JArray effectsArray = new JArray();
             JArray entitiesArray = new JArray();
 
-            effectHolders.AddRange(GameObjects.OfType<IEffectHolder>());
-            foreach(var entity in GameObjects.OfType<IJsonSerializable>())
+            var gameObjects = World.GameObjects.OfType<IJsonSerializable>().Where(obj => obj.Map == this);
+            effectHolders.AddRange(gameObjects.OfType<IEffectHolder>());
+            foreach(var entity in gameObjects)
             {
                 entitiesArray.Add(entity.WriteJson(context));
             }
-            json["entities"] = entitiesArray;
            
             var effects = effectHolders.SelectMany(holder => EffectManager.GetEffects<Effect>(holder, false)).Distinct().ToList();
             foreach(var effect in effects)
@@ -223,12 +222,16 @@ namespace RoguelikeEngine
                 if(!effect.Innate)
                     effectsArray.Add(effect.WriteJson());
             }
+
+            json["entities"] = entitiesArray;
             json["effects"] = effectsArray;
             return json;
         }
 
         public void ReadJson(JToken json)
         {
+            Context context = new Context(this);
+
             var width = json["width"].Value<int>();
             var height = json["height"].Value<int>();
 
@@ -244,7 +247,7 @@ namespace RoguelikeEngine
             Tile readTile(JToken tileJson)
             {
                 string id = GetID(tileJson);
-                Tile tile = Serializer.Create<Tile>(id);
+                Tile tile = Serializer.Create<Tile>(id, context);
                 if (tile != null)
                 {
                     tile.ReadJson(tileJson);
@@ -267,6 +270,30 @@ namespace RoguelikeEngine
                     mapTile.Glowing = glowJson.Value<bool>();
                     mapTile.Tile = readTile(tileJson);
                     mapTile.UnderTile = readTile(tileUnderJson);
+                }
+            }
+
+            JArray entities = json["entities"] as JArray;
+            JArray effects = json["effects"] as JArray;
+
+            foreach (var entityJson in entities)
+            {
+                string id = GetID(entityJson);
+                var entity = Serializer.Create<IJsonSerializable>(id, context);
+                if (entity != null)
+                {
+                    entity.ReadJson(entityJson, context);
+                }
+            } 
+
+            foreach (var effectJson in effects)
+            {
+                string id = GetID(effectJson);
+                var effect = Serializer.Create<Effect>(id, context);
+                if(effect != null)
+                {
+                    effect.ReadJson(effectJson, context);
+                    Effect.Apply(effect);
                 }
             }
         }

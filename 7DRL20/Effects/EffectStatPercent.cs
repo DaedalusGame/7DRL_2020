@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    [SerializeInfo("stat_percent")]
     class EffectStatPercent : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -21,6 +23,10 @@ namespace RoguelikeEngine.Effects
         }
 
         public override double VisualPriority => Stat.Priority + 0.1;
+
+        public EffectStatPercent()
+        {
+        }
 
         public EffectStatPercent(IEffectHolder holder, Stat stat, double percentage)
         {
@@ -62,6 +68,29 @@ namespace RoguelikeEngine.Effects
         public override string ToString()
         {
             return $"{Stat} {Percentage*100:+0;-#}% ({Holder})";
+        }
+
+        [Construct]
+        public static EffectStatPercent Construct(Context context)
+        {
+            return new EffectStatPercent();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["holder"] = Serializer.GetHolderID(Holder);
+            json["stat"] = Stat.Id;
+            json["percentage"] = Percentage;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Holder = Serializer.GetHolder<IEffectHolder>(json["holder"], context);
+            Stat = Stat.GetStat(json["stat"].Value<string>());
+            Percentage = json["percentage"].Value<double>();
         }
 
         public class Stackable : EffectStatPercent

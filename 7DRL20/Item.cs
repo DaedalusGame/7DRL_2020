@@ -42,11 +42,26 @@ namespace RoguelikeEngine
                 return null;
             }
         }
+        public IEffectHolder Owner
+        {
+            get
+            {
+                var owners = EffectManager.GetEffects<EffectItemInventory>(this);
+                if (owners.Any())
+                    return owners.First().Holder;
+                return null;
+            }
+        }
         public Map Map
         {
             get
             {
-                return Tile?.Map;
+                if (Tile != null)
+                    return Tile.Map;
+                else if (Owner is IJsonSerializable serializable)
+                    return serializable.Map;
+                else
+                    return null;
             }
             set
             {
@@ -245,16 +260,21 @@ namespace RoguelikeEngine
         }
         public double FuelTemperature => Material.FuelTemperature;
 
-        public Ore(SceneGame world, Material material, int amount) : base(world, "Ore", string.Empty)
+        public Ore(SceneGame world) : base(world, "Ore", string.Empty)
+        {
+
+        }
+
+        public Ore(SceneGame world, Material material, int amount) : this(world)
         {
             Material = material;
             Amount = amount;
         }
 
         [Construct]
-        public static Ore Construct()
+        public static Ore Construct(Context context)
         {
-            return null;
+            return new Ore(context.World);
         }
 
         public bool CanUseInAnvil(PartType partType)
@@ -308,7 +328,7 @@ namespace RoguelikeEngine
         public override JToken WriteJson(Context context)
         {
             JToken json = base.WriteJson(context);
-            json["material"] = Serializer.GetHolderID(Material);
+            json["material"] = Material.ID;
             json["amount"] = Amount;
             return json;
         }
@@ -316,6 +336,8 @@ namespace RoguelikeEngine
         public override void ReadJson(JToken json, Context context)
         {
             base.ReadJson(json, context);
+            Material = Material.GetMaterial(json["material"].Value<string>());
+            Amount = json["amount"].Value<int>();
         }
     }
 
@@ -343,9 +365,8 @@ namespace RoguelikeEngine
         public int Count;
         public int AmountPerItem = 0;
 
-        protected OreItem(SceneGame world, string name, int count) : base(world, name, string.Empty)
+        protected OreItem(SceneGame world, string name) : base(world, name, string.Empty)
         {
-            Count = count;
         }
 
         public virtual bool CanUseInAnvil(PartType partType)
@@ -379,8 +400,22 @@ namespace RoguelikeEngine
             Count -= Amount / amount;
             return Amount;
         }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            json["count"] = Count;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Count = json["count"].Value<int>();
+        }
     }
 
+    [SerializeInfo("handle_wood")]
     class ItemHandle : OreItem
     {
         static HashSet<PartType> ValidParts = new HashSet<PartType>()
@@ -392,10 +427,21 @@ namespace RoguelikeEngine
             ToolArrow.Limb,
         };
 
-        public ItemHandle(SceneGame world, int count) : base(world, "Wooden Handle", count)
+        public ItemHandle(SceneGame world) : base(world, "Wooden Handle")
         {
             Material = Material.Wood;
             AmountPerItem = 200;
+        }
+
+        public ItemHandle(SceneGame world, int count) : this(world)
+        {
+            Count = count;
+        }
+
+        [Construct]
+        public static ItemHandle Construct(Context context)
+        {
+            return new ItemHandle(context.World);
         }
 
         public override bool CanUseInAnvil(PartType partType)
@@ -415,12 +461,24 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("feather")]
     class ItemFeather : OreItem
     {
-        public ItemFeather(SceneGame world, int count) : base(world, "Feather", count)
+        public ItemFeather(SceneGame world) : base(world, "Feather")
         {
             Material = Material.Feather;
             AmountPerItem = 200;
+        }
+
+        public ItemFeather(SceneGame world, int count) : this(world)
+        {
+            Count = count;
+        }
+
+        [Construct]
+        public static ItemFeather Construct(Context context)
+        {
+            return new ItemFeather(context.World);
         }
 
         public override Item CopyWithCount(int count)
@@ -435,6 +493,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("ingot")]
     class Ingot : Item, IOre, IFuel
     {
         public override string BaseName { get => $"{Material.Name} Ingot"; set { } }
@@ -449,10 +508,20 @@ namespace RoguelikeEngine
         public int Amount => Count * 200;
         public double FuelTemperature => Material.FuelTemperature;
 
-        public Ingot(SceneGame world, Material material, int count) : base(world, "Ingot", string.Empty)
+        public Ingot(SceneGame world) : base(world, "Ingot", string.Empty)
+        {
+        }
+
+        public Ingot(SceneGame world, Material material, int count) : this(world)
         {
             Material = material;
             Count = count;
+        }
+
+        [Construct]
+        public static Ingot Construct(Context context)
+        {
+            return new Ingot(context.World);
         }
 
         public bool CanUseInAnvil(PartType partType)
@@ -495,6 +564,20 @@ namespace RoguelikeEngine
         {
             Count -= Amount / amount;
             return Amount;
+        }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            json["material"] = Material.ID;
+            json["count"] = Count;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Count = json["count"].Value<int>();
         }
     }
 

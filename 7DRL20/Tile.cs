@@ -656,7 +656,7 @@ namespace RoguelikeEngine
         }
 
         [Construct]
-        public static FloorCave Construct()
+        public static FloorCave Construct(Context context)
         {
             return new FloorCave();
         }
@@ -681,7 +681,7 @@ namespace RoguelikeEngine
         }
 
         [Construct]
-        public static FloorTiles Construct()
+        public static FloorTiles Construct(Context context)
         {
             return new FloorTiles();
         }
@@ -805,7 +805,7 @@ namespace RoguelikeEngine
         }
 
         [Construct]
-        public static WallCave Construct()
+        public static WallCave Construct(Context context)
         {
             return new WallCave();
         }

@@ -68,7 +68,7 @@ namespace RoguelikeEngine.Effects
         }
 
         //TODO: Mark abstract so I can't make mistakes
-        public virtual void ReadJson()
+        public virtual void ReadJson(JToken json, Context context)
         {
             //NOOP
         }

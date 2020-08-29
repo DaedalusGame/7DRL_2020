@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Events;
@@ -132,8 +133,27 @@ namespace RoguelikeEngine
             if (!Hidden)
                 PopupManager.Add(new MessageStatusBuildup(Creature, this, delta));
         }
+
+        public virtual JToken WriteJson()
+        {
+            JObject json = new JObject();
+
+            json["creature"] = Serializer.GetHolderID(Creature);
+            json["buildup"] = Buildup;
+            json["duration"] = Duration.WriteJson();
+
+            return json;
+        }
+
+        public virtual void ReadJson(JToken json, Context context)
+        {
+            Creature = Serializer.GetHolder(json["creature"], context);
+            Buildup = json["buildup"].Value<double>();
+            Duration = new Slider(json["duration"]);
+        }
     }
 
+    [SerializeInfo("bleed_lesser")]
     class BleedLesser : StatusEffect
     { 
         public override string Name => $"Lesser Bleed";
@@ -143,6 +163,12 @@ namespace RoguelikeEngine
 
         public BleedLesser() : base()
         {
+        }
+
+        [Construct]
+        public static BleedLesser Construct(Context context)
+        {
+            return new BleedLesser();
         }
 
         public override void OnStackChange(int delta)

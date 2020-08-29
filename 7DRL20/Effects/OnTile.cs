@@ -17,16 +17,14 @@ namespace RoguelikeEngine.Effects
         public IEffectHolder Holder;
         public IEnumerable<Effect> Effects => Tile.GetEffects<Effect>();
 
+        public OnTile()
+        {
+        }
+
         public OnTile(MapTile tile, IEffectHolder holder)
         {
             MapTile = tile;
             Holder = holder;
-        }
-
-        [Construct]
-        public static OnTile Construct()
-        {
-            return null;
         }
 
         public override void Apply()
@@ -40,6 +38,12 @@ namespace RoguelikeEngine.Effects
             return $"On tile {MapTile}";
         }
 
+        [Construct]
+        public static OnTile Construct(Context context)
+        {
+            return new OnTile();
+        }
+
         public override JToken WriteJson()
         {
             JObject json = new JObject();
@@ -49,22 +53,22 @@ namespace RoguelikeEngine.Effects
             return json;
         }
 
-        public override void ReadJson()
+        public override void ReadJson(JToken json, Context context)
         {
-            base.ReadJson();
+            Holder = Serializer.GetHolder(json["holder"], context);
+            MapTile = Serializer.GetHolder<MapTile>(json["tile"], context);
         }
 
         [SerializeInfo("on_tile_primary")]
         public class Primary : OnTile
         {
-            public Primary(MapTile tile, IEffectHolder holder) : base(tile, holder)
+            public Primary() : base()
             {
+
             }
 
-            [Construct]
-            public static Primary Construct()
+            public Primary(MapTile tile, IEffectHolder holder) : base(tile, holder)
             {
-                return null;
             }
 
             public override void Apply()
@@ -76,6 +80,12 @@ namespace RoguelikeEngine.Effects
             public override string ToString()
             {
                 return $"On tile {MapTile} (Primary)";
+            }
+
+            [Construct]
+            public static Primary Construct(Context context)
+            {
+                return new Primary();
             }
         }
     }

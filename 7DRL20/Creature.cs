@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Events;
@@ -27,7 +28,8 @@ namespace RoguelikeEngine
             }
         }
 
-        public int ID;
+        public int Index;
+        public string Id;
         public string Name;
         public Symbol Symbol;
         public Stat Resistance;
@@ -37,21 +39,22 @@ namespace RoguelikeEngine
 
         public string FormatString => $"{Game.FormatElement(this)}{Name}";
 
-        public Element(string name, Symbol symbol)
+        public Element(string id, string name, Symbol symbol)
         {
-            ID = AllElements.Count;
+            Index = AllElements.Count;
+            Id = Id;
             Name = name;
             Symbol = symbol;
-            Priority = ID;
-            Resistance = new ElementStat(this, $"{Name} Resistance", 0, 4, 0, SpriteLoader.Instance.AddSprite("content/stat_element_defense"));
-            DamageRate = new ElementStat(this, $"{Name} Damage Rate", 1, 4, 0.5, SpriteLoader.Instance.AddSprite("content/stat_element_rate"))
+            Priority = Index;
+            Resistance = new ElementStat(this, "resistance", $"{Name} Resistance", 0, 4, 0, SpriteLoader.Instance.AddSprite("content/stat_element_defense"));
+            DamageRate = new ElementStat(this, "damage_rate", $"{Name} Damage Rate", 1, 4, 0.5, SpriteLoader.Instance.AddSprite("content/stat_element_rate"))
             {
                 Format = Stat.FormatRate,
             };
             AllElements.Add(this);
         }
 
-        public Element(string name, SpriteReference sprite) : this(name, new Symbol(sprite))
+        public Element(string id, string name, SpriteReference sprite) : this(id, name, new Symbol(sprite))
         {
         }
 
@@ -70,121 +73,126 @@ namespace RoguelikeEngine
             return Name;
         }
 
-        public static Element Bludgeon = new Element("Bludgeon", SpriteLoader.Instance.AddSprite("content/element_blunt"));
-        public static Element Slash = new Element("Slash", SpriteLoader.Instance.AddSprite("content/element_slice"));
-        public static Element Pierce = new Element("Pierce", SpriteLoader.Instance.AddSprite("content/element_pierce"));
+        public static Element GetElement(string id)
+        {
+            return AllElements.Find(element => element.Id == id);
+        }
 
-        public static Element Fire = new Element("Fire", SpriteLoader.Instance.AddSprite("content/element_fire"));
-        public static Element Ice = new Element("Ice", SpriteLoader.Instance.AddSprite("content/element_ice"));
-        public static Element Thunder = new Element("Thunder", SpriteLoader.Instance.AddSprite("content/element_thunder"));
-        public static Element Water = new Element("Water", SpriteLoader.Instance.AddSprite("content/element_water"));
-        public static Element Wind = new Element("Wind", SpriteLoader.Instance.AddSprite("content/element_wind"));
-        public static Element Earth = new Element("Earth", SpriteLoader.Instance.AddSprite("content/element_earth"));
-        public static Element Holy = new Element("Holy", SpriteLoader.Instance.AddSprite("content/element_holy"));
-        public static Element Dark = new Element("Dark", SpriteLoader.Instance.AddSprite("content/element_dark"));
+        public static Element Bludgeon = new Element("bludgeon", "Bludgeon", SpriteLoader.Instance.AddSprite("content/element_blunt"));
+        public static Element Slash = new Element("slash", "Slash", SpriteLoader.Instance.AddSprite("content/element_slice"));
+        public static Element Pierce = new Element("pierce", "Pierce", SpriteLoader.Instance.AddSprite("content/element_pierce"));
+
+        public static Element Fire = new Element("fire", "Fire", SpriteLoader.Instance.AddSprite("content/element_fire"));
+        public static Element Ice = new Element("ice", "Ice", SpriteLoader.Instance.AddSprite("content/element_ice"));
+        public static Element Thunder = new Element("thunder", "Thunder", SpriteLoader.Instance.AddSprite("content/element_thunder"));
+        public static Element Water = new Element("water", "Water", SpriteLoader.Instance.AddSprite("content/element_water"));
+        public static Element Wind = new Element("wind", "Wind", SpriteLoader.Instance.AddSprite("content/element_wind"));
+        public static Element Earth = new Element("earth", "Earth", SpriteLoader.Instance.AddSprite("content/element_earth"));
+        public static Element Holy = new Element("holy", "Holy", SpriteLoader.Instance.AddSprite("content/element_holy"));
+        public static Element Dark = new Element("dark", "Dark", SpriteLoader.Instance.AddSprite("content/element_dark"));
 
         //Status Elements
-        public static Element Bleed = new Element("Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
-        public static Element Poison = new Element("Poison", SpriteLoader.Instance.AddSprite("content/element_poison"));
-        public static Element Acid = new Element("Acid", SpriteLoader.Instance.AddSprite("content/element_acid"));
+        public static Element Bleed = new Element("bleed", "Bleed", SpriteLoader.Instance.AddSprite("content/element_blood"));
+        public static Element Poison = new Element("poison", "Poison", SpriteLoader.Instance.AddSprite("content/element_poison"));
+        public static Element Acid = new Element("acid", "Acid", SpriteLoader.Instance.AddSprite("content/element_acid"));
 
         //Combination Elements
-        public static Element Light = new ElementCombined("Light", SpriteLoader.Instance.AddSprite("content/element_light"), new Dictionary<Element, double>()
+        public static Element Light = new ElementCombined("light", "Light", SpriteLoader.Instance.AddSprite("content/element_light"), new Dictionary<Element, double>()
         {
             { Thunder, 0.7 },
             { Fire, 0.7 }
         });
-        public static Element Hellfire = new ElementCombined("Hellfire", SpriteLoader.Instance.AddSprite("content/element_hellfire"), new Dictionary<Element, double>()
+        public static Element Hellfire = new ElementCombined("hellfire", "Hellfire", SpriteLoader.Instance.AddSprite("content/element_hellfire"), new Dictionary<Element, double>()
         {
             { Holy, 0.7 },
             { Fire, 0.7 }
         });
-        public static Element Drought = new ElementCombined("Drought", SpriteLoader.Instance.AddSprite("content/element_drought"), new Dictionary<Element, double>()
+        public static Element Drought = new ElementCombined("drought", "Drought", SpriteLoader.Instance.AddSprite("content/element_drought"), new Dictionary<Element, double>()
         {
             { Water, 1.0 },
             { Ice, 1.0 }
         });
-        public static Element BlackFlame = new ElementCombined("Black Flame", SpriteLoader.Instance.AddSprite("content/element_black_flame"), new Dictionary<Element, double>()
+        public static Element BlackFlame = new ElementCombined("black_flame", "Black Flame", SpriteLoader.Instance.AddSprite("content/element_black_flame"), new Dictionary<Element, double>()
         {
             { Fire, 0.5 },
             { Dark, 1.5 }
         });
-        public static Element RedDevil = new ElementCombined("Red Devil", SpriteLoader.Instance.AddSprite("content/element_red_devil"), new Dictionary<Element, double>()
+        public static Element RedDevil = new ElementCombined("red_devil", "Red Devil", SpriteLoader.Instance.AddSprite("content/element_red_devil"), new Dictionary<Element, double>()
         {
             { Fire, 1.5 },
             { Dark, 0.5 }
         });
-        public static Element Darkness = new ElementCombined("Darkness", SpriteLoader.Instance.AddSprite("content/element_darkness"), new Dictionary<Element, double>()
+        public static Element Darkness = new ElementCombined("darkness", "Darkness", SpriteLoader.Instance.AddSprite("content/element_darkness"), new Dictionary<Element, double>()
         {
             { Ice, 0.8 },
             { Dark, 0.8 }
         });
-        public static Element Emperor = new ElementCombined("Emperor", SpriteLoader.Instance.AddSprite("content/element_emperor"), new Dictionary<Element, double>()
+        public static Element Emperor = new ElementCombined("emperor", "Emperor", SpriteLoader.Instance.AddSprite("content/element_emperor"), new Dictionary<Element, double>()
         {
             { Thunder, 1.5 },
             { Dark, 0.5 }
         });
-        public static Element HeavenThunder = new ElementCombined("Heavenly Thunder", SpriteLoader.Instance.AddSprite("content/element_heaven_thunder"), new Dictionary<Element, double>()
+        public static Element HeavenThunder = new ElementCombined("heavenly_thunder", "Heavenly Thunder", SpriteLoader.Instance.AddSprite("content/element_heaven_thunder"), new Dictionary<Element, double>()
         {
             { Thunder, 1.5 },
             { Holy, 0.5 }
         });
-        public static Element ThunderPole = new ElementCombined("Thunder Pole", SpriteLoader.Instance.AddSprite("content/element_thunderpole"), new Dictionary<Element, double>()
+        public static Element ThunderPole = new ElementCombined("thunder_pole", "Thunder Pole", SpriteLoader.Instance.AddSprite("content/element_thunderpole"), new Dictionary<Element, double>()
         {
             { Thunder, 0.7 },
             { Earth, 0.7 }
         });
-        public static Element Steam = new ElementCombined("Steam", SpriteLoader.Instance.AddSprite("content/element_steam"), new Dictionary<Element, double>()
+        public static Element Steam = new ElementCombined("steam", "Steam", SpriteLoader.Instance.AddSprite("content/element_steam"), new Dictionary<Element, double>()
         {
             { Water, 0.6 },
             { Fire, 0.4 }
         });
-        public static Element Sand = new ElementCombined("Sand", SpriteLoader.Instance.AddSprite("content/element_sand"), new Dictionary<Element, double>()
+        public static Element Sand = new ElementCombined("sand", "Sand", SpriteLoader.Instance.AddSprite("content/element_sand"), new Dictionary<Element, double>()
         {
             { Earth, 0.5 },
             { Wind, 0.5 }
         });
-        public static Element Mud = new ElementCombined("Mud", SpriteLoader.Instance.AddSprite("content/element_mud"), new Dictionary<Element, double>()
+        public static Element Mud = new ElementCombined("mud", "Mud", SpriteLoader.Instance.AddSprite("content/element_mud"), new Dictionary<Element, double>()
         {
             { Water, 0.5 },
             { Earth, 0.5 }
         });
-        public static Element Permafrost = new ElementCombined("Permafrost", SpriteLoader.Instance.AddSprite("content/element_permafrost"), new Dictionary<Element, double>()
+        public static Element Permafrost = new ElementCombined("permafrost", "Permafrost", SpriteLoader.Instance.AddSprite("content/element_permafrost"), new Dictionary<Element, double>()
         {
             { Ice, 0.6 },
             { Earth, 0.6 }
         });
-        public static Element Storm = new ElementCombined("Storm", SpriteLoader.Instance.AddSprite("content/element_storm"), new Dictionary<Element, double>()
+        public static Element Storm = new ElementCombined("storm", "Storm", SpriteLoader.Instance.AddSprite("content/element_storm"), new Dictionary<Element, double>()
         {
             { Water, 0.6 },
             { Wind, 0.6 }
         });
-        public static Element Magma = new ElementCombined("Magma", SpriteLoader.Instance.AddSprite("content/element_magma"), new Dictionary<Element, double>()
+        public static Element Magma = new ElementCombined("magma", "Magma", SpriteLoader.Instance.AddSprite("content/element_magma"), new Dictionary<Element, double>()
         {
             { Earth, 0.4 },
             { Fire, 0.8 }
         });
-        public static Element Metal = new ElementCombined("Metal", SpriteLoader.Instance.AddSprite("content/element_metal"), new Dictionary<Element, double>()
+        public static Element Metal = new ElementCombined("metal", "Metal", SpriteLoader.Instance.AddSprite("content/element_metal"), new Dictionary<Element, double>()
         {
             { Earth, 0.6 },
             { Holy, 0.4 }
         });
-        public static Element Inferno = new ElementCombined("Inferno", SpriteLoader.Instance.AddSprite("content/element_inferno"), new Dictionary<Element, double>()
+        public static Element Inferno = new ElementCombined("inferno", "Inferno", SpriteLoader.Instance.AddSprite("content/element_inferno"), new Dictionary<Element, double>()
         {
             { Wind, 0.5 },
             { Fire, 0.5 }
         });
-        public static Element Blizzard = new ElementCombined("Blizzard", SpriteLoader.Instance.AddSprite("content/element_blizzard"), new Dictionary<Element, double>()
+        public static Element Blizzard = new ElementCombined("blizzard", "Blizzard", SpriteLoader.Instance.AddSprite("content/element_blizzard"), new Dictionary<Element, double>()
         {
             { Wind, 0.5 },
             { Ice, 0.5 }
         });
-        public static Element Arcane = new ElementCombined("Arcane", SpriteLoader.Instance.AddSprite("content/element_arcane"), new Dictionary<Element, double>()
+        public static Element Arcane = new ElementCombined("arcane", "Arcane", SpriteLoader.Instance.AddSprite("content/element_arcane"), new Dictionary<Element, double>()
         {
             { Dark, 0.5 },
             { Holy, 0.5 }
         });
-        public static Element Origin = new ElementCombined("Origin", SpriteLoader.Instance.AddSprite("content/element_origin"), new Dictionary<Element, double>()
+        public static Element Origin = new ElementCombined("origin", "Origin", SpriteLoader.Instance.AddSprite("content/element_origin"), new Dictionary<Element, double>()
         {
             { BlackFlame, 0.2 },
             { Darkness, 0.2 },
@@ -193,7 +201,7 @@ namespace RoguelikeEngine
             { HeavenThunder, 0.2 },
             { Drought, 0.2 },
         });
-        public static Element Chaos = new ElementRandom("Chaos", SpriteLoader.Instance.AddSprite("content/element_demon"), new List<Element>()
+        public static Element Chaos = new ElementRandom("chaos", "Chaos", SpriteLoader.Instance.AddSprite("content/element_demon"), new List<Element>()
         {
             Fire,
             Ice,
@@ -204,13 +212,13 @@ namespace RoguelikeEngine
             Dark,
             Holy
         },1);
-        public static Element TheEnd = new ElementCombined("The End", SpriteLoader.Instance.AddSprite("content/element_the_end"), new Dictionary<Element, double>()
+        public static Element TheEnd = new ElementCombined("the_end", "The End", SpriteLoader.Instance.AddSprite("content/element_the_end"), new Dictionary<Element, double>()
         {
             { Dark, 2.0 },
             { Holy, 0.3 }
         });
 
-        public static Element Healing = new Element("Healing", SpriteLoader.Instance.AddSprite("content/element_healing"));
+        public static Element Healing = new Element("healing", "Healing", SpriteLoader.Instance.AddSprite("content/element_healing"));
 
         public static Element[] PhysicalElements = new Element[] { Bludgeon, Slash, Pierce };
         public static Element[] MagicalElements = new Element[] { Fire, Ice, Thunder, Water, Wind, Earth, Holy, Dark };
@@ -221,7 +229,7 @@ namespace RoguelikeEngine
     {
         Dictionary<Element, double> Composites = new Dictionary<Element, double>();
 
-        public ElementCombined(string name, SpriteReference sprite, Dictionary<Element, double> composites) : base(name, sprite)
+        public ElementCombined(string id, string name, SpriteReference sprite, Dictionary<Element, double> composites) : base(id, name, sprite)
         {
             Composites = composites;
         }
@@ -243,7 +251,7 @@ namespace RoguelikeEngine
         List<Element> Composites = new List<Element>();
         double Total;
 
-        public ElementRandom(string name, SpriteReference sprite, List<Element> composites, double total) : base(name, sprite)
+        public ElementRandom(string id, string name, SpriteReference sprite, List<Element> composites, double total) : base(id, name, sprite)
         {
             Composites = composites;
             Total = total;
@@ -277,7 +285,8 @@ namespace RoguelikeEngine
             }
         }
 
-        public int ID;
+        public int Index;
+        public string Id;
         public string Name;
         public bool Hidden;
         public double DefaultStat;
@@ -289,9 +298,10 @@ namespace RoguelikeEngine
         public double Priority;
         public virtual double EffectivePriority => Priority;
 
-        public Stat(string name, double defaultStat, double priority, Symbol symbol)
+        public Stat(string id, string name, double defaultStat, double priority, Symbol symbol)
         {
-            ID = AllStats.Count;
+            Index = AllStats.Count;
+            Id = id;
             Name = name;
             DefaultStat = defaultStat;
             Symbol = symbol;
@@ -299,13 +309,18 @@ namespace RoguelikeEngine
             AllStats.Add(this);
         }
 
-        public Stat(string name, double defaultStat, double priority, SpriteReference sprite) : this(name, defaultStat, priority, new Symbol(sprite))
+        public Stat(string id, string name, double defaultStat, double priority, SpriteReference sprite) : this(id, name, defaultStat, priority, new Symbol(sprite))
         {
         }
 
         public override string ToString()
         {
             return Name;
+        }
+
+        public static Stat GetStat(string id)
+        {
+            return AllStats.Find(stat => stat.Id == id);
         }
 
         public static string FormatHP(Creature creature, double value)
@@ -321,36 +336,36 @@ namespace RoguelikeEngine
                 return $"x{value}";
         }
 
-        public static Stat HP = new Stat("HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"))
+        public static Stat HP = new Stat("hp", "HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"))
         {
             Format = FormatHP,
         };
-        public static Stat Attack = new Stat("Attack", 0, 1, SpriteLoader.Instance.AddSprite("content/stat_attack"));
-        public static Stat Defense = new Stat("Defense", 0, 2, SpriteLoader.Instance.AddSprite("content/stat_defense"));
-        public static Stat DamageRate = new Stat("Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"))
+        public static Stat Attack = new Stat("attack", "Attack", 0, 1, SpriteLoader.Instance.AddSprite("content/stat_attack"));
+        public static Stat Defense = new Stat("defense", "Defense", 0, 2, SpriteLoader.Instance.AddSprite("content/stat_defense"));
+        public static Stat DamageRate = new Stat("damage_rate", "Damage Rate", 1, 3, SpriteLoader.Instance.AddSprite("content/stat_damage_rate"))
         {
             Format = FormatRate,
         };
-        public static Stat AlchemyPower = new Stat("Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
-        public static Stat MiningLevel = new Stat("Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
-        public static Stat MiningSpeed = new Stat("Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
-        public static Stat Speed = new Stat("Speed", 1, 8, SpriteLoader.Instance.AddSprite("content/stat_speed"));
+        public static Stat AlchemyPower = new Stat("alchemy", "Alchemy Power", 0, 5, SpriteLoader.Instance.AddSprite("content/stat_alchemy"));
+        public static Stat MiningLevel = new Stat("mining_level", "Mining Level", 0, 6, SpriteLoader.Instance.AddSprite("content/stat_mining_level"));
+        public static Stat MiningSpeed = new Stat("mining_speed", "Mining Speed", 1, 7, SpriteLoader.Instance.AddSprite("content/stat_mining_speed"));
+        public static Stat Speed = new Stat("speed", "Speed", 1, 8, SpriteLoader.Instance.AddSprite("content/stat_speed"));
 
-        public static Stat ArrowAttack = new Stat("Arrow Attack", 0, 10, SpriteLoader.Instance.AddSprite("content/stat_arrow_attack"));
-        public static Stat ArrowRange = new Stat("Arrow Range", 0, 11, SpriteLoader.Instance.AddSprite("content/stat_arrow_range"));
-        public static Stat ArrowVolley = new Stat("Arrow Volley", 1, 12, SpriteLoader.Instance.AddSprite("content/stat_arrow_volley"));
+        public static Stat ArrowAttack = new Stat("arrow_attack", "Arrow Attack", 0, 10, SpriteLoader.Instance.AddSprite("content/stat_arrow_attack"));
+        public static Stat ArrowRange = new Stat("arrow_range", "Arrow Range", 0, 11, SpriteLoader.Instance.AddSprite("content/stat_arrow_range"));
+        public static Stat ArrowVolley = new Stat("arrow_volley", "Arrow Volley", 1, 12, SpriteLoader.Instance.AddSprite("content/stat_arrow_volley"));
 
-        public static Stat Durability = new Stat("Durability", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_durability")) { Hidden = true };
-        public static Stat Blood = new Stat("Blood", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_blood"));
+        public static Stat Durability = new Stat("durability", "Durability", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_durability")) { Hidden = true };
+        public static Stat Blood = new Stat("blood", "Blood", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_blood"));
 
-        public static Stat SlimeHP = new Stat("Slime HP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
-        public static Stat SlimeAttack = new Stat("Slime Attack", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_attack"));
+        public static Stat SlimeHP = new Stat("slime_hp", "Slime HP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
+        public static Stat SlimeAttack = new Stat("slime_attack", "Slime Attack", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_attack"));
         
-        public static Flag SwapItem = new Flag("Swap Item", true, SpriteLoader.Instance.AddSprite("content/stat_swap_enabled"));
-        public static Flag EquipItem = new Flag("Equip Item", true, SpriteLoader.Instance.AddSprite("content/stat_equip_enabled"));
-        public static Flag UnequipItem = new Flag("Unequip Item", true, SpriteLoader.Instance.AddSprite("content/stat_unequip_enabled"));
-        public static Flag LightningRod = new Flag("Lightning Rod", true, SpriteLoader.Instance.AddSprite("content/stat_lightning_rod"));
-        public static Flag Insulation = new Flag("Insulation", true, SpriteLoader.Instance.AddSprite("content/stat_insulation"));
+        public static Flag SwapItem = new Flag("swap_item", "Swap Item", true, SpriteLoader.Instance.AddSprite("content/stat_swap_enabled"));
+        public static Flag EquipItem = new Flag("equip_item", "Equip Item", true, SpriteLoader.Instance.AddSprite("content/stat_equip_enabled"));
+        public static Flag UnequipItem = new Flag("unequip_item", "Unequip Item", true, SpriteLoader.Instance.AddSprite("content/stat_unequip_enabled"));
+        public static Flag LightningRod = new Flag("lightning_rod", "Lightning Rod", true, SpriteLoader.Instance.AddSprite("content/stat_lightning_rod"));
+        public static Flag Insulation = new Flag("insulation", "Insulation", true, SpriteLoader.Instance.AddSprite("content/stat_insulation"));
 
         public static Stat[] Stats = new Stat[] { HP, Attack, Defense, AlchemyPower, DamageRate };
     }
@@ -362,13 +377,13 @@ namespace RoguelikeEngine
         public double SubPriority;
         public override double EffectivePriority => Priority + (Element.Priority + SubPriority) / Element.AllElements.Count;
 
-        public ElementStat(Element element, string name, double defaultStat, double priority, double subPriority, Symbol symbol) : base(name, defaultStat, priority, symbol)
+        public ElementStat(Element element, string id, string name, double defaultStat, double priority, double subPriority, Symbol symbol) : base($"{id}_{element.Id}", name, defaultStat, priority, symbol)
         {
             Element = element;
             SubPriority = subPriority;
         }
 
-        public ElementStat(Element element, string name, double defaultStat, double priority, double subPriority, SpriteReference sprite) : this(element, name, defaultStat, priority, subPriority, new SymbolElement(sprite, element))
+        public ElementStat(Element element, string id, string name, double defaultStat, double priority, double subPriority, SpriteReference sprite) : this(element, id, name, defaultStat, priority, subPriority, new SymbolElement(sprite, element))
         {
         }
     }
@@ -377,7 +392,7 @@ namespace RoguelikeEngine
     {
         public bool DefaultValue;
         
-        public Flag(string name, bool defaultValue, SpriteReference sprite) : base(name, 0, -1, sprite)
+        public Flag(string id, string name, bool defaultValue, SpriteReference sprite) : base(id, name, 0, -1, sprite)
         {
             DefaultValue = defaultValue;
         }
@@ -581,7 +596,7 @@ namespace RoguelikeEngine
 
     delegate Attack AttackDelegate(Creature attacker, IEffectHolder defender);
 
-    abstract class Creature : IEffectHolder, IGameObject, IHasPosition
+    abstract class Creature : IEffectHolder, IGameObject, IHasPosition, IJsonSerializable
     {
         public class WaitFrames : Wait
         {
@@ -608,7 +623,13 @@ namespace RoguelikeEngine
 
         public ActionQueue ActionQueue => World.ActionQueue;
 
-        public ReusableID ObjectID {
+        public ReusableID ObjectID
+        {
+            get;
+            private set;
+        }
+        public Guid GlobalID
+        {
             get;
             private set;
         }
@@ -686,6 +707,7 @@ namespace RoguelikeEngine
             World = world;
             World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.NewID(this);
+            GlobalID = Guid.NewGuid();
             VisualFacing = () => Facing;
             CurrentActions = new WaitGameObject(this);
             CurrentHits = new WaitGameObject(this);
@@ -1191,8 +1213,24 @@ namespace RoguelikeEngine
         {
             return player == this;
         }
+
+        public virtual JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["objectId"] = Serializer.GetHolderID(this);
+            json["name"] = Name;
+            json["description"] = Description;
+            return json;
+        }
+
+        public virtual void ReadJson(JToken json, Context context)
+        {
+            //NOOP
+        }
     }
 
+    [SerializeInfo("hero")]
     class Hero : Creature
     {
         public Hero(SceneGame world) : base(world)
@@ -1209,6 +1247,12 @@ namespace RoguelikeEngine
 
             Effect.Apply(new EffectStat(this, Stat.HP, 1000));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+        }
+
+        [Construct]
+        public static Hero Construct(Context context)
+        {
+            return new Hero(context.World);
         }
     }
 }

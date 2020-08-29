@@ -87,11 +87,14 @@ namespace RoguelikeEngine
             public static implicit operator Part(string sprite) => new Part(sprite); 
         }
 
+        public static Dictionary<string, Material> Materials = new Dictionary<string, Material>();
+
         public ReusableID ObjectID
         {
             get;
             private set;
         }
+        public string ID;
         public string Name;
         public string Description;
         public double Priority;
@@ -121,8 +124,10 @@ namespace RoguelikeEngine
 
         public ColorMatrix ColorTransform = ColorMatrix.Identity;
 
-        public Material(string name, string description)
+        public Material(string id, string name, string description)
         {
+            ID = id;
+            Materials.Add(ID, this);
             ObjectID = EffectManager.NewID(this);
             Name = name;
             Description = description;
@@ -260,7 +265,12 @@ namespace RoguelikeEngine
             return ValidParts.Contains(partType);
         }
 
-        public static Material None = new Material("None", string.Empty);
+        public static Material GetMaterial(string id)
+        {
+            return Materials.GetOrDefault(id, None);
+        }
+
+        public static Material None = new Material("none", "None", string.Empty);
         public static Material Wood = new Wood();
         public static Material Coal = new Coal();
         public static Material Bone = new Bone();
@@ -291,7 +301,7 @@ namespace RoguelikeEngine
 
     class Wood : Material
     {
-        public Wood() : base("Wood", string.Empty)
+        public Wood() : base("wood", "Wood", string.Empty)
         {
             MeltingRequired = false;
             FuelTemperature = 100;
@@ -305,7 +315,7 @@ namespace RoguelikeEngine
 
     class Feather : Material
     {
-        public Feather() : base("Feather", string.Empty)
+        public Feather() : base("feather", "Feather", string.Empty)
         {
             MeltingRequired = false;
             ColorTransform = ColorMatrix.Tint(new Color(255, 255, 255));
@@ -319,7 +329,7 @@ namespace RoguelikeEngine
 
     class Coal : Material
     {
-        public Coal() : base("Coal", string.Empty)
+        public Coal() : base("coal", "Coal", string.Empty)
         {
             FuelTemperature = 1000;
             ColorTransform = ColorMatrix.Tint(new Color(103, 103, 103));
@@ -328,7 +338,7 @@ namespace RoguelikeEngine
 
     class Bone : Material
     {
-        public Bone() : base("Bone", string.Empty)
+        public Bone() : base("bone", "Bone", string.Empty)
         {
             MeltingRequired = false;
             ColorTransform = ColorMatrix.TwoColor(new Color(100, 92, 66), new Color(255, 255, 255));
@@ -359,7 +369,7 @@ namespace RoguelikeEngine
 
     class Dilithium : Material
     {
-        public Dilithium() : base("Dilithium", string.Empty)
+        public Dilithium() : base("dilithium", "Dilithium", string.Empty)
         {
             FuelTemperature = 2000;
             MeltingTemperature = 75;
@@ -390,7 +400,7 @@ namespace RoguelikeEngine
     {
         Random Random = new Random();
 
-        public Tiberium() : base("Tiberium", string.Empty)
+        public Tiberium() : base("tiberium", "Tiberium", string.Empty)
         {
             MeltingTemperature = 260;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(92, 156, 65), new Color(238, 251, 77));
@@ -424,7 +434,7 @@ namespace RoguelikeEngine
 
     class Basalt : Material
     {
-        public Basalt() : base("Basalt", string.Empty)
+        public Basalt() : base("basalt", "Basalt", string.Empty)
         {
             MeltingTemperature = 500;
             ColorTransform = ColorMatrix.TwoColor(new Color(89, 89, 89), new Color(239, 236, 233));
@@ -452,7 +462,7 @@ namespace RoguelikeEngine
 
     class Triberium : Material
     {
-        public Triberium() : base("Triberium", string.Empty)
+        public Triberium() : base("triberium", "Triberium", string.Empty)
         {
             Priority = 2;
             MeltingTemperature = 760;
@@ -499,7 +509,7 @@ namespace RoguelikeEngine
 
     class Meteorite : Material
     {
-        public Meteorite() : base("Meteorite", string.Empty)
+        public Meteorite() : base("meteorite", "Meteorite", string.Empty)
         {
             MeltingTemperature = 600;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(69, 75, 54), new Color(157, 167, 143));
@@ -530,7 +540,7 @@ namespace RoguelikeEngine
 
     class Obsidiorite : Material
     {
-        public Obsidiorite() : base("Obsidiorite", string.Empty)
+        public Obsidiorite() : base("obsidiorite", "Obsidiorite", string.Empty)
         {
             MeltingTemperature = 1100;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(69 / 2, 54 / 2, 75 / 2), new Color(157, 143, 167));
@@ -558,7 +568,7 @@ namespace RoguelikeEngine
 
     class Karmesine : Material
     {
-        public Karmesine() : base("Karmesine", string.Empty)
+        public Karmesine() : base("karmesine", "Karmesine", string.Empty)
         {
             MeltingTemperature = 800;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(198, 77, 55), new Color(242, 214, 208));
@@ -594,7 +604,7 @@ namespace RoguelikeEngine
 
     class Ovium : Material
     {
-        public Ovium() : base("Ovium", string.Empty)
+        public Ovium() : base("ovium", "Ovium", string.Empty)
         {
             MeltingTemperature = 700;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(94, 101, 170), new Color(215, 227, 253));
@@ -628,7 +638,7 @@ namespace RoguelikeEngine
 
     class Jauxum : Material
     {
-        public Jauxum() : base("Jauxum", string.Empty)
+        public Jauxum() : base("jauxum", "Jauxum", string.Empty)
         {
             MeltingTemperature = 550;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(105, 142, 64), new Color(208, 251, 121));
@@ -662,7 +672,7 @@ namespace RoguelikeEngine
 
     class Ardite : Material
     {
-        public Ardite() : base("Ardite", string.Empty)
+        public Ardite() : base("ardite", "Ardite", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(215, 92, 11), new Color(252, 196, 112));
@@ -684,7 +694,7 @@ namespace RoguelikeEngine
 
     class Cobalt : Material
     {
-        public Cobalt() : base("Cobalt", string.Empty)
+        public Cobalt() : base("cobalt", "Cobalt", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(61, 106, 143), new Color(63, 233, 233));
@@ -706,7 +716,7 @@ namespace RoguelikeEngine
 
     class Manyullyn : Material
     {
-        public Manyullyn() : base("Manyullyn", string.Empty)
+        public Manyullyn() : base("manyullyn", "Manyullyn", string.Empty)
         {
             Priority = 3;
             MeltingTemperature = 1900;
@@ -749,7 +759,7 @@ namespace RoguelikeEngine
 
     class Terrax : Material
     {
-        public Terrax() : base("Terrax", string.Empty)
+        public Terrax() : base("terrax", "Terrax", string.Empty)
         {
             Priority = 3;
             MeltingTemperature = 1900;
@@ -798,7 +808,7 @@ namespace RoguelikeEngine
 
     class Aurorium : Material
     {
-        public Aurorium() : base("Aurorium", string.Empty)
+        public Aurorium() : base("aurorium", "Aurorium", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(191, 51, 86), new Color(243, 209, 218));
@@ -821,7 +831,7 @@ namespace RoguelikeEngine
 
     class Violium : Material
     {
-        public Violium() : base("Violium", string.Empty)
+        public Violium() : base("violium", "Violium", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(58, 50, 80), new Color(128, 168, 198));
@@ -843,7 +853,7 @@ namespace RoguelikeEngine
 
     class Astrium : Material
     {
-        public Astrium() : base("Astrium", string.Empty)
+        public Astrium() : base("astrium", "Astrium", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(112, 46, 81), new Color(179, 197, 225));
@@ -865,7 +875,7 @@ namespace RoguelikeEngine
 
     class Ignitz : Material
     {
-        public Ignitz() : base("Ignitz", string.Empty)
+        public Ignitz() : base("ignitz", "Ignitz", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(188, 95, 92), new Color(255, 186, 26)) * ColorMatrix.Scale(1.3f);
@@ -888,7 +898,7 @@ namespace RoguelikeEngine
 
     class Tritonite : Material
     {
-        public Tritonite() : base("Tritonite", string.Empty)
+        public Tritonite() : base("tritonite", "Tritonite", string.Empty)
         {
             MeltingTemperature = 2000;
             ColorTransform = ColorMatrix.TwoColorLight(new Color(23, 29, 96), new Color(85, 190, 196)) * ColorMatrix.Scale(1.2f);

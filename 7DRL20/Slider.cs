@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,11 @@ namespace RoguelikeEngine
         public Slider(float time) : this(0, time)
         {
 
+        }
+
+        public Slider(JToken json)
+        {
+            ReadJson(json);
         }
 
         public static Slider operator +(Slider slider, float i)
@@ -60,6 +66,20 @@ namespace RoguelikeEngine
         public override string ToString()
         {
             return $"{Time} ({Slide})";
+        }
+
+        public JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["time"] = Time;
+            json["timeEnd"] = EndTime;
+            return json;
+        }
+
+        public void ReadJson(JToken json)
+        {
+            Time = json["time"].Value<float>();
+            EndTime = json["timeEnd"].Value<float>();
         }
     }
 }

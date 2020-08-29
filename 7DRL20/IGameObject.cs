@@ -14,12 +14,6 @@ namespace RoguelikeEngine
             set;
         }
 
-        Map Map
-        {
-            get;
-            set;
-        }
-
         bool Destroyed
         {
             set;

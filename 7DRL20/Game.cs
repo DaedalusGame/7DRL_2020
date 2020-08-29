@@ -268,7 +268,7 @@ namespace RoguelikeEngine
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_ELEMENT_ICON);
-            builder.Append(StringUtil.ToFormatString(element.ID));
+            builder.Append(StringUtil.ToFormatString(element.Index));
             return builder.ToString();
         }
 
@@ -276,7 +276,7 @@ namespace RoguelikeEngine
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(FORMAT_STAT_ICON);
-            builder.Append(StringUtil.ToFormatString(stat.ID));
+            builder.Append(StringUtil.ToFormatString(stat.Index));
             return builder.ToString();
         }
 

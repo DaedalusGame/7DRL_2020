@@ -24,13 +24,15 @@ namespace RoguelikeEngine
         }
     }
 
+    delegate object ConstructDelegate(Context context);
+
     class TypeInfo
     {
         public string ID;
         public Type Type;
-        public Func<object> Construct;
+        public ConstructDelegate Construct;
 
-        public TypeInfo(string iD, Type type, Func<object> construct)
+        public TypeInfo(string iD, Type type, ConstructDelegate construct)
         {
             ID = iD;
             Type = type;
@@ -40,26 +42,13 @@ namespace RoguelikeEngine
 
     class Context
     {
-        int CurrentID = 0;
-        Dictionary<IEffectHolder, int> EntityToID = new Dictionary<IEffectHolder, int>();
-        Dictionary<int, IEffectHolder> IDToEntity = new Dictionary<int, IEffectHolder>();
+        public Map Map;
 
-        public int AddEntity(IEffectHolder entity)
-        {
-            int id = CurrentID++;
-            AddEntity(entity, id);
-            return id;
-        }
+        public SceneGame World => Map.World;
 
-        public void AddEntity(IEffectHolder entity, int id)
+        public Context(Map map)
         {
-            EntityToID.Add(entity, id);
-            IDToEntity.Add(id, entity);
-        }
-
-        public int GetID(IEffectHolder holder)
-        {
-            return EntityToID[holder];
+            Map = map;
         }
     }
 
@@ -68,6 +57,12 @@ namespace RoguelikeEngine
         Guid GlobalID
         {
             get;
+        }
+
+        Map Map
+        {
+            get;
+            set;
         }
 
         JToken WriteJson(Context context);
@@ -80,13 +75,13 @@ namespace RoguelikeEngine
         public static Dictionary<Type, string> TypeToName = new Dictionary<Type, string>();
         public static Dictionary<string, TypeInfo> Registry = new Dictionary<string, TypeInfo>();
 
-        public static void Register(string id, Type type, Func<object> construct)
+        public static void Register(string id, Type type, ConstructDelegate construct)
         {
             TypeToName.Add(type, id);
             Registry.Add(id, new TypeInfo(id, type, construct));
         }
 
-        public static T Create<T>(string id) where T : class
+        public static T Create<T>(string id, Context context) where T : class
         {
             TypeInfo typeInfo;
             if(id == null || !Registry.TryGetValue(id, out typeInfo))
@@ -95,7 +90,7 @@ namespace RoguelikeEngine
                 typeInfo = null;
             }
             if (typeInfo != null && typeof(T).IsAssignableFrom(typeInfo.Type))
-                return (T)typeInfo.Construct();
+                return (T)typeInfo.Construct(context);
             return null;
         }
 
@@ -123,8 +118,51 @@ namespace RoguelikeEngine
             }
             else
             {
-                return null; //TODO: Static id
+                return null;
             }
+        }
+
+        public static IEffectHolder GetHolder(JToken json, Context context)
+        {
+            //TODO: Extract this somehow
+            if (json is JObject) //It's a coord
+            {
+                string type = json["type"].Value<string>();
+                int x = json["x"].Value<int>();
+                int y = json["y"].Value<int>();
+
+                MapTile mapTile = context.Map.Tiles[x, y];
+
+                switch (type)
+                {
+                    case ("mapTile"):
+                        return mapTile;
+                    case ("tile"):
+                        return mapTile.Tile;
+                    case ("under"):
+                        return mapTile.UnderTile;
+                    default:
+                        return null;
+                }
+            }
+            else if (json is JValue value && value.Type == JTokenType.Integer) //It's a global id
+            {
+                Guid globalId = Guid.Parse(value.Value<string>());
+                //TODO: find holder by global id
+                return null;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public static T GetHolder<T>(JToken json, Context context) where T : class, IEffectHolder
+        {
+            IEffectHolder holder = GetHolder(json, context);
+            if (holder is T)
+                return (T)holder;
+            return null;
         }
 
         //TODO: Support cross-map coords
@@ -139,6 +177,7 @@ namespace RoguelikeEngine
 
         public static void Init()
         {
+            //TODO: Get id from construct instead of serializeinfo
             foreach(var type in GetSerializableTypes())
             {
                 var serializable = type.GetCustomAttribute<SerializeInfo>();
@@ -154,11 +193,16 @@ namespace RoguelikeEngine
                 {
                     throw new Exception($"Type {type} is marked serializable, but doesn't contain a method marked as construct.");
                 }
-                Func<object> del = (Func<object>)Delegate.CreateDelegate(typeof(Func<object>), construct);
 
-                Register(serializable.ID, type, del);
-
-                //TODO: Register construct as delegate
+                try
+                {
+                    ConstructDelegate del = (ConstructDelegate)Delegate.CreateDelegate(typeof(ConstructDelegate), construct);
+                    Register(serializable.ID, type, del);
+                }
+                catch(ArgumentException e)
+                {
+                    throw new Exception($"Type {type} is marked serializable, but construct method could not be bound.");
+                }
             }
         }
 

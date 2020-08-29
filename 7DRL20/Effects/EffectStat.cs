@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace RoguelikeEngine.Effects
 {
+    [SerializeInfo("stat_add")]
     class EffectStat : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -22,6 +24,10 @@ namespace RoguelikeEngine.Effects
         public bool Base = true;
 
         public override double VisualPriority => Stat.Priority + 0;
+
+        public EffectStat()
+        {
+        }
 
         public EffectStat(IEffectHolder holder, Stat stat, double amount)
         {
@@ -66,6 +72,29 @@ namespace RoguelikeEngine.Effects
         public override string ToString()
         {
             return $"{Stat} {Amount:+0;-#} ({Holder})";
+        }
+
+        [Construct]
+        public static EffectStat Construct(Context context)
+        {
+            return new EffectStat();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["holder"] = Serializer.GetHolderID(Holder);
+            json["stat"] = Stat.Id;
+            json["amount"] = Amount;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Holder = Serializer.GetHolder<IEffectHolder>(json["holder"], context);
+            Stat = Stat.GetStat(json["stat"].Value<string>());
+            Amount = json["amount"].Value<double>();
         }
 
         public class Stackable : EffectStat

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,12 +7,17 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    [SerializeInfo("in_inventory")]
     class EffectItemInventory : Effect, IPosition
     {
         public IEffectHolder Subject => Item;
 
         public Item Item;
         public IEffectHolder Holder;
+
+        public EffectItemInventory()
+        {
+        }
 
         public EffectItemInventory(Item item, IEffectHolder holder)
         {
@@ -38,6 +44,27 @@ namespace RoguelikeEngine.Effects
         public override string ToString()
         {
             return $"{Holder} has {Item}";
+        }
+
+        [Construct]
+        public static EffectItemInventory Construct(Context context)
+        {
+            return new EffectItemInventory();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["holder"] = Serializer.GetHolderID(Holder);
+            json["item"] = Serializer.GetHolderID(Item);
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Holder = Serializer.GetHolder(json["holder"], context);
+            Item = Serializer.GetHolder<Item>(json["item"], context);
         }
     }
 }

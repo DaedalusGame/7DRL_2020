@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,11 +7,16 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    [SerializeInfo("damage")]
     class EffectDamage : Effect
     {
         public IEffectHolder Holder;
         public double Amount;
         public Element Element;
+
+        public EffectDamage()
+        {
+        }
 
         public EffectDamage(IEffectHolder holder, double amount, Element element)
         {
@@ -44,6 +50,29 @@ namespace RoguelikeEngine.Effects
         public override string ToString()
         {
             return $"{Amount} {Element} Damage ({Holder})";
+        }
+
+        [Construct]
+        public static EffectDamage Construct(Context context)
+        {
+            return new EffectDamage();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["holder"] = Serializer.GetHolderID(Holder);
+            json["element"] = Element.Id;
+            json["amount"] = Amount;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Holder = Serializer.GetHolder<IEffectHolder>(json["holder"], context);
+            Element = Element.GetElement(json["element"].Value<string>());
+            Amount = json["amount"].Value<double>();
         }
     }
 }
