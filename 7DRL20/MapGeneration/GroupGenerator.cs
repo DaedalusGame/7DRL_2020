@@ -121,7 +121,6 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 Spawns = { EnemySpawn.Skeleton },
-                Template = DirtCave,
             };
         }
         public static GeneratorGroup MakeFireCave(MapGenerator generator)
@@ -132,7 +131,6 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
                 WoodColor = new TileColor(new Color(128, 96, 16), new Color(255, 64, 16)),
                 Spawns = { EnemySpawn.Skeleton },
-                Template = FireCave,
             };
         }
         public static GeneratorGroup MakeAdamantCave(MapGenerator generator)
@@ -143,19 +141,18 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
                 WoodColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
                 Spawns = { EnemySpawn.Skeleton, EnemySpawn.PoisonBlob },
-                Template = AdamantCave
             };
         }
         public static GeneratorGroup MakeAcidCave(MapGenerator generator)
         {
+            Color lowColor = Color.Lerp(Color.Black, Color.GreenYellow, 0.5f);
             return new CaveAcid(generator) //Acid Cave
             {
                 CaveColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 WoodColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
-                GlowColor = (time) => Color.Lerp(Color.Black, Color.GreenYellow, 0.75f + 0.25f * (float)Math.Sin(time / 60f)),
+                GlowColor = new AdvancedColor(new[] { Color.Black, Color.GreenYellow, Color.Black }, 60),
                 Spawns = { EnemySpawn.AcidBlob, EnemySpawn.Ctholoid, EnemySpawn.YellowDragon },
-                Template = AcidCave
             };
         }
         public static GeneratorGroup MakeSeaOfDirac(MapGenerator generator)
@@ -165,9 +162,8 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
                 BrickColor = new TileColor(new Color(80, 80, 150), new Color(253, 234, 248)),
                 WoodColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
-                GlowColor = (time) => Color.Lerp(Color.Black, new Color(34, 255, 255), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
+                GlowColor = new AdvancedColor(new[] { Color.Black, new Color(34, 255, 255), Color.Black }, 60),
                 Spawns = { EnemySpawn.PoisonBlob, EnemySpawn.GoreVala, EnemySpawn.BlueDragon, EnemySpawn.Ctholoid },
-                Template = SeaOfDirac
             };
         }
         public static GeneratorGroup MakeMagmaMine(MapGenerator generator)
@@ -178,7 +174,6 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(160, 35, 35), new Color(247, 211, 70)),
                 WoodColor = new TileColor(new Color(160, 35, 35), new Color(247, 211, 70)),
                 Spawns = { EnemySpawn.BlastCannon, EnemySpawn.AcidBlob, EnemySpawn.Skeleton, EnemySpawn.RedDragon },
-                Template = MagmaMine
             };
         }
         public static GeneratorGroup MakeDungeon(MapGenerator generator)
@@ -189,7 +184,6 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
                 WoodColor = new TileColor(new Color(32, 64, 32), new Color(128, 160, 160)),
                 Spawns = { EnemySpawn.Skeleton, EnemySpawn.Vorrax, EnemySpawn.DeathKnight },
-                Template = Dungeon
             };
         }
         public static GeneratorGroup MakeIvoryTower(MapGenerator generator)
@@ -200,7 +194,6 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 WoodColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 Spawns = { EnemySpawn.Skeleton, EnemySpawn.DeathKnight, EnemySpawn.BlueDragon },
-                Template = IvoryTower
             };
         }
         public static GeneratorGroup MakeEbonyTower(MapGenerator generator)
@@ -211,19 +204,18 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(50, 15, 50), new Color(90, 90, 90)),
                 WoodColor = new TileColor(new Color(50, 15, 50), new Color(90, 90, 90)),
                 Spawns = { EnemySpawn.Skeleton, EnemySpawn.DeathKnight, EnemySpawn.BlueDragon },
-                Template = EbonyTower
             };
         }
         public static GeneratorGroup MakeDarkCastle(MapGenerator generator)
         {
+            
             return new CastleDark(generator) //Dark Castle
             {
                 CaveColor = new TileColor(new Color(54, 72, 101), new Color(109, 197, 112)),
                 BrickColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
                 WoodColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
-                GlowColor = (time) => Color.Lerp(new Color(62, 79, 2), new Color(227, 253, 138), 0.5f + 0.5f * (float)Math.Sin(time / 60f)),
+                GlowColor = new AdvancedColor(new[] { new Color(62, 79, 2), new Color(227, 253, 138), new Color(62, 79, 2) }, 60),
                 Spawns = { EnemySpawn.DeathKnight, EnemySpawn.BlastCannon, EnemySpawn.Ctholoid },
-                Template = DarkCastle
             };
         }
     }

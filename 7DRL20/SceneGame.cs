@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.MapGeneration;
 
@@ -259,25 +262,30 @@ namespace RoguelikeEngine
         {
             ActionQueue = new ActionQueue(this);
             Menu = new PlayerUI(this);
-            
-            GeneratorTemplate template = new TemplateHome();
-            template.Build(this);
-            MapHome = template.Map;
 
-            Tile startTile = template.GetStartRoom();
-            Tile stairDown = template.BuildStairRoom();
-
-            StairDown stairTile = new StairDown()
+            try
             {
-                Template = new TemplateRandomLevel(new GroupRandom(), 0)
-            };
-            stairTile.InitBonuses();
-            stairDown.Replace(stairTile);
+                StreamReader reader = File.OpenText("test.json");
+                JsonTextReader jsonReader = new JsonTextReader(reader);
+                JObject json = JObject.Load(jsonReader);
+                jsonReader.Close();
+                LoadHome(json);
+            }
+            catch(FileNotFoundException e)
+            {
+                CreateHome();
+            }
 
             PushObjects();
 
+            StreamWriter writer = File.CreateText("test.json");
+            JsonTextWriter jsonWriter = new JsonTextWriter(writer);
             var mapJson = MapHome.WriteJson();
             var strJson = mapJson.ToString();
+            mapJson.WriteTo(jsonWriter);
+            jsonWriter.Close();
+
+            var startTile = MapHome.EnumerateTiles().Where(tile => !tile.Solid).Shuffle(Random).First();
 
             Player = new Hero(this);
             Player.MoveTo(startTile, 1);
@@ -318,10 +326,29 @@ namespace RoguelikeEngine
             Quests.Add(buildAdze);
 
             Spawner = new EnemySpawner(this, 60);
+        }
 
-            
-            var testMap = new Map(this, 0, 0);
-            testMap.ReadJson(mapJson);
+        private void CreateHome()
+        {
+            GeneratorTemplate template = new TemplateHome();
+            template.Build(this);
+            MapHome = template.Map;
+
+            Tile startTile = template.GetStartRoom();
+            Tile stairDown = template.BuildStairRoom();
+
+            StairDown stairTile = new StairDown()
+            {
+                Template = new TemplateRandomLevel(new GroupRandom(), 0)
+            };
+            stairTile.InitBonuses();
+            stairDown.Replace(stairTile);
+        }
+
+        private void LoadHome(JObject json)
+        {
+            MapHome = new Map(this, 0, 0);
+            MapHome.ReadJson(json);
         }
 
         private void BuildSmelterRoom(Tile center, GeneratorGroup group)

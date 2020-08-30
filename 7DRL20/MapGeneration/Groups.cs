@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +21,9 @@ namespace RoguelikeEngine.MapGeneration
         public TileColor CaveColor;
         public TileColor BrickColor;
         public TileColor WoodColor;
-        public Func<float, Color> GlowColor = (slide) => Color.TransparentBlack;
+        public AdvancedColor GlowColor = AdvancedColor.Empty;
         public ColorMatrix Atmosphere = ColorMatrix.Identity;
         public List<EnemySpawn> Spawns = new List<EnemySpawn>();
-        public GroupGenerator Template;
 
         protected GeneratorGroup(MapGenerator generator)
         {
@@ -87,6 +87,43 @@ namespace RoguelikeEngine.MapGeneration
                     Techniques.Current();
                 else
                     Techniques = null;
+            }
+        }
+
+        public GroupGenerator MakeTemplate()
+        {
+            return new GroupGenerator(Copy);
+        }
+
+        public abstract GeneratorGroup Copy(MapGenerator generator);
+
+        public JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["colorCave"] = CaveColor.WriteJson();
+            json["colorBrick"] = BrickColor.WriteJson();
+            json["colorWood"] = WoodColor.WriteJson();
+            json["colorGlow"] = GlowColor.WriteJson();
+            JArray spawnArray = new JArray();
+            foreach(var spawn in Spawns)
+            {
+                spawnArray.Add(spawn.ID);
+            }
+            json["spawns"] = spawnArray;
+            return json;
+        }
+
+        public void ReadJson(JToken json)
+        {
+            CaveColor = new TileColor(json["colorCave"]);
+            BrickColor = new TileColor(json["colorBrick"]);
+            WoodColor = new TileColor(json["colorWood"]);
+            GlowColor = new AdvancedColor(json["colorGlow"]);
+            JArray spawnArray = json["spawns"] as JArray;
+            foreach(var spawnJson in spawnArray)
+            {
+                Spawns.Add(EnemySpawn.GetSpawn(spawnJson.Value<string>()));
             }
         }
 
@@ -359,44 +396,30 @@ namespace RoguelikeEngine.MapGeneration
         #endregion
     }
 
-    /*class Home : GeneratorGroup
-    {
-        public Home(MapGenerator generator) : base(generator)
-        {
-        }
-
-        public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
-        {
-            return Enumerable.Empty<Point>();
-        }
-
-        public override void PlaceConnection(MapGenerator generator, GeneratorCell cell)
-        {
-            //NOOP
-        }
-
-        public override void PlaceRoom(MapGenerator generator, GeneratorCell cell)
-        {
-            for (int i = 0; i < 4; i++)
-            {
-                int offX = generator.Random.Next(-5, 6);
-                int offY = generator.Random.Next(-5, 6);
-
-                GeneratorCell center = cell.GetNeighbor(offX, offY);
-                if (center.Tile == GeneratorTile.Empty)
-                {
-                    center.Tile = GeneratorTile.FloorBrick;
-                    center.Group = this;
-                    //generator.SpreadCastle(center, 3 + generator.Random.Next(4), GeneratorTile.FloorBrick);
-                }
-            }
-        }
-    }*/
-
+    [SerializeInfo("group_castle")]
     class Castle : GeneratorGroup
     {
         public Castle(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static Castle Construct(Context context)
+        {
+            return new Castle(null);
+        }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new Castle(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
         }
 
         public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
@@ -437,10 +460,17 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
+    [SerializeInfo("group_tower")]
     class Tower : GeneratorGroup
     {
         public Tower(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static Tower Construct(Context context)
+        {
+            return new Tower(null);
         }
 
         public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
@@ -458,12 +488,32 @@ namespace RoguelikeEngine.MapGeneration
         {
             cell.AddSpread(new SpreadTower(null, generator.Random.Next(6, 10), generator.Random.Next(3, 6) + 0.5f));
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new Tower(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_cave")]
     class Cave : GeneratorGroup
     {
         public Cave(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static Cave Construct(Context context)
+        {
+            return new Cave(null);
         }
 
         public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
@@ -496,12 +546,32 @@ namespace RoguelikeEngine.MapGeneration
             //yield return MakeGlowingFloor;
             yield return MakeBridges;
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new Cave(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_cave_acid")]
     class CaveAcid : Cave
     {
         public CaveAcid(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static CaveAcid Construct(Context context)
+        {
+            return new CaveAcid(null);
         }
 
         protected override IEnumerator<Action> GetTechniques()
@@ -512,12 +582,32 @@ namespace RoguelikeEngine.MapGeneration
             yield return MakeGlowingWall;
             yield return MakeBridges;
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new CaveAcid(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_cave_lava")]
     class CaveLava : Cave
     {
         public CaveLava(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static CaveLava Construct(Context context)
+        {
+            return new CaveLava(null);
         }
 
         protected override IEnumerator<Action> GetTechniques()
@@ -525,12 +615,32 @@ namespace RoguelikeEngine.MapGeneration
             yield return MakeLava;
             yield return MakeBridges;
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new CaveLava(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_cave_magma")]
     class CaveMagma : Cave
     {
         public CaveMagma(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static CaveMagma Construct(Context context)
+        {
+            return new CaveMagma(null);
         }
 
         protected override IEnumerator<Action> GetTechniques()
@@ -553,12 +663,32 @@ namespace RoguelikeEngine.MapGeneration
         {
             cell.AddSpread(new SpreadCave(null, generator.Random.Next(5, 13)));
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new CaveMagma(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_cave_water")]
     class CaveWater : Cave
     {
         public CaveWater(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static CaveWater Construct(Context context)
+        {
+            return new CaveWater(null);
         }
 
         protected override IEnumerator<Action> GetTechniques()
@@ -569,12 +699,32 @@ namespace RoguelikeEngine.MapGeneration
             yield return MakeGlowingFloor;
             yield return MakeBridges;
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new CaveWater(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_castle_dark")]
     class CastleDark : Castle
     {
         public CastleDark(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static CastleDark Construct(Context context)
+        {
+            return new CastleDark(null);
         }
 
         protected override IEnumerator<Action> GetTechniques()
@@ -588,12 +738,32 @@ namespace RoguelikeEngine.MapGeneration
             yield return MakeStoneBridges;
             yield return MakeOutsideRooms;
         }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new CastleDark(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
     }
 
+    [SerializeInfo("group_home")]
     class Home : Castle
     {
         public Home(MapGenerator generator) : base(generator)
         {
+        }
+
+        [Construct]
+        public static Home Construct(Context context)
+        {
+            return new Home(null);
         }
 
         protected override IEnumerator<Action> GetTechniques()
@@ -610,6 +780,19 @@ namespace RoguelikeEngine.MapGeneration
                 cell.AddSpread(new SpreadCastle(null, generator.Random.Next(3, 6), GeneratorTile.FloorBrick, GeneratorTile.WallBrick));
             else
                 cell.AddSpread(new SpreadCastle(null, generator.Random.Next(3, 6), GeneratorTile.FloorPlank, GeneratorTile.WallPlank));
+        }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new Home(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
         }
     }
 }

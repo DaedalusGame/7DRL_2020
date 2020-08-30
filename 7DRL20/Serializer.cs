@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.MapGeneration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,6 +45,7 @@ namespace RoguelikeEngine
     class Context
     {
         public Map Map;
+        public BiDictionary<string, GeneratorGroup> Groups = new BiDictionary<string, GeneratorGroup>();
 
         public SceneGame World => Map.World;
 
@@ -61,6 +63,21 @@ namespace RoguelikeEngine
                 id = json["id"].Value<string>();
 
             return id;
+        }
+
+        public void AddGroup(string id, GeneratorGroup group)
+        {
+            Groups.Add(id, group);
+        }
+
+        public GeneratorGroup GetGroup(string id)
+        {
+            return Groups.Forward[id];
+        }
+
+        public string GetGroupID(GeneratorGroup group)
+        {
+            return Groups.Reverse[group];
         }
 
         public Tile CreateTile(JToken json)
@@ -99,6 +116,18 @@ namespace RoguelikeEngine
             if (entity != null)
             {
                 entity.ReadJson(json, this);
+                return entity;
+            }
+            return null;
+        }
+
+        public GeneratorGroup CreateGroup(JToken json)
+        {
+            string id = GetID(json);
+            var entity = Serializer.Create<GeneratorGroup>(id, this);
+            if (entity != null)
+            {
+                entity.ReadJson(json);
                 return entity;
             }
             return null;
@@ -198,7 +227,7 @@ namespace RoguelikeEngine
                         return null;
                 }
             }
-            else if (json is JValue value && value.Type == JTokenType.Integer) //It's a global id
+            else if (json is JValue value && value.Type == JTokenType.String) //It's a global id
             {
                 Guid globalId = Guid.Parse(value.Value<string>());
                 return EffectManager.GetHolder(globalId);

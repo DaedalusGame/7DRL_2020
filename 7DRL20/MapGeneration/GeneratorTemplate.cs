@@ -83,7 +83,7 @@ namespace RoguelikeEngine.MapGeneration
                 var group = nextStair.Group;
                 StairDown stairTile = new StairDown()
                 {
-                    Template = new TemplateRandomLevel(new GroupRandom(group.Template), Random.Next())
+                    Template = new TemplateRandomLevel(new GroupRandom(group.MakeTemplate()), Random.Next())
                 };
                 stairTile.InitBonuses();
                 nextStair.Replace(stairTile);

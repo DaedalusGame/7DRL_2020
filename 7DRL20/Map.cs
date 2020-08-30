@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.MapGeneration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -144,6 +145,17 @@ namespace RoguelikeEngine
             return cloud;
         }
 
+        public IEnumerable<Tile> EnumerateTiles()
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    yield return GetTile(x, y);
+                }
+            }
+        }
+
         public IEnumerable<Tile> GetNearby(int x, int y, int radius)
         {
             for (int dx = MathHelper.Clamp(x - radius, 0, Width - 1); dx <= MathHelper.Clamp(x + radius, 0, Width - 1); dx++)
@@ -176,33 +188,87 @@ namespace RoguelikeEngine
             return x >= 1 && y >= 1 && x < Width-1 && y < Height-1;
         }
 
+        //TODO: Move to MapTile
+        private JToken WriteFlags(MapTile tile)
+        {
+            JObject json = new JObject();
+            if(tile.Glowing)
+                json["glowing"] = tile.Glowing;
+
+            if (json.Count > 0)
+                return json;
+            else
+                return null;
+        }
+
+        private void ReadFlags(JToken json, MapTile tile)
+        {
+            if (!(json is JObject))
+                return;
+
+            if (json.HasKey("glowing"))
+                tile.Glowing = json["glowing"].Value<bool>();
+        }
+
+        private JObject WriteGroups(Context context)
+        {
+            JObject json = new JObject();
+            int i = 0;
+            foreach (var group in EnumerateTiles().Select(x => x.Group).Distinct())
+            {
+                string groupId = i.ToString();
+                context.AddGroup(groupId, group);
+                json.Add(groupId, group.WriteJson());
+                i++;
+            }
+
+            return json;
+        }
+
+        private void ReadGroups(JObject json, Context context)
+        {
+            foreach(var pair in json)
+            {
+                string groupId = pair.Key;
+                var groupJson = pair.Value;
+                context.AddGroup(groupId, context.CreateGroup(groupJson));
+            }
+        }
+
         public JToken WriteJson()
         {
             Context context = new Context(this);
             List<IEffectHolder> effectHolders = new List<IEffectHolder>();
 
             JObject json = new JObject();
-            JArray glowing = new JArray();
-            JArray tilesAbove = new JArray();
-            JArray tilesUnder = new JArray();
+
             json["width"] = Width;
             json["height"] = Height;
+
+            json["groups"] = WriteGroups(context);
+
+            JArray groups = new JArray();
+            JArray flags = new JArray();
+            JArray tilesAbove = new JArray();
+            JArray tilesUnder = new JArray();
             for (int y = 0; y < Height; y++)
             {
-                for(int x = 0; x < Width; x++)
+                for (int x = 0; x < Width; x++)
                 {
                     var tile = Tiles[x, y];
-                    glowing.Add(new JValue(tile.Glowing));
+                    groups.Add(context.GetGroupID(tile.Group));
+                    flags.Add(WriteFlags(tile));
                     tilesAbove.Add(tile.Tile?.WriteJson(context));
                     tilesUnder.Add(tile.UnderTile?.WriteJson(context));
                     effectHolders.Add(tile);
-                    if(tile.Tile != null)
+                    if (tile.Tile != null)
                         effectHolders.Add(tile.Tile);
-                    if(tile.UnderTile != null)
+                    if (tile.UnderTile != null)
                         effectHolders.Add(tile.UnderTile);
                 }
             }
-            json["glowMap"] = glowing;
+            json["groupMap"] = groups;
+            json["flagMap"] = flags;
             json["tileMap"] = tilesAbove;
             json["tileMapUnder"] = tilesUnder;
 
@@ -211,15 +277,15 @@ namespace RoguelikeEngine
 
             var gameObjects = World.GameObjects.OfType<IJsonSerializable>().Where(obj => obj.Map == this);
             effectHolders.AddRange(gameObjects.OfType<IEffectHolder>());
-            foreach(var entity in gameObjects)
+            foreach (var entity in gameObjects)
             {
                 entitiesArray.Add(entity.WriteJson(context));
             }
-           
+
             var effects = effectHolders.SelectMany(holder => EffectManager.GetEffects<Effect>(holder, false)).Distinct().ToList();
-            foreach(var effect in effects)
+            foreach (var effect in effects)
             {
-                if(!effect.Innate)
+                if (!effect.Innate)
                     effectsArray.Add(effect.WriteJson());
             }
 
@@ -235,12 +301,16 @@ namespace RoguelikeEngine
             var width = json["width"].Value<int>();
             var height = json["height"].Value<int>();
 
-            JArray glowing = json["glowMap"] as JArray;
+            ReadGroups(json["groups"] as JObject, context);
+
+            JArray groups = json["groupMap"] as JArray;
+            JArray flags = json["flagMap"] as JArray;
             JArray tilesAbove = json["tileMap"] as JArray;
             JArray tilesUnder = json["tileMapUnder"] as JArray;
 
             SetSize(width, height);
-            var enumeratorGlowing = glowing.GetEnumerator();
+            var enumeratorGroups = groups.GetEnumerator();
+            var enumeratorFlags = flags.GetEnumerator();
             var enumeratorTiles = tilesAbove.GetEnumerator();
             var enumeratorTilesUnder = tilesUnder.GetEnumerator();
 
@@ -248,17 +318,20 @@ namespace RoguelikeEngine
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    enumeratorGlowing.MoveNext();
+                    enumeratorGroups.MoveNext();
+                    enumeratorFlags.MoveNext();
                     enumeratorTiles.MoveNext();
                     enumeratorTilesUnder.MoveNext();
-                    var glowJson = enumeratorGlowing.Current;
+                    var groupJson = enumeratorGroups.Current;
+                    var flagJson = enumeratorFlags.Current;
                     var tileJson = enumeratorTiles.Current;
                     var tileUnderJson = enumeratorTilesUnder.Current;
 
                     var mapTile = Tiles[x, y] = new MapTile(this, x, y);
-                    mapTile.Glowing = glowJson.Value<bool>();
-                    mapTile.Tile = context.CreateTile(tileJson);
-                    mapTile.UnderTile = context.CreateTile(tileUnderJson);
+                    mapTile.Group = context.GetGroup(groupJson.Value<string>());
+                    ReadFlags(flagJson, mapTile);
+                    mapTile.Set(context.CreateTile(tileJson));
+                    mapTile.SetUnder(context.CreateTile(tileUnderJson));
                 }
             }
 

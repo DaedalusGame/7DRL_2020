@@ -240,7 +240,7 @@ namespace RoguelikeEngine
 
         protected Color GetUnderColor(SceneGame scene)
         {
-            Color glow = Group.GlowColor(scene.Frame);
+            Color glow = Group.GlowColor.GetColor(scene.Frame);
             Color underColor = VisualUnderColor();
             if (IsVisible() && Glowing)
                 return new Color(glow.R + underColor.R, glow.G + underColor.G, glow.B + underColor.B, glow.A + underColor.A);
@@ -404,6 +404,13 @@ namespace RoguelikeEngine
         public Color Background;
         public Color Foreground;
 
+        public TileColor(JToken json)
+        {
+            Background = Color.Black;
+            Foreground = Color.White;
+            ReadJson(json);
+        }
+
         public TileColor(Color background, Color foreground)
         {
             Background = background;
@@ -418,6 +425,20 @@ namespace RoguelikeEngine
         public TileColor ToSeaFloor()
         {
             return new TileColor(SeaFloor.Transform(Background), SeaFloor.Transform(Foreground));
+        }
+
+        public JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["foreground"] = Util.WriteColor(Foreground);
+            json["background"] = Util.WriteColor(Background);
+            return json;
+        }
+
+        public void ReadJson(JToken json)
+        {
+            Foreground = Util.ReadColor(json["foreground"]);
+            Background = Util.ReadColor(json["background"]);
         }
     }
 
@@ -844,7 +865,7 @@ namespace RoguelikeEngine
             var cave1 = SpriteLoader.Instance.AddSprite("content/cave_layer");
 
             var color = Group.CaveColor;
-            Color glow = Group.GlowColor(scene.Frame);
+            Color glow = Group.GlowColor.GetColor(scene.Frame);
 
             if (!IsVisible())
                 color = HiddenColor;
@@ -895,7 +916,7 @@ namespace RoguelikeEngine
             var cave1 = SpriteLoader.Instance.AddSprite("content/planks_layer");
 
             var color = Group.CaveColor;
-            Color glow = Group.GlowColor(scene.Frame);
+            Color glow = Group.GlowColor.GetColor(scene.Frame);
 
             if (!IsVisible())
                 color = HiddenColor;

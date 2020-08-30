@@ -66,7 +66,15 @@ namespace RoguelikeEngine
         public void Set(Tile tile)
         {
             Tile = tile;
-            Tile.SetParent(this);
+            if (Tile != null)
+                Tile.SetParent(this);
+        }
+
+        public void SetUnder(Tile tile)
+        {
+            UnderTile = tile;
+            if(UnderTile != null)
+                UnderTile.SetParent(this);
         }
 
         public void SaveUnder()

@@ -42,6 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActionQueue.cs" />
+    <Compile Include="AdvancedColor.cs" />
     <Compile Include="Attack.cs" />
     <Compile Include="BiDictionary.cs" />
     <Compile Include="Cloud.cs" />

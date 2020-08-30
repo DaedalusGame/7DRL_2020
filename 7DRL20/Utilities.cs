@@ -762,6 +762,30 @@ namespace RoguelikeEngine
             return json[key] != null;
         }
 
+        public static JToken WriteColor(Color color)
+        {
+            JArray json = new JArray();
+            json.Add(color.R);
+            json.Add(color.G);
+            json.Add(color.B);
+            json.Add(color.A);
+            return json;
+        }
+
+        public static Color ReadColor(JToken json)
+        {
+            if (json is JArray array)
+            {
+                var c = array.Select(x => x.Value<int>()).ToArray();
+
+                if (c.Length == 3)
+                    return new Color(c[0], c[1], c[2]);
+                if (c.Length == 4)
+                    return new Color(c[0], c[1], c[2], c[3]);
+            }
+            return Color.Black;
+        }
+
         static Dictionary<int, int> BlobTileMap = new Dictionary<int, int>() //Mapper for the minimal tileset, index in memory -> index in image
         {
             {0, 0},

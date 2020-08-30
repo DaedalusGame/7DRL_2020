@@ -11,29 +11,44 @@ namespace RoguelikeEngine.MapGeneration
     {
         public abstract IEnumerable<Enemy> Spawn(SceneGame world, Tile tile);
 
-        public static EnemySpawn Skeleton = new SingleSpawn((world) => new Skeleton(world));
-        public static EnemySpawn PeatMummy = new SingleSpawn((world) => new PeatMummy(world));
-        public static EnemySpawn DeathKnight = new SingleSpawn((world) => new DeathKnight(world));
+        static List<EnemySpawn> AllSpawns = new List<EnemySpawn>();
 
-        public static EnemySpawn BlastCannon = new SingleSpawn((world) => new BlastCannon(world));
+        public string ID;
 
-        public static EnemySpawn GoreVala = new SingleSpawn((world) => new GoreVala(world));
-        public static EnemySpawn Vorrax = new SingleSpawn((world) => new Vorrax(world));
-        public static EnemySpawn Ctholoid = new SingleSpawn((world) => new Ctholoid(world));
+        public EnemySpawn(string id)
+        {
+            ID = id;
+            AllSpawns.Add(this);
+        }
 
-        public static EnemySpawn BlueDragon = new SingleSpawn((world) => new BlueDragon(world));
-        public static EnemySpawn YellowDragon = new SingleSpawn((world) => new YellowDragon(world));
-        public static EnemySpawn RedDragon = new SingleSpawn((world) => new RedDragon(world));
+        public static EnemySpawn GetSpawn(string id)
+        {
+            return AllSpawns.Find(spawn => spawn.ID == id);
+        }
 
-        public static EnemySpawn PoisonBlob = new SingleSpawn((world) => new PoisonBlob(world));
-        public static EnemySpawn AcidBlob = new SingleSpawn((world) => new AcidBlob(world));
+        public static EnemySpawn Skeleton = new SingleSpawn("skeleton", (world) => new Skeleton(world));
+        public static EnemySpawn PeatMummy = new SingleSpawn("peat_mummy", (world) => new PeatMummy(world));
+        public static EnemySpawn DeathKnight = new SingleSpawn("death_knight", (world) => new DeathKnight(world));
+
+        public static EnemySpawn BlastCannon = new SingleSpawn("blast_cannon", (world) => new BlastCannon(world));
+
+        public static EnemySpawn GoreVala = new SingleSpawn("gore_vala", (world) => new GoreVala(world));
+        public static EnemySpawn Vorrax = new SingleSpawn("vorrax", (world) => new Vorrax(world));
+        public static EnemySpawn Ctholoid = new SingleSpawn("cthuloid", (world) => new Ctholoid(world));
+
+        public static EnemySpawn BlueDragon = new SingleSpawn("blue_dragon", (world) => new BlueDragon(world));
+        public static EnemySpawn YellowDragon = new SingleSpawn("yellow_dragon", (world) => new YellowDragon(world));
+        public static EnemySpawn RedDragon = new SingleSpawn("red_dragon", (world) => new RedDragon(world));
+
+        public static EnemySpawn PoisonBlob = new SingleSpawn("poison_blob", (world) => new PoisonBlob(world));
+        public static EnemySpawn AcidBlob = new SingleSpawn("acid_blob", (world) => new AcidBlob(world));
     }
 
     class SingleSpawn : EnemySpawn
     {
         Func<SceneGame, Enemy> EnemyFunction;
 
-        public SingleSpawn(Func<SceneGame, Enemy> enemyFunction)
+        public SingleSpawn(string id, Func<SceneGame, Enemy> enemyFunction) : base(id)
         {
             EnemyFunction = enemyFunction;
         }
