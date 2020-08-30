@@ -274,6 +274,11 @@ namespace RoguelikeEngine
             stairTile.InitBonuses();
             stairDown.Replace(stairTile);
 
+            PushObjects();
+
+            var mapJson = MapHome.WriteJson();
+            var strJson = mapJson.ToString();
+
             Player = new Hero(this);
             Player.MoveTo(startTile, 1);
             Player.AddControlTurn();
@@ -314,10 +319,7 @@ namespace RoguelikeEngine
 
             Spawner = new EnemySpawner(this, 60);
 
-            PushObjects();
-
-            var mapJson = MapHome.WriteJson();
-            var strJson = mapJson.ToString();
+            
             var testMap = new Map(this, 0, 0);
             testMap.ReadJson(mapJson);
         }

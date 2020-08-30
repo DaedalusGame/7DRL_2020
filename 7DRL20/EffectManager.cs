@@ -602,7 +602,6 @@ namespace RoguelikeEngine
             return Holders.SetGlobalID(holder, globalId);
         }
 
-
         public static bool HasHolder(int id)
         {
             return Holders.Has(id);

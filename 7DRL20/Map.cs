@@ -193,8 +193,8 @@ namespace RoguelikeEngine
                 {
                     var tile = Tiles[x, y];
                     glowing.Add(new JValue(tile.Glowing));
-                    tilesAbove.Add(tile.Tile?.WriteJson());
-                    tilesUnder.Add(tile.UnderTile?.WriteJson());
+                    tilesAbove.Add(tile.Tile?.WriteJson(context));
+                    tilesUnder.Add(tile.UnderTile?.WriteJson(context));
                     effectHolders.Add(tile);
                     if(tile.Tile != null)
                         effectHolders.Add(tile.Tile);
@@ -244,17 +244,6 @@ namespace RoguelikeEngine
             var enumeratorTiles = tilesAbove.GetEnumerator();
             var enumeratorTilesUnder = tilesUnder.GetEnumerator();
 
-            Tile readTile(JToken tileJson)
-            {
-                string id = GetID(tileJson);
-                Tile tile = Serializer.Create<Tile>(id, context);
-                if (tile != null)
-                {
-                    tile.ReadJson(tileJson);
-                }
-                return tile;
-            }
-
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
@@ -268,8 +257,8 @@ namespace RoguelikeEngine
 
                     var mapTile = Tiles[x, y] = new MapTile(this, x, y);
                     mapTile.Glowing = glowJson.Value<bool>();
-                    mapTile.Tile = readTile(tileJson);
-                    mapTile.UnderTile = readTile(tileUnderJson);
+                    mapTile.Tile = context.CreateTile(tileJson);
+                    mapTile.UnderTile = context.CreateTile(tileUnderJson);
                 }
             }
 
@@ -278,21 +267,14 @@ namespace RoguelikeEngine
 
             foreach (var entityJson in entities)
             {
-                string id = GetID(entityJson);
-                var entity = Serializer.Create<IJsonSerializable>(id, context);
-                if (entity != null)
-                {
-                    entity.ReadJson(entityJson, context);
-                }
+                context.CreateEntity(entityJson);
             } 
 
             foreach (var effectJson in effects)
             {
-                string id = GetID(effectJson);
-                var effect = Serializer.Create<Effect>(id, context);
+                var effect = context.CreateEffect(effectJson);
                 if(effect != null)
                 {
-                    effect.ReadJson(effectJson, context);
                     Effect.Apply(effect);
                 }
             }

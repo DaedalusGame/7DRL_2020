@@ -1,6 +1,7 @@
 ﻿using FibonacciHeap;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -754,6 +755,11 @@ namespace RoguelikeEngine
                 return dy > 0 ? Facing.South : Facing.North;
             }
             return null;
+        }
+
+        public static bool HasKey(this JToken json, string key)
+        {
+            return json[key] != null;
         }
 
         static Dictionary<int, int> BlobTileMap = new Dictionary<int, int>() //Mapper for the minimal tileset, index in memory -> index in image

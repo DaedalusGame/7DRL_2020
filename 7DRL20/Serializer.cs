@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using RoguelikeEngine.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,6 +50,58 @@ namespace RoguelikeEngine
         public Context(Map map)
         {
             Map = map;
+        }
+
+        public string GetID(JToken json)
+        {
+            string id = null;
+            if (json is JValue)
+                id = json.Value<string>();
+            else if (json is JObject)
+                id = json["id"].Value<string>();
+
+            return id;
+        }
+
+        public Tile CreateTile(JToken json)
+        {
+            string id = GetID(json);
+            var entity = Serializer.Create<Tile>(id, this);
+            if (entity != null)
+            {
+                entity.ReadJson(json, this);
+                return entity;
+            }
+            return null;
+        }
+
+        public IJsonSerializable CreateEntity(JToken json)
+        {
+            return CreateEntity<IJsonSerializable>(json);
+        }
+
+        public T CreateEntity<T>(JToken json) where T : class, IJsonSerializable
+        {
+            string id = GetID(json);
+            var entity = Serializer.Create<T>(id, this);
+            if (entity != null)
+            {
+                entity.ReadJson(json, this);
+                return entity;
+            }
+            return null;
+        }
+
+        public Effect CreateEffect(JToken json)
+        {
+            string id = GetID(json);
+            var entity = Serializer.Create<Effect>(id, this);
+            if (entity != null)
+            {
+                entity.ReadJson(json, this);
+                return entity;
+            }
+            return null;
         }
     }
 

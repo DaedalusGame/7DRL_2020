@@ -384,12 +384,12 @@ namespace RoguelikeEngine
             scene.DrawSprite(cracks, frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color, 0);
         }
 
-        public JToken WriteJson()
+        public virtual JToken WriteJson(Context context)
         {
             return Serializer.GetID(this);
         }
 
-        public void ReadJson(JToken token)
+        public virtual void ReadJson(JToken token, Context context)
         {
             //NOOP
         }
@@ -698,10 +698,17 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("floor_big_tile")]
     class FloorBigTile : Tile
     {
         public FloorBigTile() : base("Tiled Floor")
         {
+        }
+
+        [Construct]
+        public static FloorBigTile Construct(Context context)
+        {
+            return new FloorBigTile();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -716,6 +723,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("floor_bridge")]
     class FloorBridge : Tile
     {
         public ConnectivityHelper Connectivity;
@@ -723,6 +731,12 @@ namespace RoguelikeEngine
         public FloorBridge() : base("Bridge")
         {
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        [Construct]
+        public static FloorBridge Construct(Context context)
+        {
+            return new FloorBridge();
         }
 
         private ConnectivityHelper GetConnection(Tile tile)
@@ -750,6 +764,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("floor_carpet")]
     class FloorCarpet : Tile
     {
         public TileColor Color = new TileColor(new Color(85, 107, 168), new Color(198, 190, 55));
@@ -757,6 +772,12 @@ namespace RoguelikeEngine
 
         public FloorCarpet() : base("Carpet")
         {
+        }
+
+        [Construct]
+        public static FloorCarpet Construct(Context context)
+        {
+            return new FloorCarpet();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -775,10 +796,17 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("floor_plank")]
     class FloorPlank : Tile
     {
         public FloorPlank() : base("Plank Floor")
         {
+        }
+
+        [Construct]
+        public static FloorPlank Construct(Context context)
+        {
+            return new FloorPlank();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -844,6 +872,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("wall_plank")]
     class WallPlank : Tile, IMineable
     {
         public override double Durability => 200;
@@ -852,6 +881,12 @@ namespace RoguelikeEngine
         {
             Solid = true;
             Opaque = true;
+        }
+
+        [Construct]
+        public static WallPlank Construct(Context context)
+        {
+            return new WallPlank();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -888,6 +923,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("wall_ore")]
     class WallOre : Tile, IMineable
     {
         public override double Durability => (Under?.Durability ?? 0) + 50;
@@ -895,11 +931,21 @@ namespace RoguelikeEngine
         int Frame = Random.Next(1000);
         Material Material;
 
-        public WallOre(Material material) : base($"{material.Name} Vein")
+        public WallOre() : base("Ore Vein") //TODO: fix the name
         {
-            Material = material;
             Solid = true;
             Opaque = true;
+        }
+
+        public WallOre(Material material) : this()
+        {
+            Material = material;
+        }
+
+        [Construct]
+        public static WallOre Construct(Context context)
+        {
+            return new WallOre();
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -939,8 +985,22 @@ namespace RoguelikeEngine
         {
             Scrape();
         }
+
+        public override JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["material"] = Material.ID;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Material = Material.GetMaterial(json["material"].Value<string>());
+        }
     }
 
+    [SerializeInfo("wall_obsidiorite")]
     class WallObsidiorite : Tile, IMineable
     {
         public override double Durability => 2000;
@@ -949,6 +1009,12 @@ namespace RoguelikeEngine
         {
             Solid = true;
             Opaque = true;
+        }
+
+        [Construct]
+        public static WallObsidiorite Construct(Context context)
+        {
+            return new WallObsidiorite();
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -995,6 +1061,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("wall_meteorite")]
     class WallMeteorite : Tile, IMineable
     {
         public override double Durability => 4500;
@@ -1003,6 +1070,12 @@ namespace RoguelikeEngine
         {
             Solid = true;
             Opaque = true;
+        }
+
+        [Construct]
+        public static WallMeteorite Construct(Context context)
+        {
+            return new WallMeteorite();
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -1049,6 +1122,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("wall_basalt")]
     class WallBasalt : Tile, IMineable
     {
         public override double Durability => 500;
@@ -1057,6 +1131,12 @@ namespace RoguelikeEngine
         {
             Solid = true;
             Opaque = true;
+        }
+
+        [Construct]
+        public static WallBasalt Construct(Context context)
+        {
+            return new WallBasalt();
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -1103,6 +1183,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("wall_brick")]
     class WallBrick : Tile, IMineable
     {
         public override double Durability => 1000;
@@ -1111,6 +1192,12 @@ namespace RoguelikeEngine
         {
             Solid = true;
             Opaque = true;
+        }
+
+        [Construct]
+        public static WallBrick Construct(Context context)
+        {
+            return new WallBrick();
         }
 
         public override void Draw(SceneGame scene, DrawPass drawPass)
@@ -1146,6 +1233,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_water")]
     class Water : Tile
     {
         bool HasCoral = Random.NextDouble() < 0.3;
@@ -1157,6 +1245,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectTrait(this, Trait.Water));
 
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        [Construct]
+        public static Water Construct(Context context)
+        {
+            return new Water();
         }
 
         private ConnectivityHelper GetConnection(Tile tile)
@@ -1213,11 +1307,18 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_water_shallow")]
     class WaterShallow : Water
     {
         public WaterShallow() : base()
         {
             Name = "Shallow Water";
+        }
+
+        [Construct]
+        public static WaterShallow Construct(Context context)
+        {
+            return new WaterShallow();
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
@@ -1255,11 +1356,18 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_lava")]
     class Lava : Tile
     {
         public Lava() : base("Lava")
         {
             Effect.Apply(new EffectTrait(this, Trait.Lava));
+        }
+
+        [Construct]
+        public static Lava Construct(Context context)
+        {
+            return new Lava();
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -1284,6 +1392,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_lava_super")]
     class SuperLava : Tile
     {
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
@@ -1298,6 +1407,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectTrait(this, Trait.SuperLava));
         }
 
+        [Construct]
+        public static SuperLava Construct(Context context)
+        {
+            return new SuperLava();
+        }
+
         public override void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
@@ -1325,6 +1440,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_lava_hyper")]
     class HyperLava : Tile
     {
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
@@ -1339,6 +1455,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectTrait(this, Trait.HyperLava));
         }
 
+        [Construct]
+        public static HyperLava Construct(Context context)
+        {
+            return new HyperLava();
+        }
+
         public override void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
@@ -1366,6 +1488,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_lava_dark")]
     class DarkLava : Tile
     {
         static ColorMatrix ColorMatrix = ColorMatrix.Identity;
@@ -1375,6 +1498,12 @@ namespace RoguelikeEngine
         public DarkLava() : base("Dark Lava")
         {
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        [Construct]
+        public static DarkLava Construct(Context context)
+        {
+            return new DarkLava();
         }
 
         private ConnectivityHelper GetConnection(Tile tile)
@@ -1420,6 +1549,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("coral")]
     class Coral : Tile
     {
         int Frame = Random.Next(1000);
@@ -1436,6 +1566,12 @@ namespace RoguelikeEngine
         {
         }
 
+        [Construct]
+        public static Coral Construct(Context context)
+        {
+            return new Coral();
+        }
+
         public override void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
@@ -1467,6 +1603,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("coral_acid")]
     class AcidCoral : Tile
     {
         int Frame = Random.Next(1000);
@@ -1483,6 +1620,12 @@ namespace RoguelikeEngine
         {
         }
 
+        [Construct]
+        public static AcidCoral Construct(Context context)
+        {
+            return new AcidCoral();
+        }
+
         public override void AddTooltip(ref string tooltip)
         {
             tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
@@ -1514,6 +1657,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("pool_acid")]
     class AcidPool : Tile
     {
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
@@ -1534,6 +1678,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectTrait(this, Trait.Acid));
 
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
+        }
+
+        [Construct]
+        public static AcidPool Construct(Context context)
+        {
+            return new AcidPool();
         }
 
         private ConnectivityHelper GetConnection(Tile tile)
@@ -1588,6 +1738,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("anvil")]
     class Anvil : Tile
     {
         public Container Container;
@@ -1597,6 +1748,12 @@ namespace RoguelikeEngine
             Solid = true;
 
             Container = new Container();
+        }
+
+        [Construct]
+        public static Anvil Construct(Context context)
+        {
+            return new Anvil();
         }
 
         public override void AddTooltip(ref string tooltip)
@@ -1653,13 +1810,9 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("smelter")]
     class Smelter : Tile
     {
-        public double TurnSpeed => 1.0f;
-        public double TurnBuildup { get; set; }
-        public bool TurnReady => TurnBuildup >= 1;
-        public bool RemoveFromQueue => Orphaned;
-
         public double Ready;
         public Container OreContainer;
         public Container FuelContainer;
@@ -1676,8 +1829,14 @@ namespace RoguelikeEngine
             Solid = true;
 
             world.ActionQueue.Add(new TurnTakerSmelter(world.ActionQueue, this));
-            OreContainer = new Container();
-            FuelContainer = new Container();
+            OreContainer = new Container() { Owner = this };
+            FuelContainer = new Container() { Owner = this };
+        }
+
+        [Construct]
+        public static Smelter Construct(Context context)
+        {
+            return new Smelter(context.World);
         }
 
         public Wait TakeTurn(Turn turn)
@@ -1865,6 +2024,57 @@ namespace RoguelikeEngine
                 item.MoveTo(this);
             foreach (Item item in FuelContainer.Items)
                 item.MoveTo(this);
+        }
+
+        public override JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["containerOre"] = OreContainer.WriteJson(context);
+            json["containerFuel"] = FuelContainer.WriteJson(context);
+            json["fuel"] = WriteFuel();
+
+            return json;
+        }
+
+        private JArray WriteFuel()
+        {
+            JArray fuelDict = new JArray();
+
+            var fuelKeys = Fuels.Keys.Concat(FuelCapacities.Keys).Distinct();
+            foreach (var key in fuelKeys)
+            {
+                JObject fuelJson = new JObject();
+                fuelJson["material"] = key.ID;
+                if (Fuels.ContainsKey(key))
+                    fuelJson["amount"] = Fuels[key];
+                if (FuelCapacities.ContainsKey(key))
+                    fuelJson["capacity"] = FuelCapacities[key];
+                fuelDict.Add(fuelJson);
+            }
+
+            return fuelDict;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            OreContainer = context.CreateEntity<Container>(json["containerOre"]);
+            OreContainer.Owner = this;
+            FuelContainer = context.CreateEntity<Container>(json["containerFuel"]);
+            FuelContainer.Owner = this;
+            ReadFuel(json["fuel"] as JArray);
+        }
+
+        private void ReadFuel(JArray fuelDict)
+        {
+            foreach(var fuelJson in fuelDict)
+            {
+                var key = Material.GetMaterial(fuelJson["material"].Value<string>());
+                if (fuelJson.HasKey("amount"))
+                    Fuels[key] = fuelJson["amount"].Value<int>();
+                if (fuelJson.HasKey("capacity"))
+                    FuelCapacities[key] = fuelJson["capacity"].Value<int>();
+            }
         }
     }
 }
