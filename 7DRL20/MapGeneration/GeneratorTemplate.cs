@@ -66,6 +66,7 @@ namespace RoguelikeEngine.MapGeneration
             Random = new Random(Seed);
 
             Map = world.CreateMap(100, 100);
+            world.SetMapId(Guid.NewGuid(), Map);
 
             MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Seed, GroupGenerator, Feelings);
             generator.SetupDefaultOres();

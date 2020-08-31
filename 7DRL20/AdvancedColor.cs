@@ -35,7 +35,7 @@ namespace RoguelikeEngine
                 return Colors[0];
 
             int count = Colors.Count - 1;
-            float slide = timeSlide % (1.0f / count);
+            float slide = (timeSlide * count) % 1;
             int index = Math.Min((int)Math.Floor(timeSlide * count), count);
 
             return Color.Lerp(Colors[index], Colors[index + 1], slide);

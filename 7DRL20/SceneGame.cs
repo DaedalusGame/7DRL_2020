@@ -336,6 +336,11 @@ namespace RoguelikeEngine
             map.ID = id;
         }
 
+        public void SetMapId(Guid guid, Map map)
+        {
+            SetMapId(guid.ToString(), map);
+        }
+
         private void CreateHome()
         {
             GeneratorTemplate template = new TemplateHome();

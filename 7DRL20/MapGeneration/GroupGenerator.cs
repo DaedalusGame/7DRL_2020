@@ -151,7 +151,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 BrickColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
                 WoodColor = new TileColor(new Color(197, 182, 137), new Color(243, 241, 233)),
-                GlowColor = new AdvancedColor(new[] { Color.Black, Color.GreenYellow, Color.Black }, 60),
+                GlowColor = new AdvancedColor(new[] { Color.Black, Color.GreenYellow, Color.Black }, 60 * 3),
                 Spawns = { EnemySpawn.AcidBlob, EnemySpawn.Ctholoid, EnemySpawn.YellowDragon },
             };
         }
@@ -162,7 +162,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
                 BrickColor = new TileColor(new Color(80, 80, 150), new Color(253, 234, 248)),
                 WoodColor = new TileColor(new Color(88, 156, 175), new Color(111, 244, 194)),
-                GlowColor = new AdvancedColor(new[] { Color.Black, new Color(34, 255, 255), Color.Black }, 60),
+                GlowColor = new AdvancedColor(new[] { Color.Black, new Color(34, 255, 255), Color.Black }, 60 * 3),
                 Spawns = { EnemySpawn.PoisonBlob, EnemySpawn.GoreVala, EnemySpawn.BlueDragon, EnemySpawn.Ctholoid },
             };
         }
@@ -214,7 +214,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(54, 72, 101), new Color(109, 197, 112)),
                 BrickColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
                 WoodColor = new TileColor(new Color(29, 50, 56), new Color(53, 124, 151)),
-                GlowColor = new AdvancedColor(new[] { new Color(62, 79, 2), new Color(227, 253, 138), new Color(62, 79, 2) }, 60),
+                GlowColor = new AdvancedColor(new[] { new Color(62, 79, 2), new Color(227, 253, 138), new Color(62, 79, 2) }, 60 * 3),
                 Spawns = { EnemySpawn.DeathKnight, EnemySpawn.BlastCannon, EnemySpawn.Ctholoid },
             };
         }

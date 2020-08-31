@@ -114,6 +114,8 @@ namespace RoguelikeEngine
         private static void PrintAcid(MapGenerator generator, Tile tile, GeneratorCell cell)
         {
             tile.Replace(new AcidPool());
+            if(generator.Random.NextDouble() < 0.3)
+                tile.Parent.SetUnder(new AcidCoral());
         }
 
         private static void PrintAcidCoral(MapGenerator generator, Tile tile, GeneratorCell cell)
@@ -131,6 +133,8 @@ namespace RoguelikeEngine
         private static void PrintWater(MapGenerator generator, Tile tile, GeneratorCell cell)
         {
             tile.Replace(new Water());
+            if (generator.Random.NextDouble() < 0.3)
+                tile.Parent.SetUnder(new Coral());
         }
 
         private static void PrintWaterShallow(MapGenerator generator, Tile tile, GeneratorCell cell)

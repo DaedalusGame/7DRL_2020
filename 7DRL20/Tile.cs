@@ -1356,8 +1356,6 @@ namespace RoguelikeEngine
     [SerializeInfo("pool_water")]
     class Water : Tile
     {
-        bool HasCoral = Random.NextDouble() < 0.3;
-        int Frame = Random.Next(1000);
         public ConnectivityHelper Connectivity;
 
         public Water() : base("Water")
@@ -1403,13 +1401,12 @@ namespace RoguelikeEngine
             else if (drawPass == DrawPass.SeaFloor)
             {
                 bool visible = IsVisible();
-                var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
                 var color = visible ? Group.CaveColor.ToSeaFloor() : HiddenColor;
 
                 scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
                 DrawCave(scene, 0, 6, color);
-                if (HasCoral && visible)
-                    scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Coral.Colors[Frame % Coral.Colors.Count], 0);
+                if (Under is Coral coral && visible)
+                    coral.DrawCoral(scene);
             }
             else if (drawPass == DrawPass.Sea)
             {
@@ -1672,7 +1669,7 @@ namespace RoguelikeEngine
     [SerializeInfo("coral")]
     class Coral : Tile
     {
-        int Frame = Random.Next(1000);
+        protected int Frame = Random.Next(1000);
 
         public static List<Color> Colors = new List<Color>()
         {
@@ -1683,6 +1680,10 @@ namespace RoguelikeEngine
         };
 
         public Coral() : base("Coral")
+        {
+        }
+
+        public Coral(string name) : base(name)
         {
         }
 
@@ -1712,6 +1713,11 @@ namespace RoguelikeEngine
             }
             if (!IsVisible())
                 return;
+            DrawCoral(scene);
+        }
+
+        public virtual void DrawCoral(SceneGame scene)
+        {
             var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
 
             scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Colors[Frame % Colors.Count], 0);
@@ -1724,10 +1730,8 @@ namespace RoguelikeEngine
     }
 
     [SerializeInfo("coral_acid")]
-    class AcidCoral : Tile
+    class AcidCoral : Coral
     {
-        int Frame = Random.Next(1000);
-
         public static List<Color> Colors = new List<Color>()
         {
             new Color(184, 177, 97),
@@ -1746,34 +1750,11 @@ namespace RoguelikeEngine
             return new AcidCoral();
         }
 
-        public override void AddTooltip(ref string tooltip)
+        public override void DrawCoral(SceneGame scene)
         {
-            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
-            base.AddTooltip(ref tooltip);
-        }
-
-        public override void Draw(SceneGame scene, DrawPass drawPass)
-        {
-            var color = Group.BrickColor;
-
-            if (!IsVisible())
-                color = HiddenColor;
-
-            if (Under != null)
-            {
-                Under.VisualUnderColor = VisualUnderColor;
-                Under.Draw(scene, drawPass);
-            }
-            if (!IsVisible())
-                return;
             var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
 
             scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Colors[Frame % Colors.Count], 0);
-        }
-
-        public void Destroy()
-        {
-            Scrape();
         }
     }
 
@@ -1789,8 +1770,6 @@ namespace RoguelikeEngine
         //static ColorMatrix ColorMatrix = ColorMatrix.TwoColorLight(new Color(152, 234, 0), new Color(236, 248, 201));
         //static ColorMatrix ColorMatrix = ColorMatrix.Greyscale() * ColorMatrix.TwoColorLight(Color.Lerp(Color.Black,Color.GreenYellow,0.5f), Color.YellowGreen);
 
-        bool HasCoral = Random.NextDouble() < 0.3;
-        int Frame = Random.Next(1000);
         ConnectivityHelper Connectivity;
 
         public AcidPool() : base("Acid")
@@ -1836,12 +1815,11 @@ namespace RoguelikeEngine
             else if (drawPass == DrawPass.SeaFloor)
             {
                 bool visible = IsVisible();
-                var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
                 var color = visible ? Group.CaveColor.ToSeaFloor() : HiddenColor;
 
                 DrawCave(scene, 0, 6, color);
-                if (HasCoral && visible)
-                    scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, AcidCoral.Colors[Frame % AcidCoral.Colors.Count], 0);
+                if (Under is Coral coral && visible)
+                    coral.DrawCoral(scene);
             }
             else if (drawPass == DrawPass.Sea)
             {
