@@ -766,6 +766,30 @@ namespace RoguelikeEngine
                 //scene.DrawSprite(equip, 0, position - equip.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
             }
         }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            JArray materialArray = new JArray();
+            foreach(var material in Materials)
+            {
+                materialArray.Add(material.ID);
+            }
+            json["materials"] = materialArray;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            JArray materialArray = json["materials"] as JArray;
+            int i = 0;
+            foreach (var materialJson in materialArray)
+            {
+                Materials[i] = Material.GetMaterial(materialJson.Value<string>());
+                i++;
+            }
+        }
     }
 
     class ToolBlade : ToolCore
@@ -785,6 +809,12 @@ namespace RoguelikeEngine
         public ToolBlade(SceneGame world) : base(world, "Blade", string.Empty, Parts)
         {
             
+        }
+
+        [Construct("tool_blade")]
+        public static ToolBlade Construct(Context context)
+        {
+            return new ToolBlade(context.World);
         }
 
         public static ToolBlade Create(SceneGame world, params Material[] materials)
@@ -864,6 +894,12 @@ namespace RoguelikeEngine
 
         }
 
+        [Construct("tool_adze")]
+        public static ToolAdze Construct(Context context)
+        {
+            return new ToolAdze(context.World);
+        }
+
         public static ToolAdze Create(SceneGame world, params Material[] materials)
         {
             ToolAdze tool = new ToolAdze(world);
@@ -941,6 +977,12 @@ namespace RoguelikeEngine
 
         }
 
+        [Construct("tool_plate")]
+        public static ToolPlate Construct(Context context)
+        {
+            return new ToolPlate(context.World);
+        }
+
         public static ToolPlate Create(SceneGame world, params Material[] materials)
         {
             ToolPlate tool = new ToolPlate(world);
@@ -1004,6 +1046,12 @@ namespace RoguelikeEngine
         public ToolArrow(SceneGame world) : base(world, "Arrow", string.Empty, Parts)
         {
 
+        }
+
+        [Construct("tool_arrow")]
+        public static ToolArrow Construct(Context context)
+        {
+            return new ToolArrow(context.World);
         }
 
         public static ToolArrow Create(SceneGame world, params Material[] materials)
