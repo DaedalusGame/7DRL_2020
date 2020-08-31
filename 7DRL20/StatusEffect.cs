@@ -12,6 +12,7 @@ using RoguelikeEngine.Traits;
 
 namespace RoguelikeEngine
 {
+    [SerializeInfo]
     abstract class StatusEffect : IEffectHolder
     {
         public IEffectHolder Creature;
@@ -154,7 +155,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("bleed_lesser")]
     class BleedLesser : StatusEffect
     { 
         public override string Name => $"Lesser Bleed";
@@ -166,7 +166,7 @@ namespace RoguelikeEngine
         {
         }
 
-        [Construct]
+        [Construct("bleed_lesser")]
         public static BleedLesser Construct(Context context)
         {
             return new BleedLesser();

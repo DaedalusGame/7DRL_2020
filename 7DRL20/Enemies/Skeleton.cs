@@ -34,6 +34,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillDrainTouch2());
             Skills.Add(new SkillAttack());
         }
+
+        [Construct("skeleton")]
+        public static Skeleton Construct(Context context)
+        {
+            return new Skeleton(context.World);
+        }
     }
 
     class PeatMummy : Enemy
@@ -57,6 +63,12 @@ namespace RoguelikeEngine.Enemies
             Effect.Apply(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillMudTouch());
+        }
+
+        [Construct("peat_mummy")]
+        public static PeatMummy Construct(Context context)
+        {
+            return new PeatMummy(context.World);
         }
     }
 
@@ -83,6 +95,12 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillDrainTouch2());
             Skills.Add(new SkillAttack());
+        }
+
+        [Construct("lich_pretty")]
+        public static PrettyLich Construct(Context context)
+        {
+            return new PrettyLich(context.World);
         }
     }
 
@@ -114,6 +132,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillBloodSword());
             Skills.Add(new SkillIronMaiden());
             Skills.Add(new SkillWarp());
+        }
+
+        [Construct("death_knight")]
+        public static DeathKnight Construct(Context context)
+        {
+            return new DeathKnight(context.World);
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("in_inventory")]
     class EffectItemInventory : Effect, IPosition
     {
         public IEffectHolder Subject => Item;
@@ -46,7 +45,7 @@ namespace RoguelikeEngine.Effects
             return $"{Holder} has {Item}";
         }
 
-        [Construct]
+        [Construct("in_inventory")]
         public static EffectItemInventory Construct(Context context)
         {
             return new EffectItemInventory();

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    [SerializeInfo]
     abstract class Item : IEffectHolder, IGameObject, IJsonSerializable
     {
         public SceneGame World { get; set; }
@@ -243,7 +244,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("ore")]
     class Ore : Item, IOre, IFuel
     {
         public override string BaseName { get => $"{Material.Name} Ore"; set {} }
@@ -272,7 +272,7 @@ namespace RoguelikeEngine
             Amount = amount;
         }
 
-        [Construct]
+        [Construct("ore")]
         public static Ore Construct(Context context)
         {
             return new Ore(context.World);
@@ -416,7 +416,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("handle_wood")]
     class ItemHandle : OreItem
     {
         static HashSet<PartType> ValidParts = new HashSet<PartType>()
@@ -439,7 +438,7 @@ namespace RoguelikeEngine
             Count = count;
         }
 
-        [Construct]
+        [Construct("handle_wood")]
         public static ItemHandle Construct(Context context)
         {
             return new ItemHandle(context.World);
@@ -462,7 +461,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("feather")]
     class ItemFeather : OreItem
     {
         public ItemFeather(SceneGame world) : base(world, "Feather")
@@ -476,7 +474,7 @@ namespace RoguelikeEngine
             Count = count;
         }
 
-        [Construct]
+        [Construct("feather")]
         public static ItemFeather Construct(Context context)
         {
             return new ItemFeather(context.World);
@@ -494,7 +492,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("ingot")]
     class Ingot : Item, IOre, IFuel
     {
         public override string BaseName { get => $"{Material.Name} Ingot"; set { } }
@@ -519,7 +516,7 @@ namespace RoguelikeEngine
             Count = count;
         }
 
-        [Construct]
+        [Construct("ingot")]
         public static Ingot Construct(Context context)
         {
             return new Ingot(context.World);

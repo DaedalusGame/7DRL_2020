@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("stat_add")]
     class EffectStat : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -74,7 +73,7 @@ namespace RoguelikeEngine.Effects
             return $"{Stat} {Amount:+0;-#} ({Holder})";
         }
 
-        [Construct]
+        [Construct("stat_add")]
         public static EffectStat Construct(Context context)
         {
             return new EffectStat();

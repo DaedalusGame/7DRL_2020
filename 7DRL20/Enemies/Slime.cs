@@ -31,6 +31,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillAttack());
         }
+
+        [Construct("blob_acid")]
+        public static AcidBlob Construct(Context context)
+        {
+            return new AcidBlob(context.World);
+        }
     }
 
     class PoisonBlob : Enemy
@@ -54,11 +60,17 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillPoisonTouch());
             Skills.Add(new SkillAttack());
         }
+
+        [Construct("blob_poison")]
+        public static PoisonBlob Construct(Context context)
+        {
+            return new PoisonBlob(context.World);
+        }
     }
 
     class GreenBlob : Enemy
     {
-        public GreenBlob(SceneGame world, double hp) : base(world)
+        public GreenBlob(SceneGame world) : base(world)
         {
             Name = "Green Blob";
             Description = "Forgive and forget";
@@ -69,7 +81,6 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
 
             Effect.Apply(new EffectFamily(this, Family.Slime));
@@ -81,6 +92,17 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAttack());
         }
 
+        public GreenBlob(SceneGame world, double hp) : this(world)
+        {
+            Effect.Apply(new EffectStat(this, Stat.HP, hp));
+        }
+
+        [Construct("blob_green")]
+        public static GreenBlob Construct(Context context)
+        {
+            return new GreenBlob(context.World);
+        }
+
         public override bool IsHostile(Creature other)
         {
             return !other.HasFamily(Family.GreenSlime);
@@ -89,7 +111,7 @@ namespace RoguelikeEngine.Enemies
 
     class GreenAmoeba : Enemy
     {
-        public GreenAmoeba(SceneGame world, double hp) : base(world)
+        public GreenAmoeba(SceneGame world) : base(world)
         {
             Name = "Green Amoeba";
             Description = "I'm baby";
@@ -100,13 +122,23 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, hp));
             Effect.Apply(new EffectStat(this, Stat.Attack, 15));
 
             Effect.Apply(new EffectFamily(this, Family.Slime));
             Effect.Apply(new EffectFamily(this, Family.GreenSlime));
 
             Skills.Add(new SkillSlimeTouch());
+        }
+
+        public GreenAmoeba(SceneGame world, double hp) : this(world)
+        {
+            Effect.Apply(new EffectStat(this, Stat.HP, hp));
+        }
+
+        [Construct("amoeba_green")]
+        public static GreenAmoeba Construct(Context context)
+        {
+            return new GreenAmoeba(context.World);
         }
 
         public override bool IsHostile(Creature other)

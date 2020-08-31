@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    [SerializeInfo]
     abstract class Effect
     {
         class StatEqualityComparer : IEqualityComparer<Effect>

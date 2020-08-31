@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
-    [SerializeInfo("container")]
+    [SerializeInfo]
     class Container : IEffectHolder, IJsonSerializable
     {
         public ReusableID ObjectID
@@ -49,7 +49,7 @@ namespace RoguelikeEngine
             GlobalID = EffectManager.SetGlobalID(this);
         }
 
-        [Construct]
+        [Construct("container")]
         public static Container Construct(Context context)
         {
             return new Container();

@@ -34,6 +34,12 @@ namespace RoguelikeEngine.Enemies
 
             Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
         }
+
+        [Construct("dragon_red")]
+        public static RedDragon Construct(Context context)
+        {
+            return new RedDragon(context.World);
+        }
     }
 
     class WhiteDragon : Enemy
@@ -60,6 +66,12 @@ namespace RoguelikeEngine.Enemies
 
             //Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
         }
+
+        [Construct("dragon_white")]
+        public static WhiteDragon Construct(Context context)
+        {
+            return new WhiteDragon(context.World);
+        }
     }
 
     class BlueDragon : Enemy
@@ -84,6 +96,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillLightning());
         }
+
+        [Construct("dragon_blue")]
+        public static BlueDragon Construct(Context context)
+        {
+            return new BlueDragon(context.World);
+        }
     }
 
     class GreenDragon : Enemy
@@ -106,6 +124,12 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillViperBite());
+        }
+
+        [Construct("dragon_green")]
+        public static GreenDragon Construct(Context context)
+        {
+            return new GreenDragon(context.World);
         }
     }
 
@@ -132,6 +156,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillIronMaiden());
         }
+
+        [Construct("dragon_yellow")]
+        public static YellowDragon Construct(Context context)
+        {
+            return new YellowDragon(context.World);
+        }
     }
 
     class BoneDragon : Enemy
@@ -157,6 +187,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillForcefield());
             Skills.Add(new SkillAgeOfDragons());
             Skills.Add(new SkillOblivion());
+        }
+
+        [Construct("dragon_bone")]
+        public static BoneDragon Construct(Context context)
+        {
+            return new BoneDragon(context.World);
         }
     }
 }

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("family")]
     class EffectFamily : Effect
     {
         public IEffectHolder Holder;
@@ -44,7 +43,7 @@ namespace RoguelikeEngine.Effects
             base.Remove();
         }
 
-        [Construct]
+        [Construct("family")]
         public static EffectFamily Construct(Context context)
         {
             return new EffectFamily();

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("stat_lock")]
     class EffectStatLock : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -49,7 +48,7 @@ namespace RoguelikeEngine.Effects
             return $"{Stat} locked between {MinValue} and {MaxValue} ({Holder})";
         }
 
-        [Construct]
+        [Construct("stat_lock")]
         public static EffectStatLock Construct(Context context)
         {
             return new EffectStatLock();

@@ -420,5 +420,11 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillCannonShot());
         }
+
+        [Construct("blast_cannon")]
+        public static BlastCannon Construct(Context context)
+        {
+            return new BlastCannon(context.World);
+        }
     }
 }

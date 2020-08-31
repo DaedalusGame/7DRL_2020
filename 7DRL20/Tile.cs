@@ -28,6 +28,7 @@ namespace RoguelikeEngine
         void Destroy();
     }
 
+    [SerializeInfo]
     abstract class Tile : IEffectHolder, IHasPosition, IDrawable
     {
         protected static Random Random = new Random();
@@ -658,7 +659,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("stair_up")]
     class StairUp : Stair
     {
         private bool StairsHidden => HasContent(this) || HasContent(GetNeighbor(0, -1));
@@ -667,7 +667,7 @@ namespace RoguelikeEngine
         {
         }
 
-        [Construct]
+        [Construct("stair_up")]
         public static StairUp Construct(Context context)
         {
             return new StairUp();
@@ -714,14 +714,13 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("stair_down")]
     class StairDown : Stair
     {
         public StairDown() : base()
         {
         }
 
-        [Construct]
+        [Construct("stair_down")]
         public static StairDown Construct(Context context)
         {
             return new StairDown();
@@ -755,14 +754,13 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("floor_cave")]
     class FloorCave : Tile
     {
         public FloorCave() : base("Cave Floor")
         {
         }
 
-        [Construct]
+        [Construct("floor_cave")]
         public static FloorCave Construct(Context context)
         {
             return new FloorCave();
@@ -780,14 +778,13 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("floor_tiles")]
     class FloorTiles : Tile
     {
         public FloorTiles() : base("Tiled Floor")
         {
         }
 
-        [Construct]
+        [Construct("floor_tiles")]
         public static FloorTiles Construct(Context context)
         {
             return new FloorTiles();
@@ -805,14 +802,13 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("floor_big_tile")]
     class FloorBigTile : Tile
     {
         public FloorBigTile() : base("Tiled Floor")
         {
         }
 
-        [Construct]
+        [Construct("floor_big_tile")]
         public static FloorBigTile Construct(Context context)
         {
             return new FloorBigTile();
@@ -830,7 +826,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("floor_bridge")]
     class FloorBridge : Tile
     {
         public ConnectivityHelper Connectivity;
@@ -840,7 +835,7 @@ namespace RoguelikeEngine
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
 
-        [Construct]
+        [Construct("floor_bridge")]
         public static FloorBridge Construct(Context context)
         {
             return new FloorBridge();
@@ -871,7 +866,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("floor_carpet")]
     class FloorCarpet : Tile
     {
         public TileColor Color = new TileColor(new Color(85, 107, 168), new Color(198, 190, 55));
@@ -881,7 +875,7 @@ namespace RoguelikeEngine
         {
         }
 
-        [Construct]
+        [Construct("floor_carpet")]
         public static FloorCarpet Construct(Context context)
         {
             return new FloorCarpet();
@@ -916,14 +910,13 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("floor_plank")]
     class FloorPlank : Tile
     {
         public FloorPlank() : base("Plank Floor")
         {
         }
 
-        [Construct]
+        [Construct("floor_plank")]
         public static FloorPlank Construct(Context context)
         {
             return new FloorPlank();
@@ -941,7 +934,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_cave")]
     class WallCave : Tile, IMineable
     {
         public override double Durability => 100;
@@ -952,7 +944,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        [Construct]
+        [Construct("wall_cave")]
         public static WallCave Construct(Context context)
         {
             return new WallCave();
@@ -992,7 +984,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_plank")]
     class WallPlank : Tile, IMineable
     {
         public override double Durability => 200;
@@ -1003,7 +994,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        [Construct]
+        [Construct("wall_plank")]
         public static WallPlank Construct(Context context)
         {
             return new WallPlank();
@@ -1043,7 +1034,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_ore")]
     class WallOre : Tile, IMineable
     {
         public override double Durability => (Under?.Durability ?? 0) + 50;
@@ -1062,7 +1052,7 @@ namespace RoguelikeEngine
             Material = material;
         }
 
-        [Construct]
+        [Construct("wall_ore")]
         public static WallOre Construct(Context context)
         {
             return new WallOre();
@@ -1120,7 +1110,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_obsidiorite")]
     class WallObsidiorite : Tile, IMineable
     {
         public override double Durability => 2000;
@@ -1131,7 +1120,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        [Construct]
+        [Construct("wall_obsidiorite")]
         public static WallObsidiorite Construct(Context context)
         {
             return new WallObsidiorite();
@@ -1181,7 +1170,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_meteorite")]
     class WallMeteorite : Tile, IMineable
     {
         public override double Durability => 4500;
@@ -1192,7 +1180,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        [Construct]
+        [Construct("wall_meteorite")]
         public static WallMeteorite Construct(Context context)
         {
             return new WallMeteorite();
@@ -1242,7 +1230,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_basalt")]
     class WallBasalt : Tile, IMineable
     {
         public override double Durability => 500;
@@ -1253,7 +1240,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        [Construct]
+        [Construct("wall_basalt")]
         public static WallBasalt Construct(Context context)
         {
             return new WallBasalt();
@@ -1303,7 +1290,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("wall_brick")]
     class WallBrick : Tile, IMineable
     {
         public override double Durability => 1000;
@@ -1314,7 +1300,7 @@ namespace RoguelikeEngine
             Opaque = true;
         }
 
-        [Construct]
+        [Construct("wall_brick")]
         public static WallBrick Construct(Context context)
         {
             return new WallBrick();
@@ -1353,7 +1339,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_water")]
     class Water : Tile
     {
         public ConnectivityHelper Connectivity;
@@ -1365,7 +1350,7 @@ namespace RoguelikeEngine
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
 
-        [Construct]
+        [Construct("pool_water")]
         public static Water Construct(Context context)
         {
             return new Water();
@@ -1424,7 +1409,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_water_shallow")]
     class WaterShallow : Water
     {
         public WaterShallow() : base()
@@ -1432,7 +1416,7 @@ namespace RoguelikeEngine
             Name = "Shallow Water";
         }
 
-        [Construct]
+        [Construct("pool_water_shallow")]
         public static WaterShallow Construct(Context context)
         {
             return new WaterShallow();
@@ -1473,7 +1457,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_lava")]
     class Lava : Tile
     {
         public Lava() : base("Lava")
@@ -1481,7 +1464,7 @@ namespace RoguelikeEngine
             Effect.ApplyInnate(new EffectTrait(this, Trait.Lava));
         }
 
-        [Construct]
+        [Construct("pool_lava")]
         public static Lava Construct(Context context)
         {
             return new Lava();
@@ -1509,7 +1492,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_lava_super")]
     class SuperLava : Tile
     {
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
@@ -1524,7 +1506,7 @@ namespace RoguelikeEngine
             Effect.ApplyInnate(new EffectTrait(this, Trait.SuperLava));
         }
 
-        [Construct]
+        [Construct("pool_lava_super")]
         public static SuperLava Construct(Context context)
         {
             return new SuperLava();
@@ -1557,7 +1539,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_lava_hyper")]
     class HyperLava : Tile
     {
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
@@ -1572,7 +1553,7 @@ namespace RoguelikeEngine
             Effect.ApplyInnate(new EffectTrait(this, Trait.HyperLava));
         }
 
-        [Construct]
+        [Construct("pool_lava_hyper")]
         public static HyperLava Construct(Context context)
         {
             return new HyperLava();
@@ -1605,7 +1586,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_lava_dark")]
     class DarkLava : Tile
     {
         static ColorMatrix ColorMatrix = ColorMatrix.Identity;
@@ -1617,7 +1597,7 @@ namespace RoguelikeEngine
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
 
-        [Construct]
+        [Construct("pool_lava_dark")]
         public static DarkLava Construct(Context context)
         {
             return new DarkLava();
@@ -1666,7 +1646,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("coral")]
     class Coral : Tile
     {
         protected int Frame = Random.Next(1000);
@@ -1687,7 +1666,7 @@ namespace RoguelikeEngine
         {
         }
 
-        [Construct]
+        [Construct("coral")]
         public static Coral Construct(Context context)
         {
             return new Coral();
@@ -1729,7 +1708,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("coral_acid")]
     class AcidCoral : Coral
     {
         public static List<Color> Colors = new List<Color>()
@@ -1744,7 +1722,7 @@ namespace RoguelikeEngine
         {
         }
 
-        [Construct]
+        [Construct("coral_acid")]
         public static AcidCoral Construct(Context context)
         {
             return new AcidCoral();
@@ -1758,7 +1736,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("pool_acid")]
     class AcidPool : Tile
     {
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
@@ -1779,7 +1756,7 @@ namespace RoguelikeEngine
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
 
-        [Construct]
+        [Construct("pool_acid")]
         public static AcidPool Construct(Context context)
         {
             return new AcidPool();
@@ -1836,7 +1813,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("anvil")]
     class Anvil : Tile
     {
         public Container Container;
@@ -1848,7 +1824,7 @@ namespace RoguelikeEngine
             Container = new Container();
         }
 
-        [Construct]
+        [Construct("anvil")]
         public static Anvil Construct(Context context)
         {
             return new Anvil();
@@ -1908,7 +1884,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("smelter")]
     class Smelter : Tile
     {
         public double Ready;
@@ -1931,7 +1906,7 @@ namespace RoguelikeEngine
             FuelContainer = new Container() { Owner = this };
         }
 
-        [Construct]
+        [Construct("smelter")]
         public static Smelter Construct(Context context)
         {
             return new Smelter(context.World);

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("damage")]
     class EffectDamage : Effect
     {
         public IEffectHolder Holder;
@@ -52,7 +51,7 @@ namespace RoguelikeEngine.Effects
             return $"{Amount} {Element} Damage ({Holder})";
         }
 
-        [Construct]
+        [Construct("damage")]
         public static EffectDamage Construct(Context context)
         {
             return new EffectDamage();

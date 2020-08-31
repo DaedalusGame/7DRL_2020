@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("on_tile")]
     class OnTile : Effect, IPosition
     {
         public IEffectHolder Subject => Holder;
@@ -38,7 +37,7 @@ namespace RoguelikeEngine.Effects
             return $"On tile {MapTile}";
         }
 
-        [Construct]
+        [Construct("on_tile")]
         public static OnTile Construct(Context context)
         {
             return new OnTile();
@@ -59,7 +58,6 @@ namespace RoguelikeEngine.Effects
             MapTile = Serializer.GetHolder<MapTile>(json["tile"], context);
         }
 
-        [SerializeInfo("on_tile_primary")]
         public class Primary : OnTile
         {
             public Primary() : base()
@@ -82,7 +80,7 @@ namespace RoguelikeEngine.Effects
                 return $"On tile {MapTile} (Primary)";
             }
 
-            [Construct]
+            [Construct("on_tile_primary")]
             public static Primary Construct(Context context)
             {
                 return new Primary();

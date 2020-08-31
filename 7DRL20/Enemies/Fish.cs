@@ -27,6 +27,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());
         }
+
+        [Construct("gore_vala")]
+        public static GoreVala Construct(Context context)
+        {
+            return new GoreVala(context.World);
+        }
     }
 
     class Vorrax : Enemy
@@ -46,6 +52,12 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());
+        }
+
+        [Construct("vorrax")]
+        public static Vorrax Construct(Context context)
+        {
+            return new Vorrax(context.World);
         }
     }
 
@@ -67,6 +79,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());
             Skills.Add(new SkillChaosJaunt());
+        }
+
+        [Construct("cthuloid")]
+        public static Ctholoid Construct(Context context)
+        {
+            return new Ctholoid(context.World);
         }
     }
 }

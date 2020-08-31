@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("stat_percent")]
     class EffectStatPercent : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -70,7 +69,7 @@ namespace RoguelikeEngine.Effects
             return $"{Stat} {Percentage*100:+0;-#}% ({Holder})";
         }
 
-        [Construct]
+        [Construct("stat_percent")]
         public static EffectStatPercent Construct(Context context)
         {
             return new EffectStatPercent();

@@ -41,6 +41,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillPrance(3, 5));
             Skills.Add(new SkillPounce(0, 5));
         }
+
+        [Construct("gashwal")]
+        public static Gashwal Construct(Context context)
+        {
+            return new Gashwal(context.World);
+        }
     }
 
     class GashwalHairy : Enemy
@@ -76,6 +82,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillRainDance());
             Skills.Add(new SkillPrance(3, 5));
             Skills.Add(new SkillPounce(0, 5));
+        }
+
+        [Construct("gashwal_hairy")]
+        public static GashwalHairy Construct(Context context)
+        {
+            return new GashwalHairy(context.World);
         }
     }
 
@@ -113,6 +125,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillDeltaAttack());
             Skills.Add(new SkillHeptablast());
             Skills.Add(new SkillWedlock());
+        }
+
+        [Construct("wallhach")]
+        public static Wallhach Construct(Context context)
+        {
+            return new Wallhach(context.World);
         }
 
         public override void OnManifest()
@@ -283,6 +301,12 @@ namespace RoguelikeEngine.Enemies
             //Skills.Add(new SkillDrainTouch());
             //Skills.Add(new SkillAttack());
         }
+
+        [Construct("erebizo")]
+        public static Erebizo Construct(Context context)
+        {
+            return new Erebizo(context.World);
+        }
     }
 
     class EnderErebizo : Enemy
@@ -317,6 +341,12 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillEnderFlare());
             Skills.Add(new SkillEnderQuake());
             Skills.Add(new SkillSideJump(3, 5));
+        }
+
+        [Construct("erebizo_ender")]
+        public static EnderErebizo Construct(Context context)
+        {
+            return new EnderErebizo(context.World);
         }
 
         public override void Update()

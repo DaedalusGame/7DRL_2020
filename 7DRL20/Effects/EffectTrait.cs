@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("trait")]
     class EffectTrait : Effect, IEffectContainer
     {
         public IEffectHolder Holder;
@@ -57,7 +56,7 @@ namespace RoguelikeEngine.Effects
             return Trait.GetEffects<T>();
         }
 
-        [Construct]
+        [Construct("trait")]
         public static EffectTrait Construct(Context context)
         {
             return new EffectTrait();

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("stat_multiply")]
     class EffectStatMultiply : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -70,7 +69,7 @@ namespace RoguelikeEngine.Effects
             return $"{Stat} x{Multiplier} ({Holder})";
         }
 
-        [Construct]
+        [Construct("stat_multiply")]
         public static EffectStatMultiply Construct(Context context)
         {
             return new EffectStatMultiply();

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("stat_damage")]
     class EffectStatDamage : Effect, IStat
     {
         public IEffectHolder Holder;
@@ -58,7 +57,7 @@ namespace RoguelikeEngine.Effects
             return $"{Amount} {Stat} Damage ({Holder})";
         }
 
-        [Construct]
+        [Construct("stat_damage")]
         public static EffectStatDamage Construct(Context context)
         {
             return new EffectStatDamage();

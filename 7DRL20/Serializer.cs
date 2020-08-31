@@ -13,17 +13,17 @@ namespace RoguelikeEngine
     [AttributeUsage(AttributeTargets.Method)]
     class Construct : Attribute
     {
+        public string ID;
+
+        public Construct(string id)
+        {
+            ID = id;
+        }
     }
 
     [AttributeUsage(AttributeTargets.Class)]
     class SerializeInfo : Attribute
     {
-        public string ID;
-
-        public SerializeInfo(string id)
-        {
-            ID = id;
-        }
     }
 
     delegate object ConstructDelegate(Context context);
@@ -261,28 +261,27 @@ namespace RoguelikeEngine
             //TODO: Get id from construct instead of serializeinfo
             foreach(var type in GetSerializableTypes())
             {
-                var serializable = type.GetCustomAttribute<SerializeInfo>();
                 MethodInfo construct = null;
                 foreach (var method in type.GetMethods())
                 {
-                    if (Attribute.IsDefined(method, typeof(Construct)))
+                    var attribute = method.GetCustomAttribute<Construct>();
+                    if (attribute != null)
                     {
                         construct = method;
+                        try
+                        {
+                            ConstructDelegate del = (ConstructDelegate)Delegate.CreateDelegate(typeof(ConstructDelegate), method);
+                            Register(attribute.ID, method.ReturnType, del);
+                        }
+                        catch (ArgumentException e)
+                        {
+                            throw new Exception($"Type {type} is marked serializable, but construct method could not be bound.");
+                        }
                     }
                 }
-                if(construct == null)
+                if(construct == null && !type.IsAbstract)
                 {
-                    throw new Exception($"Type {type} is marked serializable, but doesn't contain a method marked as construct.");
-                }
-
-                try
-                {
-                    ConstructDelegate del = (ConstructDelegate)Delegate.CreateDelegate(typeof(ConstructDelegate), construct);
-                    Register(serializable.ID, type, del);
-                }
-                catch(ArgumentException e)
-                {
-                    throw new Exception($"Type {type} is marked serializable, but construct method could not be bound.");
+                    Console.WriteLine($"Type {type} is marked serializable, but doesn't contain a method marked as construct.");
                 }
             }
         }
@@ -293,7 +292,7 @@ namespace RoguelikeEngine
             {
                 foreach (Type type in assembly.GetTypes())
                 {
-                    if (Attribute.IsDefined(type, typeof(SerializeInfo), false))
+                    if (Attribute.IsDefined(type, typeof(SerializeInfo), true))
                     {
                         yield return type;
                     }

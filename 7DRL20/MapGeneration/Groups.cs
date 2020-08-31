@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.MapGeneration
 {
+    [SerializeInfo]
     abstract class GeneratorGroup
     {
         protected MapGenerator Generator;
@@ -396,14 +397,13 @@ namespace RoguelikeEngine.MapGeneration
         #endregion
     }
 
-    [SerializeInfo("group_castle")]
     class Castle : GeneratorGroup
     {
         public Castle(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_castle")]
         public static Castle Construct(Context context)
         {
             return new Castle(null);
@@ -460,14 +460,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_tower")]
     class Tower : GeneratorGroup
     {
         public Tower(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_tower")]
         public static Tower Construct(Context context)
         {
             return new Tower(null);
@@ -503,14 +502,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_cave")]
     class Cave : GeneratorGroup
     {
         public Cave(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_cave")]
         public static Cave Construct(Context context)
         {
             return new Cave(null);
@@ -561,14 +559,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_cave_acid")]
     class CaveAcid : Cave
     {
         public CaveAcid(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_cave_acid")]
         public static CaveAcid Construct(Context context)
         {
             return new CaveAcid(null);
@@ -597,14 +594,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_cave_lava")]
     class CaveLava : Cave
     {
         public CaveLava(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_cave_lava")]
         public static CaveLava Construct(Context context)
         {
             return new CaveLava(null);
@@ -630,14 +626,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_cave_magma")]
     class CaveMagma : Cave
     {
         public CaveMagma(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_cave_magma")]
         public static CaveMagma Construct(Context context)
         {
             return new CaveMagma(null);
@@ -678,14 +673,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_cave_water")]
     class CaveWater : Cave
     {
         public CaveWater(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_cave_water")]
         public static CaveWater Construct(Context context)
         {
             return new CaveWater(null);
@@ -714,14 +708,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_castle_dark")]
     class CastleDark : Castle
     {
         public CastleDark(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_castle_dark")]
         public static CastleDark Construct(Context context)
         {
             return new CastleDark(null);
@@ -753,14 +746,13 @@ namespace RoguelikeEngine.MapGeneration
         }
     }
 
-    [SerializeInfo("group_home")]
     class Home : Castle
     {
         public Home(MapGenerator generator) : base(generator)
         {
         }
 
-        [Construct]
+        [Construct("group_home")]
         public static Home Construct(Context context)
         {
             return new Home(null);

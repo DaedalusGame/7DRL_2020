@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("status_effect")]
     class EffectStatusEffect : Effect
     {
         public StatusEffect StatusEffect;
@@ -51,7 +50,7 @@ namespace RoguelikeEngine.Effects
             return json;
         }
 
-        [Construct]
+        [Construct("status_effect")]
         public static EffectStatusEffect Construct(Context context)
         {
             return new EffectStatusEffect();

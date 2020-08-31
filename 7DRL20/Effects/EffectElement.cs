@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    [SerializeInfo("element")]
     class EffectElement : Effect
     {
         public IEffectHolder Holder;
@@ -66,7 +65,7 @@ namespace RoguelikeEngine.Effects
             statBlock += $"{Game.FormatElement(Element)} {Game.FORMAT_BOLD}{Element}{Game.FORMAT_BOLD} {((int)Math.Round(total * 100)).ToString("0;-#")}%\n";
         }
 
-        [Construct]
+        [Construct("element")]
         public static EffectElement Construct(Context context)
         {
             return new EffectElement();

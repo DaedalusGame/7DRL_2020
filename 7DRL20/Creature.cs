@@ -596,6 +596,7 @@ namespace RoguelikeEngine
 
     delegate Attack AttackDelegate(Creature attacker, IEffectHolder defender);
 
+    [SerializeInfo]
     abstract class Creature : IEffectHolder, IGameObject, IHasPosition, IJsonSerializable
     {
         public class WaitFrames : Wait
@@ -1233,7 +1234,6 @@ namespace RoguelikeEngine
         }
     }
 
-    [SerializeInfo("hero")]
     class Hero : Creature
     {
         public Hero(SceneGame world) : base(world)
@@ -1252,7 +1252,7 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectStat(this, Stat.Attack, 10));
         }
 
-        [Construct]
+        [Construct("hero")]
         public static Hero Construct(Context context)
         {
             return new Hero(context.World);
