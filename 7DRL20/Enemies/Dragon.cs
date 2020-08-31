@@ -23,11 +23,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 440));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 25));
-            Effect.Apply(new EffectStatMultiply(this, Element.Fire.DamageRate, -1));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 440));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 25));
+            Effect.ApplyInnate(new EffectStatMultiply(this, Element.Fire.DamageRate, -1));
 
-            Effect.Apply(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillFireBreath());
@@ -55,11 +55,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 800));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 50));
-            Effect.Apply(new EffectStatMultiply(this, Element.Ice.DamageRate, -1));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 800));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
+            Effect.ApplyInnate(new EffectStatMultiply(this, Element.Ice.DamageRate, -1));
 
-            Effect.Apply(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillIceBreath());
@@ -87,11 +87,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 440));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 25));
-            Effect.Apply(new EffectStatMultiply(this, Element.Thunder.DamageRate, -1));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 440));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 25));
+            Effect.ApplyInnate(new EffectStatMultiply(this, Element.Thunder.DamageRate, -1));
 
-            Effect.Apply(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillLightning());
@@ -117,10 +117,10 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 670));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 20));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 670));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 20));
 
-            Effect.Apply(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillViperBite());
@@ -146,10 +146,10 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 560));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 5));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 560));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
 
-            Effect.Apply(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillRendingClaw());
@@ -177,12 +177,12 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 1700));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 35));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1700));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 35));
 
-            Effect.Apply(new EffectFamily(this, Family.Dragon));
-            Effect.Apply(new EffectTrait(this, Trait.Undead));
-            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillForcefield());
             Skills.Add(new SkillAgeOfDragons());

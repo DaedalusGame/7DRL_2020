@@ -23,10 +23,10 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 120));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 15));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 120));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 15));
 
-            Effect.Apply(new EffectFamily(this, Family.Slime));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Slime));
 
             Skills.Add(new SkillAcidTouch());
             Skills.Add(new SkillAttack());
@@ -52,10 +52,10 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 120));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 15));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 120));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 15));
 
-            Effect.Apply(new EffectFamily(this, Family.Slime));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Slime));
 
             Skills.Add(new SkillPoisonTouch());
             Skills.Add(new SkillAttack());
@@ -81,12 +81,12 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectFamily(this, Family.Slime));
-            Effect.Apply(new EffectFamily(this, Family.GreenSlime));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Slime));
+            Effect.ApplyInnate(new EffectFamily(this, Family.GreenSlime));
 
-            Effect.Apply(new EffectTrait(this, Trait.SplitGreenSlime));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.SplitGreenSlime));
 
             Skills.Add(new SkillSlimeTouch());
             Skills.Add(new SkillAttack());
@@ -122,10 +122,10 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.Attack, 15));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 15));
 
-            Effect.Apply(new EffectFamily(this, Family.Slime));
-            Effect.Apply(new EffectFamily(this, Family.GreenSlime));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Slime));
+            Effect.ApplyInnate(new EffectFamily(this, Family.GreenSlime));
 
             Skills.Add(new SkillSlimeTouch());
         }

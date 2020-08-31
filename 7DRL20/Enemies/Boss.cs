@@ -29,10 +29,10 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 900));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 900));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
 
-            Effect.Apply(new EffectFamily(this, Family.Boss));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillWildSpin());
@@ -67,12 +67,12 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 1200));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1200));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
 
-            Effect.Apply(new EffectFamily(this, Family.Boss));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
 
-            Effect.Apply(new EffectTrait(this, Trait.Sparking));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Sparking));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillLightningClaw());
@@ -114,10 +114,10 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 1200));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 40));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1200));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 40));
 
-            Effect.Apply(new EffectFamily(this, Family.Boss));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
 
             //Skills.Add(new SkillAttack());
             Skills.Add(new SkillPhalange());
@@ -291,10 +291,10 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 50));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectFamily(this, Family.Boss));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
 
             Skills.Add(new SkillDrainTouch());
             Skills.Add(new SkillLightning());
@@ -328,10 +328,10 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 3000));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 160));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3000));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 160));
 
-            Effect.Apply(new EffectFamily(this, Family.Boss));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
 
             Skills.Add(new SkillEnderBlast());
             Skills.Add(new SkillEnderRam());

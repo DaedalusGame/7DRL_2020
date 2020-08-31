@@ -19,10 +19,10 @@ namespace RoguelikeEngine.Enemies
             Render = new CreatureFishRender(ColorMatrix.Identity);
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 80));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 80));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectFamily(this, Family.Fish));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());
@@ -45,10 +45,10 @@ namespace RoguelikeEngine.Enemies
             Render = new CreatureFishRender(ColorMatrix.TwoColorLight(Color.Black, new Color(255, 160, 64)));
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 30));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 80));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 30));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 80));
 
-            Effect.Apply(new EffectFamily(this, Family.Fish));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());
@@ -71,10 +71,10 @@ namespace RoguelikeEngine.Enemies
             Render = new CreatureFishRender(ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen));
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 100));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 100));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectFamily(this, Family.Fish));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDive());

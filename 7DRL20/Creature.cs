@@ -1248,8 +1248,8 @@ namespace RoguelikeEngine
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 1000));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1000));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
         }
 
         [Construct("hero")]

@@ -25,11 +25,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 50));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectTrait(this, Trait.Undead));
-            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillDrainTouch2());
             Skills.Add(new SkillAttack());
@@ -56,11 +56,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 50));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectTrait(this, Trait.Undead));
-            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillMudTouch());
         }
@@ -87,11 +87,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 50));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
 
-            Effect.Apply(new EffectTrait(this, Trait.Undead));
-            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillDrainTouch2());
             Skills.Add(new SkillAttack());
@@ -120,11 +120,11 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 1200));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 40));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1200));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 40));
 
-            Effect.Apply(new EffectTrait(this, Trait.Undead));
-            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillDrainTouch());

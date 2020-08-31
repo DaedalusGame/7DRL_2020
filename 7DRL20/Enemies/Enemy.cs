@@ -413,10 +413,10 @@ namespace RoguelikeEngine.Enemies
             Render = new CreatureCannonRender(ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen));
             Mask.Add(Point.Zero);
 
-            Effect.Apply(new EffectStat(this, Stat.HP, 600));
-            Effect.Apply(new EffectStat(this, Stat.Attack, 25));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 600));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 25));
 
-            Effect.Apply(new EffectFamily(this, Family.Bloodless));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillCannonShot());
         }
