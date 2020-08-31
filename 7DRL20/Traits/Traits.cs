@@ -11,27 +11,39 @@ namespace RoguelikeEngine.Traits
 {
     class Trait : IEffectHolder
     {
+        public static List<Trait> AllTraits = new List<Trait>();
+
         public ReusableID ObjectID
         {
             get;
             private set;
         }
 
+        public int Index;
+        public string ID;
         public string Name;
         public string Description;
         public Color Color;
 
-        public Trait(string name, string description, Color color)
+        public Trait(string id, string name, string description, Color color)
         {
+            Index = AllTraits.Count;
             ObjectID = EffectManager.SetID(this);
+            ID = id;
             Name = name;
             Description = description;
             Color = color;
+            AllTraits.Add(this);
         }
 
         public IEnumerable<T> GetEffects<T>() where T : Effect
         {
             return EffectManager.GetEffects<T>(this);
+        }
+
+        public static Trait GetTrait(string id)
+        {
+            return AllTraits.Find(x => x.ID == id);
         }
 
         public static Trait Splintering = new TraitSplintering();
@@ -71,7 +83,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSplintering : Trait
     {
-        public TraitSplintering() : base("Splintering", "Deals some damage to surrounding enemies.", new Color(235, 235, 207))
+        public TraitSplintering() : base("splintering", "Splintering", "Deals some damage to surrounding enemies.", new Color(235, 235, 207))
         {
             Effect.Apply(new OnAttack(this, Splinter));
         }
@@ -115,7 +127,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitHoly : Trait
     {
-        public TraitHoly() : base("Holy", "Extra damage to undead.", new Color(255, 250, 155))
+        public TraitHoly() : base("holy", "Holy", "Extra damage to undead.", new Color(255, 250, 155))
         {
             Effect.Apply(new OnStartAttack(this, UndeadKiller));
         }
@@ -135,7 +147,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSpotlight : Trait
     {
-        public TraitSpotlight() : base("Spotlight", $"Attacking undead take {Element.Holy.FormatString} damage.", new Color(155, 255, 242))
+        public TraitSpotlight() : base("spotlight", "Spotlight", $"Attacking undead take {Element.Holy.FormatString} damage.", new Color(155, 255, 242))
         {
             Effect.Apply(new OnDefend(this, OnDefend));
         }
@@ -160,7 +172,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitUnstable() : base("Unstable", "Causes random explosions.", new Color(255, 64, 16))
+        public TraitUnstable() : base("unstable", "Unstable", "Causes random explosions.", new Color(255, 64, 16))
         {
             Effect.Apply(new OnAttack(this, ExplodeAttack));
             Effect.Apply(new OnDefend(this, ExplodeChainReact));
@@ -267,7 +279,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitTantrum() : base("Tantrum", "Mined rock explodes.", new Color(236, 215, 66))
+        public TraitTantrum() : base("tantrum", "Tantrum", "Mined rock explodes.", new Color(236, 215, 66))
         {
             Effect.Apply(new OnMine(this, ExplodeMine));
         }
@@ -334,7 +346,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitCharged : Trait
     {
-        public TraitCharged() : base("Charged", "Arcs to nearby enemies in flight.", new Color(192, 255, 16))
+        public TraitCharged() : base("charged", "Charged", "Arcs to nearby enemies in flight.", new Color(192, 255, 16))
         {
             Effect.Apply(new OnShoot(this, ShootArrow));
         }
@@ -358,7 +370,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitDischarge() : base("Discharge", "Detonates on impact.", new Color(192, 255, 16))
+        public TraitDischarge() : base("discharge", "Discharge", "Detonates on impact.", new Color(192, 255, 16))
         {
             Effect.Apply(new OnShoot(this, ShootArrow));
         }
@@ -390,7 +402,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSofty : Trait
     {
-        public TraitSofty() : base("Softy", "Breaking rock restores some HP.", new Color(207, 179, 160))
+        public TraitSofty() : base("softy", "Softy", "Breaking rock restores some HP.", new Color(207, 179, 160))
         {
             Effect.Apply(new OnMine(this, SoftyHeal));
         }
@@ -412,7 +424,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitFrothingBlast() : base("Frothing Blast", $"Create acid explosion on contact with water.\nExplosion does half {Element.Acid.FormatString}, half {Element.Steam.FormatString} damage.", new Color(164, 247, 236))
+        public TraitFrothingBlast() : base("frothing_blast", "Frothing Blast", $"Create acid explosion on contact with water.\nExplosion does half {Element.Acid.FormatString}, half {Element.Steam.FormatString} damage.", new Color(164, 247, 236))
         {
             Effect.Apply(new OnDefend(this, FrothingAttack));
             Effect.Apply(new OnTurn(this, FrothingTurn));
@@ -483,7 +495,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitFragile : Trait
     {
-        public TraitFragile() : base("Fragile", "Cracks nearby rock.", new Color(181, 230, 193))
+        public TraitFragile() : base("fragile", "Fragile", "Cracks nearby rock.", new Color(181, 230, 193))
         {
             Effect.Apply(new OnMine(this, Fracture));
         }
@@ -518,7 +530,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitCrumbling : Trait
     {
-        public TraitCrumbling() : base("Crumbling", "Destroys lower level rock faster.", new Color(171, 184, 194))
+        public TraitCrumbling() : base("crumbling", "Crumbling", "Destroys lower level rock faster.", new Color(171, 184, 194))
         {
             Effect.Apply(new OnStartMine(this, Crumble));
         }
@@ -537,7 +549,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitPulverizing : Trait
     {
-        public TraitPulverizing() : base("Pulverizing", "No mining drops.", new Color(194, 172, 172))
+        public TraitPulverizing() : base("pulverizing", "Pulverizing", "No mining drops.", new Color(194, 172, 172))
         {
             Effect.Apply(new OnStartMine(this, Pulverize));
         }
@@ -554,7 +566,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitMeteorBash : Trait
     {
-        public TraitMeteorBash() : base("Meteor Bash", $"Extra attack with shield, deals damage based on {Stat.Defense.FormatString}.", new Color(194, 172, 172))
+        public TraitMeteorBash() : base("meteor_bash", "Meteor Bash", $"Extra attack with shield, deals damage based on {Stat.Defense.FormatString}.", new Color(194, 172, 172))
         {
             Effect.Apply(new OnAttack(this, MeteorBash));
         }
@@ -587,7 +599,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitAlien : Trait
     {
-        public TraitAlien() : base("Alien", "Randomize stats.", new Color(204, 91, 182))
+        public TraitAlien() : base("alien", "Alien", "Randomize stats.", new Color(204, 91, 182))
         {
             Effect.Apply(new EffectStat.Randomized(this, Stat.Attack, -5, 20));
             Effect.Apply(new EffectStatPercent.Randomized(this, Stat.MiningSpeed, -0.5, 2.0));
@@ -596,7 +608,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSharp : Trait
     {
-        public TraitSharp() : base("Sharp", "Causes bleeding.", new Color(192, 0, 0))
+        public TraitSharp() : base("sharp", "Sharp", "Causes bleeding.", new Color(192, 0, 0))
         {
             Effect.Apply(new OnStartAttack(this, Bleed));
         }
@@ -617,7 +629,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitStiff : Trait
     {
-        public TraitStiff() : base("Stiff", "Reduce damage taken.", new Color(192, 192, 192))
+        public TraitStiff() : base("stiff", "Stiff", "Reduce damage taken.", new Color(192, 192, 192))
         {
             Effect.Apply(new OnStartDefend(this, Stiff));
         }
@@ -634,7 +646,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitBloodShield : Trait
     {
-        public TraitBloodShield() : base("Blood Shield", $"Attackers take {Element.Pierce.FormatString} damage and start bleeding.", new Color(192, 0, 0))
+        public TraitBloodShield() : base("blood_shield", "Blood Shield", $"Attackers take {Element.Pierce.FormatString} damage and start bleeding.", new Color(192, 0, 0))
         {
             Effect.Apply(new OnStartDefend(this, BloodShield));
         }
@@ -660,7 +672,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitFuming() : base("Fuming", "Sometimes produces smoke cloud.", new Color(255,255,255))
+        public TraitFuming() : base("fuming", "Fuming", "Sometimes produces smoke cloud.", new Color(255,255,255))
         {
             Effect.Apply(new OnAttack(this, EmitSmoke));
         }
@@ -701,7 +713,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitPoxic : Trait
     {
-        public TraitPoxic() : base("Poxic", "Sometimes turns enemies into slime.", new Color(206, 221, 159))
+        public TraitPoxic() : base("poxic", "Poxic", "Sometimes turns enemies into slime.", new Color(206, 221, 159))
         {
             Effect.Apply(new OnStartAttack(this, Slime));
         }
@@ -719,7 +731,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSlimeEater : Trait
     {
-        public TraitSlimeEater() : base("Slime Eater", "Devour slime for health.", new Color(206, 221, 159))
+        public TraitSlimeEater() : base("slime_eater", "Slime Eater", "Devour slime for health.", new Color(206, 221, 159))
         {
             Effect.Apply(new OnAttack(this, Devour));
         }
@@ -743,7 +755,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSludgeArmor : Trait
     {
-        public TraitSludgeArmor() : base("Sludge Armor", "When hit by slime, reduce status buildup.", new Color(206, 221, 159))
+        public TraitSludgeArmor() : base("sludge_armor", "Sludge Armor", "When hit by slime, reduce status buildup.", new Color(206, 221, 159))
         {
             Effect.Apply(new OnStartDefend(this, Armor));
         }
@@ -771,7 +783,7 @@ namespace RoguelikeEngine.Traits
     class TraitSlaughtering : Trait
     {
 
-        public TraitSlaughtering() : base("Slaughtering", "More drops, but no experience.", new Color(128, 0, 0))
+        public TraitSlaughtering() : base("slaughtering", "Slaughtering", "More drops, but no experience.", new Color(128, 0, 0))
         {
             //TODO
         }
@@ -781,7 +793,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitLifeSteal() : base("Life Steal", "Sometimes steal life on attack.", new Color(128, 0, 0))
+        public TraitLifeSteal() : base("life_steal", "Life Steal", "Sometimes steal life on attack.", new Color(128, 0, 0))
         {
             Effect.Apply(new OnAttack(this, LifeSteal));
         }
@@ -802,7 +814,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitUndead() : base("Undead", $"{Element.Healing.FormatString} causes damage.", new Color(128, 112, 128))
+        public TraitUndead() : base("undead", "Undead", $"{Element.Healing.FormatString} causes damage.", new Color(128, 112, 128))
         {
             Effect.Apply(new EffectFamily(this, Family.Undead));
             Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
@@ -813,7 +825,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitSparking() : base("Sparking", $"Spark to adjacent tiles, dealing {Element.Thunder.FormatString} damage.", new Color(128, 112, 128))
+        public TraitSparking() : base("sparking", "Sparking", $"Spark to adjacent tiles, dealing {Element.Thunder.FormatString} damage.", new Color(128, 112, 128))
         {
             Effect.Apply(new OnAttack(this, Spark));
         }

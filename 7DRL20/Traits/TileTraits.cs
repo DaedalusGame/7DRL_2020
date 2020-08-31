@@ -13,7 +13,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitWater() : base("On Water", "Become wet every turn.", new Color(16, 16, 255))
+        public TraitWater() : base("on_water", "On Water", "Become wet every turn.", new Color(16, 16, 255))
         {
             Effect.Apply(new OnTurn(this, OnWater));
         }
@@ -36,7 +36,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitLava() : base("On Lava", 
+        public TraitLava() : base("on_lava", "On Lava", 
             $"Take {Game.FormatElement(Element.Fire)}{Element.Fire.Name} damage and become Aflame every turn.", new Color(255, 128, 16))
         {
             Effect.Apply(new OnTurn(this, OnLava));
@@ -67,7 +67,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitSuperLava() : base("On Super Lava", 
+        public TraitSuperLava() : base("on_super_lava", "On Super Lava", 
             $"{Game.FormatStat(Element.Fire.DamageRate)}{Element.Fire.DamageRate.Name} +50%.\n" +
             $"Melts armor and weapons every turn.", new Color(255, 192, 32))
         {
@@ -100,7 +100,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitHyperLava() : base("On Hyper Lava", 
+        public TraitHyperLava() : base("on_hyper_lava", "On Hyper Lava", 
             $"Take {Game.FormatElement(Element.Magma)}{Element.Magma.Name} damage every turn.\n" +
             $"{Game.FormatStat(Element.Fire.DamageRate)}{Element.Fire.DamageRate.Name} +100%.\n" +
             $"Build Incinerate every turn.", new Color(255, 255, 64))
@@ -139,7 +139,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitAcid() : base("On Acid", "Take acid damage every turn.", new Color(128, 255, 16))
+        public TraitAcid() : base("on_acid", "On Acid", "Take acid damage every turn.", new Color(128, 255, 16))
         {
             Effect.Apply(new OnTurn(this, OnAcid));
         }

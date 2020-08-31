@@ -225,7 +225,9 @@ namespace RoguelikeEngine
         public Turn Turn;
         public WaitWorld Wait = new WaitWorld();
 
-        public Map MapHome;
+        SaveFile SaveFile;
+
+        public Map MapHome => GetMap("home");
         public Dictionary<string, Map> Maps = new Dictionary<string, Map>();
         public RenderTarget2D CameraTargetA;
         public RenderTarget2D CameraTargetB;
@@ -260,21 +262,12 @@ namespace RoguelikeEngine
 
         public SceneGame(Game game) : base(game)
         {
+            SaveFile = new SaveFile(new DirectoryInfo("test"));
+
             ActionQueue = new ActionQueue(this);
             Menu = new PlayerUI(this);
 
-            try
-            {
-                StreamReader reader = File.OpenText("test.json");
-                JsonTextReader jsonReader = new JsonTextReader(reader);
-                JObject json = JObject.Load(jsonReader);
-                jsonReader.Close();
-                LoadHome(json);
-            }
-            catch(FileNotFoundException e)
-            {
-                CreateHome();
-            }
+            CreateHome();
 
             PushObjects();
 
@@ -328,6 +321,11 @@ namespace RoguelikeEngine
             Spawner = new EnemySpawner(this, 60);
         }
 
+        public void Save()
+        {
+            SaveFile.Save(this);
+        }
+
         public void SetMapId(string id, Map map)
         {
             if(map.ID != null)
@@ -345,8 +343,8 @@ namespace RoguelikeEngine
         {
             GeneratorTemplate template = new TemplateHome();
             template.Build(this);
-            MapHome = template.Map;
-            SetMapId("home",MapHome);
+            Map map = template.Map;
+            SetMapId("home", map);
 
             Tile startTile = template.GetStartRoom();
             Tile stairDown = template.BuildStairRoom();
@@ -357,12 +355,6 @@ namespace RoguelikeEngine
             };
             stairTile.InitBonuses();
             stairDown.Replace(stairTile);
-        }
-
-        private void LoadHome(JObject json)
-        {
-            MapHome = new Map(this, 0, 0);
-            MapHome.ReadJson(json);
         }
 
         private void BuildSmelterRoom(Tile center, GeneratorGroup group)

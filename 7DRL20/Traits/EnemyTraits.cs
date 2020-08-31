@@ -11,7 +11,7 @@ namespace RoguelikeEngine.Traits
 {
     abstract class TraitDeathThroes : Trait
     {
-        public TraitDeathThroes(string name, string description, Color color) : base(name, description, color)
+        public TraitDeathThroes(string id, string name, string description, Color color) : base(id, name, description, color)
         {
             Effect.Apply(new OnDeath(this, RoutineExplode));
         }
@@ -21,7 +21,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitDeathThroesCrimson : TraitDeathThroes
     {
-        public TraitDeathThroesCrimson() : base("Crimson Throes", $"Explodes on death if slashed, dealing {Element.Dark.FormatString} and {Element.Fire.FormatString} damage.", new Color(192,0,0))
+        public TraitDeathThroesCrimson() : base("death_throes_crimson", "Crimson Throes", $"Explodes on death if slashed, dealing {Element.Dark.FormatString} and {Element.Fire.FormatString} damage.", new Color(192,0,0))
         {
         }
 
@@ -60,7 +60,7 @@ namespace RoguelikeEngine.Traits
 
         protected int Spawns;
 
-        public TraitSplit(string name, string description, Color color) : base(name, description, color)
+        public TraitSplit(string id, string name, string description, Color color) : base(id, name, description, color)
         {
             Effect.Apply(new OnDeath(this, RoutineSplit));
         }
@@ -98,7 +98,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitSplitGreenSlime : TraitSplit
     {
-        public TraitSplitGreenSlime() : base("Split", "Splits into Green Amoebas on death.", new Color(206, 221, 159))
+        public TraitSplitGreenSlime() : base("split_green_amoeba", "Split", "Splits into Green Amoebas on death.", new Color(206, 221, 159))
         {
             Spawns = 4;
         }

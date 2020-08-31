@@ -138,6 +138,7 @@ namespace RoguelikeEngine
         {
             JObject json = new JObject();
 
+            json["id"] = Serializer.GetID(this);
             json["creature"] = Serializer.GetHolderID(Creature);
             json["buildup"] = Buildup;
             json["duration"] = Duration.WriteJson();

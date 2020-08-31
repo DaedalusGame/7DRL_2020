@@ -1360,7 +1360,7 @@ namespace RoguelikeEngine
 
         public Water() : base("Water")
         {
-            Effect.Apply(new EffectTrait(this, Trait.Water));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Water));
 
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }
@@ -1478,7 +1478,7 @@ namespace RoguelikeEngine
     {
         public Lava() : base("Lava")
         {
-            Effect.Apply(new EffectTrait(this, Trait.Lava));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Lava));
         }
 
         [Construct]
@@ -1521,7 +1521,7 @@ namespace RoguelikeEngine
 
         public SuperLava() : base("Super Lava")
         {
-            Effect.Apply(new EffectTrait(this, Trait.SuperLava));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.SuperLava));
         }
 
         [Construct]
@@ -1569,7 +1569,7 @@ namespace RoguelikeEngine
 
         public HyperLava() : base("Hyper Lava")
         {
-            Effect.Apply(new EffectTrait(this, Trait.HyperLava));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.HyperLava));
         }
 
         [Construct]
@@ -1774,7 +1774,7 @@ namespace RoguelikeEngine
 
         public AcidPool() : base("Acid")
         {
-            Effect.Apply(new EffectTrait(this, Trait.Acid));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Acid));
 
             Connectivity = new ConnectivityHelper(this, GetConnection, Connects);
         }

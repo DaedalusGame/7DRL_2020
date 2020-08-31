@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    [SerializeInfo("trait")]
     class EffectTrait : Effect, IEffectContainer
     {
         public IEffectHolder Holder;
@@ -15,6 +17,10 @@ namespace RoguelikeEngine.Effects
         public int Level;
 
         public override double VisualPriority => 1000;
+
+        public EffectTrait()
+        {
+        }
 
         public EffectTrait(IEffectHolder holder, Trait trait, int level = 1)
         {
@@ -49,6 +55,29 @@ namespace RoguelikeEngine.Effects
         public IEnumerable<T> GetSubEffects<T>() where T : Effect
         {
             return Trait.GetEffects<T>();
+        }
+
+        [Construct]
+        public static EffectTrait Construct(Context context)
+        {
+            return new EffectTrait();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["holder"] = Serializer.GetHolderID(Holder);
+            json["trait"] = Trait.ID;
+            json["level"] = Level;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Holder = Serializer.GetHolder<IEffectHolder>(json["holder"], context);
+            Trait = Trait.GetTrait(json["trait"].Value<string>());
+            Level = json["level"].Value<int>();
         }
     }
 }

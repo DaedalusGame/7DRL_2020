@@ -309,6 +309,11 @@ namespace RoguelikeEngine
                     selection.Close();
                     Open(new MenuInventory(this, Player));
                 }));
+                selection.Add(new ActAction("Save", "Saves the game.", () =>
+                {
+                    selection.Close();
+                    Scene.Save();
+                }));
                 selection.AddDefault(new ActAction("Cancel", "Closes this menu.", () => selection.Close()));
 
                 Open(selection);
