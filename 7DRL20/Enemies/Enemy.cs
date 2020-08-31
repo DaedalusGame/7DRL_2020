@@ -15,25 +15,32 @@ namespace RoguelikeEngine.Enemies
     {
         public static List<Family> AllFamilies = new List<Family>();
 
-        int ID;
+        int Index;
+        public string ID;
         public string Name;
 
-        public Family(string name)
+        public Family(string id, string name)
         {
-            ID = AllFamilies.Count;
+            Index = AllFamilies.Count;
+            ID = id;
             Name = name;
             AllFamilies.Add(this);
         }
 
-        public static Family Boss = new Family("Extinction Unit");
+        public static Family GetFamily(string id)
+        {
+            return AllFamilies.Find(x => x.ID == id);
+        }
 
-        public static Family Bloodless = new Family("Bloodless");
-        public static Family Fish = new Family("Fish");
-        public static Family Undead = new Family("Undead");
-        public static Family Dragon = new Family("Dragon");
-        public static Family Slime = new Family("Slime");
+        public static Family Boss = new Family("boss", "Extinction Unit");
 
-        public static Family GreenSlime = new Family("Green Slime");
+        public static Family Bloodless = new Family("bloodless", "Bloodless");
+        public static Family Fish = new Family("fish", "Fish");
+        public static Family Undead = new Family("undead", "Undead");
+        public static Family Dragon = new Family("dragon", "Dragon");
+        public static Family Slime = new Family("slime", "Slime");
+
+        public static Family GreenSlime = new Family("slime_green", "Green Slime");
     }
 
     abstract class Enemy : Creature

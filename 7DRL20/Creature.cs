@@ -29,7 +29,7 @@ namespace RoguelikeEngine
         }
 
         public int Index;
-        public string Id;
+        public string ID;
         public string Name;
         public Symbol Symbol;
         public Stat Resistance;
@@ -42,7 +42,7 @@ namespace RoguelikeEngine
         public Element(string id, string name, Symbol symbol)
         {
             Index = AllElements.Count;
-            Id = Id;
+            ID = id;
             Name = name;
             Symbol = symbol;
             Priority = Index;
@@ -75,7 +75,7 @@ namespace RoguelikeEngine
 
         public static Element GetElement(string id)
         {
-            return AllElements.Find(element => element.Id == id);
+            return AllElements.Find(element => element.ID == id);
         }
 
         public static Element Bludgeon = new Element("bludgeon", "Bludgeon", SpriteLoader.Instance.AddSprite("content/element_blunt"));
@@ -286,7 +286,7 @@ namespace RoguelikeEngine
         }
 
         public int Index;
-        public string Id;
+        public string ID;
         public string Name;
         public bool Hidden;
         public double DefaultStat;
@@ -301,7 +301,7 @@ namespace RoguelikeEngine
         public Stat(string id, string name, double defaultStat, double priority, Symbol symbol)
         {
             Index = AllStats.Count;
-            Id = id;
+            ID = id;
             Name = name;
             DefaultStat = defaultStat;
             Symbol = symbol;
@@ -320,7 +320,7 @@ namespace RoguelikeEngine
 
         public static Stat GetStat(string id)
         {
-            return AllStats.Find(stat => stat.Id == id);
+            return AllStats.Find(stat => stat.ID == id);
         }
 
         public static string FormatHP(Creature creature, double value)
@@ -377,7 +377,7 @@ namespace RoguelikeEngine
         public double SubPriority;
         public override double EffectivePriority => Priority + (Element.Priority + SubPriority) / Element.AllElements.Count;
 
-        public ElementStat(Element element, string id, string name, double defaultStat, double priority, double subPriority, Symbol symbol) : base($"{id}_{element.Id}", name, defaultStat, priority, symbol)
+        public ElementStat(Element element, string id, string name, double defaultStat, double priority, double subPriority, Symbol symbol) : base($"{id}_{element.ID}", name, defaultStat, priority, symbol)
         {
             Element = element;
             SubPriority = subPriority;

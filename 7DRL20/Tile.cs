@@ -442,38 +442,72 @@ namespace RoguelikeEngine
         }
     }
 
+    class StairType
+    {
+        public static List<StairType> AllStairTypes = new List<StairType>();
+
+        public int Index;
+        public string ID;
+        public string Name;
+        Func<Stair, GeneratorTemplate> Function;
+
+        public StairType(string id, string name, Func<Stair, GeneratorTemplate> function)
+        {
+            Index = AllStairTypes.Count;
+            ID = id;
+            Name = name;
+            Function = function;
+            AllStairTypes.Add(this);
+        }
+
+        public GeneratorTemplate Generate(Stair stair)
+        {
+            return Function(stair);
+        }
+
+        public static StairType GetStairType(string id)
+        {
+            return AllStairTypes.Find(x => x.ID == id);
+        }
+
+        public static StairType RandomStart = new StairType("start_random", "Start", stair => new TemplateRandomLevel(new GroupRandom(), 0));
+        public static StairType Random = new StairType("random", "Random", stair => new TemplateRandomLevel(new GroupRandom(stair.Group.MakeTemplate()), stair.Seed));
+    }
+
     class StairBonus
     {
         public static List<StairBonus> AllStairBonuses = new List<StairBonus>();
 
-        public int ID;
+        public int Index;
+        public string ID;
         public string Name;
         Action<GeneratorTemplate> Function;
 
-        public StairBonus(string name, Action<GeneratorTemplate> function)
+        public StairBonus(string id, string name, Action<GeneratorTemplate> function)
         {
-            ID = AllStairBonuses.Count;
+            Index = AllStairBonuses.Count;
+            ID = id;
             Name = name;
             Function = function;
             AllStairBonuses.Add(this);
         }
 
-        public static StairBonus NoBonus = new StairBonus("No Bonus", feelings => { });
+        public static StairBonus NoBonus = new StairBonus("no_bonus", "No Bonus", feelings => { });
 
-        public static StairBonus Difficult = new StairBonus("Difficult Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, +30); });
-        public static StairBonus Easy = new StairBonus("Easy Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, -30); });
+        public static StairBonus Difficult = new StairBonus("difficult", "Difficult Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, +30); });
+        public static StairBonus Easy = new StairBonus("easy", "Easy Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, -30); });
 
-        public static StairBonus Hell = new StairBonus("Hellish Environment", template => {
+        public static StairBonus Hell = new StairBonus("hell", "Hellish Environment", template => {
             template.Feelings.Add(LevelFeeling.Fire, +30);
             template.Feelings.Add(LevelFeeling.Hell, +50);
             template.Feelings.Add(LevelFeeling.Difficulty, +10);
         });
 
-        public static StairBonus Dungeon = new StairBonus("Dungeon", template => {
+        public static StairBonus Dungeon = new StairBonus("dungeon", "Dungeon", template => {
             if (template is TemplateRandomLevel level)
                 level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.Dungeon }));
         });
-        public static StairBonus SeaOfDirac = new StairBonus("Sea of Dirac", template => {
+        public static StairBonus SeaOfDirac = new StairBonus("sea_of_dirac", "Sea of Dirac", template => {
             if (template is TemplateRandomLevel level)
                 level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.SeaOfDirac }));
         });
@@ -482,12 +516,18 @@ namespace RoguelikeEngine
         {
             Function(template);
         }
+
+        public static StairBonus GetStairBonus(string id)
+        {
+            return AllStairBonuses.Find(x => x.ID == id);
+        }
     }
 
     abstract class Stair : Tile
     {
-        public GeneratorTemplate Template;
-        MapTile TargetTile;
+        public int Seed;
+        public StairType Type;
+        RemoteTile TargetTile;
         public List<StairBonus> Bonuses = new List<StairBonus>();
 
         public Tile Target
@@ -501,7 +541,7 @@ namespace RoguelikeEngine
             }
             set
             {
-                TargetTile = value.Parent;
+                TargetTile = new RemoteTile(value.World, value.Map.ID, value.X, value.Y);
             }
         }
 
@@ -517,7 +557,7 @@ namespace RoguelikeEngine
             {
                 Bonuses.Add(validBonuses.PickAndRemove(Random));
             }
-            Bonuses.Sort((x, y) => x.ID.CompareTo(y.ID));
+            Bonuses.Sort((x, y) => x.Index.CompareTo(y.Index));
         }
 
         public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
@@ -552,14 +592,14 @@ namespace RoguelikeEngine
         {
             var fadeOut = new ScreenFade(player.World, () => ColorMatrix.Tint(Color.Black), LerpHelper.Linear, false, 20);
             yield return new WaitTime(20);
-            if (Target == null)
+            if (Target == null && Type != null)
             {
-                Template.SetFeelings(Map.Feelings);
-                bonus.Apply(Template);
-                Template.Build(World);
-                var stair = Template.BuildStairRoom(Group.GetType());
+                var template = Type.Generate(this);
+                template.SetFeelings(Map.Feelings);
+                bonus.Apply(template);
+                template.Build(World);
+                var stair = template.BuildStairRoom(Group.GetType());
                 BuildTarget(stair);
-                Template = null;
             }
             player.MoveTo(Target, 0);
             player.World.CameraMap = player.Map;
@@ -580,18 +620,57 @@ namespace RoguelikeEngine
         {
             if (Target is Stair)
                 return true;
-            if (Template != null)
+            if (Type != null)
                 return true;
             return false;
         }
+
+        public override JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["seed"] = Seed;
+            if (Type != null)
+                json["type"] = Type.ID;
+            if (TargetTile != null)
+                json["target"] = TargetTile.WriteJson(context);
+            JArray bonusArray = new JArray();
+            foreach(var bonus in Bonuses)
+            {
+                bonusArray.Add(bonus.ID);
+            }
+            json["bonuses"] = bonusArray;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Seed = json["seed"].Value<int>();
+            if (json.HasKey("type"))
+                Type = StairType.GetStairType(json["type"].Value<string>());
+            if (json.HasKey("target"))
+                TargetTile = new RemoteTile(json["target"], context);
+            var bonusArray = json["bonuses"];
+            foreach(var bonusJson in bonusArray)
+            {
+                Bonuses.Add(StairBonus.GetStairBonus(bonusJson.Value<string>()));
+            }
+        }
     }
 
+    [SerializeInfo("stair_up")]
     class StairUp : Stair
     {
         private bool StairsHidden => HasContent(this) || HasContent(GetNeighbor(0, -1));
 
         public StairUp() : base()
         {
+        }
+
+        [Construct]
+        public static StairUp Construct(Context context)
+        {
+            return new StairUp();
         }
 
         private bool HasContent(Tile tile)
@@ -635,10 +714,17 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo("stair_down")]
     class StairDown : Stair
     {
         public StairDown() : base()
         {
+        }
+
+        [Construct]
+        public static StairDown Construct(Context context)
+        {
+            return new StairDown();
         }
 
         private bool HasContent(Tile tile)
@@ -814,6 +900,19 @@ namespace RoguelikeEngine
             //scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             scene.SpriteBatch.Draw(cave0.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(0, 0, 16, 16), color.Background);
             DrawConnected(scene, cave1, Connectivity, color.Foreground);
+        }
+
+        public override JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["connect"] = new JValue(Connectivity);
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Connectivity = (Connectivity)json["connect"].Value<int>();
         }
     }
 

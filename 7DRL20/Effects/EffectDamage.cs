@@ -63,7 +63,7 @@ namespace RoguelikeEngine.Effects
             JObject json = new JObject();
             json["id"] = Serializer.GetID(this);
             json["holder"] = Serializer.GetHolderID(Holder);
-            json["element"] = Element.Id;
+            json["element"] = Element.ID;
             json["amount"] = Amount;
             return json;
         }

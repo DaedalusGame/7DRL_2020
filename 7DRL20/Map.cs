@@ -10,6 +10,49 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class RemoteTile
+    {
+        SceneGame World;
+        public string MapID;
+        public int X, Y;
+
+        public bool IsBound => Map != null;
+        public Map Map => World.GetMap(MapID);
+        public Tile Tile => Map?.GetTile(X, Y);
+
+        public RemoteTile(JToken json, Context context)
+        {
+            ReadJson(json, context);
+        }
+
+        public RemoteTile(SceneGame world, string mapID, int x, int y)
+        {
+            World = world;
+            MapID = mapID;
+            X = x;
+            Y = y;
+        }
+
+        public JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+
+            json["map"] = MapID;
+            json["x"] = X;
+            json["y"] = Y;
+
+            return json;
+        }
+
+        public void ReadJson(JToken json, Context context)
+        {
+            World = context.World;
+            MapID = json["map"].Value<string>();
+            X = json["x"].Value<int>();
+            Y = json["y"].Value<int>();
+        }
+    }
+
     class LevelFeelingSet
     {
         public Dictionary<LevelFeeling, double> Feelings = new Dictionary<LevelFeeling, double>();
@@ -56,36 +99,66 @@ namespace RoguelikeEngine
         {
             return new LevelFeelingSet(Feelings);
         }
+
+        public JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+
+            foreach (var feeling in Feelings)
+            {
+                json.Add(feeling.Key.ID, feeling.Value);
+            }
+
+            return json;
+        }
+
+        public void ReadJson(JObject json, Context context)
+        {
+            foreach (var pair in json)
+            {
+                string id = pair.Key;
+                double value = pair.Value.Value<double>();
+                Feelings[LevelFeeling.GetFeeling(id)] = value;
+            }
+        }
     }
 
     class LevelFeeling
     {
         public static List<LevelFeeling> AllFeelings = new List<LevelFeeling>();
 
-        int ID;
-        string Name;
+        int Index;
+        public string ID;
+        public string Name;
 
-        public LevelFeeling(string name)
+        public LevelFeeling(string id, string name)
         {
-            ID = AllFeelings.Count;
+            Index = AllFeelings.Count;
+            ID = id;
             Name = name;
             AllFeelings.Add(this);
         }
-
-        public static LevelFeeling Difficulty = new LevelFeeling("Difficulty");
-        public static LevelFeeling Acid = new LevelFeeling("Acid");
-        public static LevelFeeling Fire = new LevelFeeling("Fire");
-        public static LevelFeeling Hell = new LevelFeeling("Hell");
 
         public override string ToString()
         {
             return Name;
         }
+
+        public static LevelFeeling GetFeeling(string id)
+        {
+            return AllFeelings.Find(x => x.ID == id);
+        }
+
+        public static LevelFeeling Difficulty = new LevelFeeling("difficulty", "Difficulty");
+        public static LevelFeeling Acid = new LevelFeeling("acid", "Acid");
+        public static LevelFeeling Fire = new LevelFeeling("fire", "Fire");
+        public static LevelFeeling Hell = new LevelFeeling("hell", "Hell");
     }
 
     class Map
     {
         public SceneGame World;
+        public string ID;
         public int Width;
         public int Height;
         public MapTile[,] Tiles;
@@ -242,10 +315,13 @@ namespace RoguelikeEngine
 
             JObject json = new JObject();
 
+            json["id"] = ID;
+
             json["width"] = Width;
             json["height"] = Height;
 
             json["groups"] = WriteGroups(context);
+            json["feelings"] = Feelings.WriteJson(context);
 
             JArray groups = new JArray();
             JArray flags = new JArray();
@@ -298,10 +374,13 @@ namespace RoguelikeEngine
         {
             Context context = new Context(this);
 
+            World.SetMapId(json["id"].Value<string>(), this);
+
             var width = json["width"].Value<int>();
             var height = json["height"].Value<int>();
 
             ReadGroups(json["groups"] as JObject, context);
+            Feelings.ReadJson(json["feelings"] as JObject, context);
 
             JArray groups = json["groupMap"] as JArray;
             JArray flags = json["flagMap"] as JArray;

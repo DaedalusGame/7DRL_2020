@@ -226,7 +226,7 @@ namespace RoguelikeEngine
         public WaitWorld Wait = new WaitWorld();
 
         public Map MapHome;
-        public Map Map;
+        public Dictionary<string, Map> Maps = new Dictionary<string, Map>();
         public RenderTarget2D CameraTargetA;
         public RenderTarget2D CameraTargetB;
         public RenderTarget2D DistortionMap;
@@ -328,18 +328,27 @@ namespace RoguelikeEngine
             Spawner = new EnemySpawner(this, 60);
         }
 
+        public void SetMapId(string id, Map map)
+        {
+            if(map.ID != null)
+                Maps.Remove(map.ID);
+            Maps.Add(id, map);
+            map.ID = id;
+        }
+
         private void CreateHome()
         {
             GeneratorTemplate template = new TemplateHome();
             template.Build(this);
             MapHome = template.Map;
+            SetMapId("home",MapHome);
 
             Tile startTile = template.GetStartRoom();
             Tile stairDown = template.BuildStairRoom();
 
             StairDown stairTile = new StairDown()
             {
-                Template = new TemplateRandomLevel(new GroupRandom(), 0)
+                Type = StairType.RandomStart,
             };
             stairTile.InitBonuses();
             stairDown.Replace(stairTile);
@@ -860,6 +869,11 @@ namespace RoguelikeEngine
         public Map CreateMap(int width, int height)
         {
             return new Map(this, width, height);
+        }
+
+        public Map GetMap(string mapID)
+        {
+            return Maps.GetOrDefault(mapID, null);
         }
     }
 }
