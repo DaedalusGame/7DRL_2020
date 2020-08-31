@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Attacks;
 using RoguelikeEngine.Effects;
 
@@ -16,22 +17,47 @@ namespace RoguelikeEngine
         public MapTile MapTile;
         public int Duration;
 
+        public CloudPart(Cloud parent, JToken json, Context context)
+        {
+            Parent = parent;
+            ReadJson(json, context);
+        }
+
         public CloudPart(Cloud parent, MapTile mapTile, int duration)
         {
             Parent = parent;
             MapTile = mapTile;
             Duration = duration;
         }
+
+        public JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["tile"] = Serializer.GetHolderID(MapTile);
+            json["duration"] = Duration;
+            return json;
+        }
+
+        public void ReadJson(JToken json, Context context)
+        {
+            MapTile = Serializer.GetHolder<MapTile>(json["tile"], context);
+            Duration = json["duration"].Value<int>();
+        }
     }
 
     [SerializeInfo]
-    class Cloud : IEffectHolder, IGameObject
+    abstract class Cloud : IEffectHolder, IGameObject, IJsonSerializable
     {
         public SceneGame World { get; set; }
         public double DrawOrder => 0;
         public bool Destroyed { get; set; }
 
         public ReusableID ObjectID { get; private set; }
+        public Guid GlobalID
+        {
+            get;
+            private set;
+        }
 
         protected Random Random = new Random();
         public Map Map
@@ -39,6 +65,7 @@ namespace RoguelikeEngine
             get;
             set;
         }
+
         protected List<CloudPart> Parts = new List<CloudPart>();
 
         public string Name;
@@ -49,6 +76,7 @@ namespace RoguelikeEngine
             World = map.World;
             World.ToAdd.Enqueue(this);
             ObjectID = EffectManager.SetID(this);
+            GlobalID = EffectManager.SetGlobalID(this);
             Map = map;
             AddNormalTurn();
         }
@@ -174,6 +202,31 @@ namespace RoguelikeEngine
         {
             //NOOP
         }
+
+        public virtual JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["objectId"] = Serializer.GetHolderID(this);
+            JArray partArray = new JArray();
+            foreach(var part in Parts)
+            {
+                partArray.Add(part.WriteJson());
+            }
+            json["parts"] = partArray;
+            return json;
+        }
+
+        public virtual void ReadJson(JToken json, Context context)
+        {
+            Guid globalId = Guid.Parse(json["objectId"].Value<string>());
+            GlobalID = EffectManager.SetGlobalID(this, globalId);
+            JArray partArray = json["parts"] as JArray;
+            foreach (var partJson in partArray)
+            {
+                Parts.Add(new CloudPart(this, partJson, context));
+            }
+        }
     }
 
     class CloudGeomancy : Cloud
@@ -184,6 +237,12 @@ namespace RoguelikeEngine
         {
             Name = "Geomancy";
             Description = "Stat bonuses based on tile";
+        }
+
+        [Construct("cloud_geomancy")]
+        public static CloudGeomancy Construct(Context context)
+        {
+            return new CloudGeomancy(context.Map);
         }
 
         public void AddMaster(Creature creature)
@@ -222,6 +281,28 @@ namespace RoguelikeEngine
                 }
             }
         }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            JArray masterArray = new JArray();
+            foreach(var master in Masters)
+            {
+                masterArray.Add(Serializer.GetHolderID(master));
+            }
+            json["masters"] = masterArray;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            JArray masterArray = json["masters"] as JArray;
+            foreach(var masterJson in masterArray)
+            {
+                Masters.Add(Serializer.GetHolder<Creature>(masterJson, context));
+            }
+        }
     }
 
     class CloudSmoke : Cloud
@@ -232,6 +313,12 @@ namespace RoguelikeEngine
         {
             Name = "Smoke Cloud";
             Description = "Harmless smoke.";
+        }
+
+        [Construct("cloud_smoke")]
+        public static CloudSmoke Construct(Context context)
+        {
+            return new CloudSmoke(context.Map);
         }
 
         public override void Update()
@@ -271,6 +358,12 @@ namespace RoguelikeEngine
         {
         }
 
+        [Construct("cloud_rain")]
+        public static WeatherRain Construct(Context context)
+        {
+            return new WeatherRain(context.Map);
+        }
+
         public override void Update()
         {
             Ticks++;
@@ -308,6 +401,19 @@ namespace RoguelikeEngine
                 });
             }
         }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            json["duration"] = Duration;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Duration = json["duration"].Value<int>();
+        }
     }
 
     class CloudPoisonSmoke : Cloud
@@ -318,6 +424,12 @@ namespace RoguelikeEngine
         {
             Name = "Poison Smoke Cloud";
             Description = "Poisonous smoke.";
+        }
+
+        [Construct("cloud_poison")]
+        public static CloudPoisonSmoke Construct(Context context)
+        {
+            return new CloudPoisonSmoke(context.Map);
         }
 
         public override void Update()
@@ -356,6 +468,12 @@ namespace RoguelikeEngine
         {
             Name = "Blizzard";
             Description = $"Deals {Element.Ice.FormatString} damage every turn.";
+        }
+
+        [Construct("cloud_ice")]
+        public static CloudIce Construct(Context context)
+        {
+            return new CloudIce(context.Map);
         }
 
         public override void Update()

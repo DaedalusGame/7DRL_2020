@@ -538,6 +538,19 @@ namespace RoguelikeEngine
         {
             return $"{base.ToString()} x{Stacks}";
         }
+
+        public override JToken WriteJson()
+        {
+            JToken json = base.WriteJson();
+            json["master"] = Serializer.GetHolderID(Master);
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Master = Serializer.GetHolder<Creature>(json["master"], context);
+        }
     }
 
     class Slimed : StatusEffect
@@ -792,6 +805,19 @@ namespace RoguelikeEngine
             if(evt.Creature == Creature)
                 UpdateStats();
         }
+
+        public override JToken WriteJson()
+        {
+            JToken json = base.WriteJson();
+            json["master"] = Serializer.GetHolderID(Master);
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Master = Serializer.GetHolder<CloudGeomancy>(json["master"], context);
+        }
     }
 
     class Wedlock : StatusEffect
@@ -826,6 +852,19 @@ namespace RoguelikeEngine
 
             if (Master.Dead)
                 this.Remove();
+        }
+
+        public override JToken WriteJson()
+        {
+            JToken json = base.WriteJson();
+            json["master"] = Serializer.GetHolderID(Master);
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Master = Serializer.GetHolder<Creature>(json["master"], context);
         }
     }
 }
