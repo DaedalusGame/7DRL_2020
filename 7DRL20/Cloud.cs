@@ -24,6 +24,7 @@ namespace RoguelikeEngine
         }
     }
 
+    [SerializeInfo]
     class Cloud : IEffectHolder, IGameObject
     {
         public SceneGame World { get; set; }

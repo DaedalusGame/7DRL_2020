@@ -39,7 +39,7 @@ namespace RoguelikeEngine
         }
     }
 
-    class Material : IEffectHolder
+    class Material : IEffectHolderPersistent
     {
         public class Part
         {

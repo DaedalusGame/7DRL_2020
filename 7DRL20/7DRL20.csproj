@@ -65,6 +65,7 @@
     <Compile Include="Events\ItemEvents.cs" />
     <Compile Include="FontUtil.cs" />
     <Compile Include="IDrawable.cs" />
+    <Compile Include="IEffectHolderPersistent.cs" />
     <Compile Include="MapGeneration\GeneratorTemplate.cs" />
     <Compile Include="MapGeneration\GroupGenerator.cs" />
     <Compile Include="MapGeneration\Groups.cs" />

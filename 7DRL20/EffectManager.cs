@@ -40,12 +40,15 @@ namespace RoguelikeEngine
         BiDictionary<int, ReusableID> IntToID = new BiDictionary<int, ReusableID>();
         BiDictionary<Guid, ReusableID> GlobalIDToID = new BiDictionary<Guid, ReusableID>();
         Dictionary<ReusableID, WeakReference<IEffectHolder>> Holders = new Dictionary<ReusableID, WeakReference<IEffectHolder>>();
+        int HighestPersistentID;
 
         public ReusableID SetID(IEffectHolder holder)
         {
             var id = NewID();
             Holders.Add(id, new WeakReference<IEffectHolder>(holder));
             IntToID.Add(id.ID, id);
+            if (holder is IEffectHolderPersistent)
+                HighestPersistentID = Math.Max(HighestPersistentID, id);
             return id;
         }
 
@@ -147,13 +150,33 @@ namespace RoguelikeEngine
             ReusableIDs.Enqueue(id.NextGeneration);
         }
 
+        private IEnumerable<ReusableID> GetNonPersistentIDs()
+        {
+            List<ReusableID> ids = new List<ReusableID>();
+            foreach(var pair in Holders)
+            {
+                IEffectHolder holder;
+                if (!pair.Value.TryGetTarget(out holder) || !(holder is IEffectHolderPersistent))
+                    ids.Add(pair.Key);
+            }
+            return ids;
+        }
+
         public void Clear()
         {
-            CurrentID = new ReusableID();
-            ReusableIDs.Clear();
-            IntToID.Clear();
-            GlobalIDToID.Clear();
-            Holders.Clear();
+            CurrentID = new ReusableID(HighestPersistentID+1, 0);
+            foreach (var id in GetNonPersistentIDs())
+            {
+                if (id < CurrentID)
+                    ReturnID(id);
+                IntToID.Remove(id);
+                GlobalIDToID.Remove(id);
+                Holders.Remove(id);
+            }
+            //ReusableIDs.Clear();
+            //IntToID.Clear();
+            //GlobalIDToID.Clear();
+            //Holders.Clear();
         }
     }
 
@@ -162,6 +185,7 @@ namespace RoguelikeEngine
         class EffectList : List<Effect>
         {
             public int Generation;
+            public bool Persist;
 
             public EffectList(int generation)
             {
@@ -206,6 +230,15 @@ namespace RoguelikeEngine
                 if(changed)
                     Array.Resize(ref Lists, Capacity);
             }
+
+            public void Clear()
+            {
+                for(int i = 0; i < Lists.Length; i++)
+                {
+                    if (!Lists[i]?.Persist ?? false)
+                        Lists[i] = null;
+                }
+            }
         }
 
         class Drawer
@@ -245,6 +278,7 @@ namespace RoguelikeEngine
                     }
                     Effects[holder.ObjectID] = new EffectList(holder.ObjectID.Generation) { effect };
                 }
+                Effects[holder.ObjectID].Persist = holder is IEffectHolderPersistent;
             }
 
             public void Remove(IEffectHolder holder, Effect effect)
@@ -253,6 +287,11 @@ namespace RoguelikeEngine
                     return;
                 if (Has(holder))
                     Effects[holder.ObjectID].Remove(effect);
+            }
+
+            public void Clear()
+            {
+                Effects.Clear();
             }
         }
 
@@ -296,7 +335,7 @@ namespace RoguelikeEngine
 
         public static void Reset()
         {
-            Drawers.Clear();
+            GetDrawer(typeof(Effect)).Clear();
             Holders.Clear();
         }
 

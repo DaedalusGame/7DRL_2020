@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Traits
 {
-    class Trait : IEffectHolder
+    class Trait : IEffectHolderPersistent
     {
         public static List<Trait> AllTraits = new List<Trait>();
 
