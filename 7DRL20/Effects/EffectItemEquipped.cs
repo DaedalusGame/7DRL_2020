@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace RoguelikeEngine.Effects
     class EffectItemEquipped : Effect
     {
         public Item Item;
-        public Creature Wearer;
+        public IEffectHolder Wearer;
         public EquipSlot Slot;
         public IEnumerable<Effect> Effects => GetEffects();
 
@@ -31,6 +32,10 @@ namespace RoguelikeEngine.Effects
             {
                 return Item.GetEquipEffects(Slot);
             }
+        }
+
+        public EffectItemEquipped()
+        {
         }
 
         public EffectItemEquipped(Item item, Creature wearer, EquipSlot slot)
@@ -65,6 +70,29 @@ namespace RoguelikeEngine.Effects
         public override string ToString()
         {
             return $"{Wearer} equipped {Item} in slot {Slot}";
+        }
+
+        [Construct("equipped")]
+        public static EffectItemEquipped Construct(Context context)
+        {
+            return new EffectItemEquipped();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["wearer"] = Serializer.GetHolderID(Wearer);
+            json["item"] = Serializer.GetHolderID(Item);
+            json["slot"] = new JValue(Slot);
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Wearer = Serializer.GetHolder(json["wearer"], context);
+            Item = Serializer.GetHolder<Item>(json["item"], context);
+            Slot = (EquipSlot)json["slot"].Value<int>();
         }
     }
 }

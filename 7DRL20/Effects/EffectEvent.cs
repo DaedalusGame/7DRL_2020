@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    class EffectEvent<T> : Effect
+    abstract class EffectEvent<T> : Effect
     {
         public IEffectHolder Holder;
         public Func<T, IEnumerable<Wait>> EventFunction;

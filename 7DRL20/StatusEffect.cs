@@ -207,6 +207,12 @@ namespace RoguelikeEngine
         {
         }
 
+        [Construct("bleed_greater")]
+        public static BleedGreater Construct(Context context)
+        {
+            return new BleedGreater();
+        }
+
         public override void OnStackChange(int delta)
         {
             if (delta > 0)
@@ -249,6 +255,12 @@ namespace RoguelikeEngine
 
         public override int MaxStacks => 1;
 
+        [Construct("anemia")]
+        public static Anemia Construct(Context context)
+        {
+            return new Anemia();
+        }
+
         public override void Update()
         {
             base.Update();
@@ -269,6 +281,12 @@ namespace RoguelikeEngine
 
         public DefenseDownPoison() : base()
         {
+        }
+
+        [Construct("poison_defense_down")]
+        public static DefenseDownPoison Construct(Context context)
+        {
+            return new DefenseDownPoison();
         }
 
         public override void Update()
@@ -296,6 +314,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3) { Base = false });
         }
 
+        [Construct("defense_down")]
+        public static DefenseDown Construct(Context context)
+        {
+            return new DefenseDown();
+        }
+
         public override string ToString()
         {
             return $"{base.ToString()} x{Stacks}";
@@ -313,6 +337,12 @@ namespace RoguelikeEngine
         {
             Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, 0.1));
             Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3) { Base = false });
+        }
+
+        [Construct("defense_up")]
+        public static DefenseUp Construct(Context context)
+        {
+            return new DefenseUp();
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -334,6 +364,12 @@ namespace RoguelikeEngine
         public Poison() : base()
         {
             
+        }
+
+        [Construct("poison")]
+        public static Poison Construct(Context context)
+        {
+            return new Poison();
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -365,6 +401,12 @@ namespace RoguelikeEngine
         {
         }
 
+        [Construct("aflame")]
+        public static Aflame Construct(Context context)
+        {
+            return new Aflame();
+        }
+
         public override bool CanCombine(StatusEffect other)
         {
             return other is Aflame;
@@ -392,6 +434,12 @@ namespace RoguelikeEngine
 
         public Incinerate() : base()
         {
+        }
+
+        [Construct("incinerate")]
+        public static Incinerate Construct(Context context)
+        {
+            return new Incinerate();
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -425,6 +473,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectStatPercent(this, Element.Fire.DamageRate, -0.25));
         }
 
+        [Construct("wet")]
+        public static Wet Construct(Context context)
+        {
+            return new Wet();
+        }
+
         public override bool CanCombine(StatusEffect other)
         {
             return other is Wet;
@@ -451,9 +505,19 @@ namespace RoguelikeEngine
         Creature Master;
         static Random Random = new Random();
 
+        public HealSlimed() : base()
+        {
+        }
+
         public HealSlimed(Creature master) : base()
         {
             Master = master;
+        }
+
+        [Construct("slimed_heal")]
+        public static HealSlimed Construct(Context context)
+        {
+            return new HealSlimed();
         }
 
         public override void Update()
@@ -484,11 +548,15 @@ namespace RoguelikeEngine
         public override int MaxStacks => 1;
 
         Random Random = new Random();
-        Creature Master;
 
-        public Slimed(Creature master) : base()
+        public Slimed() : base()
         {
-            Master = master;
+        }
+
+        [Construct("slimed")]
+        public static Slimed Construct(Context context)
+        {
+            return new Slimed();
         }
 
         public override void OnStackChange(int delta)
@@ -556,6 +624,12 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectTrait(this, Trait.Undead));
         }
 
+        [Construct("undead")]
+        public static Undead Construct(Context context)
+        {
+            return new Undead();
+        }
+
         public override bool CanCombine(StatusEffect other)
         {
             return other is Undead;
@@ -578,6 +652,12 @@ namespace RoguelikeEngine
         {
             Hidden = true;
         }
+
+        [Construct("powered_up")]
+        public static PoweredUp Construct(Context context)
+        {
+            return new PoweredUp();
+        }
     }
 
     class Chirality : StatusEffect
@@ -588,6 +668,12 @@ namespace RoguelikeEngine
         public override bool CanCombine(StatusEffect other)
         {
             return other is Chirality;
+        }
+
+        [Construct("chirality")]
+        public static Chirality Construct(Context context)
+        {
+            return new Chirality();
         }
     }
 
@@ -601,6 +687,12 @@ namespace RoguelikeEngine
         public DeltaMark()
         {
             Effect.Apply(new EffectStatPercent(this, Element.Earth.DamageRate, 0.2));
+        }
+
+        [Construct("mark_delta")]
+        public static DeltaMark Construct(Context context)
+        {
+            return new DeltaMark();
         }
     }
 
@@ -620,6 +712,12 @@ namespace RoguelikeEngine
         public Geomancy(CloudGeomancy master)
         {
             Master = master;
+        }
+
+        [Construct("geomancy")]
+        public static Geomancy Construct(Context context)
+        {
+            return new Geomancy();
         }
 
         private string GetDescription()
@@ -705,12 +803,21 @@ namespace RoguelikeEngine
 
         Creature Master;
 
-        public Wedlock(Creature master)
+        public Wedlock()
         {
-            Master = master;
-
             Effect.Apply(new EffectFlag(this, Stat.SwapItem, false, 10));
             Effect.Apply(new EffectFlag(this, Stat.UnequipItem, false, 10));
+        }
+
+        public Wedlock(Creature master) : this()
+        {
+            Master = master;
+        }
+
+        [Construct("wedlock")]
+        public static Wedlock Construct(Context context)
+        {
+            return new Wedlock();
         }
 
         public override void Update()

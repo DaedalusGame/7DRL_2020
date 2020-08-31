@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,10 @@ namespace RoguelikeEngine.Effects
         public IEffectHolder Holder;
         public Creature Attacker;
         public double TotalDamage;
+
+        public EffectLastHit()
+        {
+        }
 
         public EffectLastHit(IEffectHolder holder, Creature attacker, double damage)
         {
@@ -43,6 +48,29 @@ namespace RoguelikeEngine.Effects
         public override string ToString()
         {
             return $"Hit by {Attacker}: {TotalDamage} Total Damage ({Holder})";
+        }
+
+        [Construct("last_hit")]
+        public static EffectLastHit Construct(Context context)
+        {
+            return new EffectLastHit();
+        }
+
+        public override JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["holder"] = Serializer.GetHolderID(Holder);
+            json["attacker"] = Serializer.GetHolderID(Attacker);
+            json["damage"] = TotalDamage;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            Holder = Serializer.GetHolder<IEffectHolder>(json["holder"], context);
+            Attacker = Serializer.GetHolder<Creature>(json["attacker"], context);
+            TotalDamage = json["damage"].Value<double>();
         }
     }
 }

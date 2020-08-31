@@ -197,7 +197,7 @@ namespace RoguelikeEngine.Skills
             attack.ExtraEffects.Add(new AttackPhysical());
             attack.Elements.Add(Element.Bludgeon, 0.5);
             if(!defender.HasFamily(Family.Slime))
-                attack.StatusEffects.Add(new Slimed(attacker)
+                attack.StatusEffects.Add(new Slimed()
                 {
                     Buildup = 0.4,
                     Duration = new Slider(15)

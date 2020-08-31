@@ -723,7 +723,7 @@ namespace RoguelikeEngine.Traits
             int traitLvl = attack.Attacker.GetTrait(this);
 
             if (!attack.Defender.HasFamily(Family.Slime))
-                attack.StatusEffects.Add(new Slimed(attack.Attacker) { Buildup = 0.4 + (traitLvl - 1) * 0.1 });
+                attack.StatusEffects.Add(new Slimed() { Buildup = 0.4 + (traitLvl - 1) * 0.1 });
 
             yield return Wait.NoWait;
         }
