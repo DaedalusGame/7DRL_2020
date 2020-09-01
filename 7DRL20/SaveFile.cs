@@ -48,7 +48,7 @@ namespace RoguelikeEngine
         {
             if (!Directory.Exists)
                 Directory.Create();
-            WriteFileSafe(Directory.FullName, "main.json", new JObject());
+            WriteFileSafe(Directory.FullName, "main.json", world.WriteJson());
             foreach(var map in world.Maps.Values)
             {
                 WriteFileSafe(Directory.FullName, $"map_{map.ID.ToString()}.json", map.WriteJson());
@@ -74,6 +74,9 @@ namespace RoguelikeEngine
                     main = ReadFile(file);
                 }
             }
+
+            if (main != null)
+                world.ReadJson(main);
 
             foreach(var json in maps)
             {

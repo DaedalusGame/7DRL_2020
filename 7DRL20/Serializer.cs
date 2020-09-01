@@ -45,13 +45,18 @@ namespace RoguelikeEngine
     class Context
     {
         public Map Map;
+        public SceneGame World;
         public BiDictionary<string, GeneratorGroup> Groups = new BiDictionary<string, GeneratorGroup>();
-
-        public SceneGame World => Map.World;
 
         public Context(Map map)
         {
+            World = map.World;
             Map = map;
+        }
+
+        public Context(SceneGame world)
+        {
+            World = world;
         }
 
         public string GetID(JToken json)
@@ -113,6 +118,18 @@ namespace RoguelikeEngine
         {
             string id = GetID(json);
             var entity = Serializer.Create<Effect>(id, this);
+            if (entity != null)
+            {
+                entity.ReadJson(json, this);
+                return entity;
+            }
+            return null;
+        }
+
+        public Quest CreateQuest(JToken json)
+        {
+            string id = GetID(json);
+            var entity = Serializer.Create<Quest>(id, this);
             if (entity != null)
             {
                 entity.ReadJson(json, this);
@@ -258,7 +275,6 @@ namespace RoguelikeEngine
 
         public static void Init()
         {
-            //TODO: Get id from construct instead of serializeinfo
             foreach(var type in GetSerializableTypes())
             {
                 MethodInfo construct = null;

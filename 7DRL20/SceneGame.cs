@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -57,10 +58,80 @@ namespace RoguelikeEngine
         }
     }
 
+    class QuestSet : IEnumerable<Quest>
+    {
+        public List<Quest> Quests = new List<Quest>();
+
+        public void Add(Quest quest)
+        {
+            quest.GlobalID = Guid.NewGuid();
+            Quests.Add(quest);
+        }
+
+        public Quest Get(Guid globalId)
+        {
+            return Quests.Find(x => x.GlobalID == globalId);
+        }
+
+        public IEnumerator<Quest> GetEnumerator()
+        {
+            return Quests.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Quests.GetEnumerator();
+        }
+
+        public JToken WriteJson(Context context)
+        {
+            JObject json = new JObject();
+            var connections = new List<Tuple<Quest, Quest>>();
+            JArray questArray = new JArray();
+            JArray connectionArray = new JArray();
+            foreach (var quest in Quests)
+            {
+                questArray.Add(quest.WriteJson());
+                foreach (var prerequisite in quest.Prerequisites)
+                    connections.Add(new Tuple<Quest, Quest>(prerequisite, quest));
+            }
+            foreach (var connection in connections)
+            {
+                JObject connectionJson = new JObject();
+                connectionJson["start"] = connection.Item1.GlobalID.ToString();
+                connectionJson["end"] = connection.Item2.GlobalID.ToString();
+                connectionArray.Add(connectionJson);
+            }
+            json["quests"] = questArray;
+            json["connections"] = connectionArray;
+            return json;
+        }
+
+        public void ReadJson(JToken json, Context context)
+        {
+            JArray questArray = json["quests"] as JArray;
+            JArray connectionArray = json["connections"] as JArray;
+
+            foreach(var questJson in questArray)
+            {
+                Quests.Add(context.CreateQuest(questJson));
+            }
+
+            foreach(var connectionJson in connectionArray)
+            {
+                Quest start = Get(Guid.Parse(connectionJson["start"].Value<string>()));
+                Quest end = Get(Guid.Parse(connectionJson["end"].Value<string>()));
+                end.Prerequisites.Add(start);
+            }
+        }
+    }
+
+    [SerializeInfo]
     abstract class Quest
     {
         protected SceneGame Game;
 
+        public Guid GlobalID;
         public virtual string Name
         {
             get;
@@ -71,20 +142,35 @@ namespace RoguelikeEngine
         }
         public bool Completed;
         public List<Quest> Prerequisites = new List<Quest>();
+        public bool PrerequisitesCompleted => Prerequisites.All(quest => quest.Completed);
+
 
         public Quest(SceneGame game, params Quest[] prerequisites)
         {
             Game = game;
             Prerequisites.AddRange(prerequisites);
         }
-
-        public bool PrerequisitesCompleted => Prerequisites.All(quest => quest.Completed);
-
+        
         public abstract bool CheckCompletion();
 
         public abstract bool ShowMarker(Tile tile);
 
         public abstract string GetMarker(Tile tile);
+
+        public JToken WriteJson()
+        {
+            JObject json = new JObject();
+            json["id"] = Serializer.GetID(this);
+            json["globalId"] = GlobalID.ToString();
+            json["completed"] = Completed;
+            return json;
+        }
+
+        public void ReadJson(JToken json, Context context)
+        {
+            GlobalID = Guid.Parse(json["globalId"].Value<string>());
+            Completed = json["completed"].Value<bool>();
+        }
     }
 
     class SceneGame : Scene
@@ -99,6 +185,12 @@ namespace RoguelikeEngine
 
             public TutorialGetOre(SceneGame game, params Quest[] prerequisites) : base(game, prerequisites)
             {
+            }
+
+            [Construct("tutorial_get_ore")]
+            public static TutorialGetOre Construct(Context context)
+            {
+                return new TutorialGetOre(context.World);
             }
 
             private bool IsFuel(IOre ore)
@@ -138,6 +230,12 @@ namespace RoguelikeEngine
             {
             }
 
+            [Construct("tutorial_get_fuel")]
+            public static TutorialGetFuel Construct(Context context)
+            {
+                return new TutorialGetFuel(context.World);
+            }
+
             private bool IsFuel(IOre ore)
             {
                 if (ore is IFuel fuel)
@@ -175,6 +273,12 @@ namespace RoguelikeEngine
             {
             }
 
+            [Construct("tutorial_smelt_ore")]
+            public static TutorialSmeltOre Construct(Context context)
+            {
+                return new TutorialSmeltOre(context.World);
+            }
+
             public override bool CheckCompletion()
             {
                 return Count >= CountMax;
@@ -198,6 +302,12 @@ namespace RoguelikeEngine
 
             public TutorialBuildAdze(SceneGame game, params Quest[] prerequisites) : base(game, prerequisites)
             {
+            }
+
+            [Construct("tutorial_build_adze")]
+            public static TutorialBuildAdze Construct(Context context)
+            {
+                return new TutorialBuildAdze(context.World);
             }
 
             public override bool CheckCompletion()
@@ -250,7 +360,7 @@ namespace RoguelikeEngine
         public List<IGameObject> GameObjects = new List<IGameObject>();
         public Queue<IGameObject> ToAdd = new Queue<IGameObject>();
 
-        public List<Quest> Quests = new List<Quest>();
+        public QuestSet Quests = new QuestSet();
         public Skill CurrentSkill;
 
         public EnemySpawner Spawner;
@@ -871,6 +981,23 @@ namespace RoguelikeEngine
         public Map GetMap(string mapID)
         {
             return Maps.GetOrDefault(mapID, null);
+        }
+
+        public JToken WriteJson()
+        {
+            Context context = new Context(this);
+
+            JObject json = new JObject();
+            json["quests"] = Quests.WriteJson(context);
+
+            return json;
+        }
+
+        public void ReadJson(JToken json)
+        {
+            Context context = new Context(this);
+
+            Quests.ReadJson(json["quests"], context);
         }
     }
 }
