@@ -15,6 +15,7 @@ namespace RoguelikeEngine
         public static DirectoryInfo SaveDirectory = new DirectoryInfo("saves");
 
         DirectoryInfo Directory;
+        DirectoryInfo TempDirectory;
 
         public bool Cached;
         public string Name;
@@ -27,6 +28,7 @@ namespace RoguelikeEngine
         public SaveFile(DirectoryInfo directory)
         {
             Directory = directory;
+            TempDirectory = new DirectoryInfo(Path.Combine(directory.Parent.FullName, $"_{directory.Name}"));
         }
 
         private void WriteFileSafe(string dir, string name, JToken json)
@@ -58,6 +60,36 @@ namespace RoguelikeEngine
             JObject json = JObject.Load(jsonReader);
             jsonReader.Close();
             return json;
+        }
+
+        private void ClearSafe(DirectoryInfo directory)
+        {
+            foreach(var file in directory.GetFiles())
+            {
+                if (file.Extension == ".json")
+                    file.Delete();
+            }
+        }
+
+        private void MoveSafe(DirectoryInfo source, DirectoryInfo destination)
+        {
+            if (!destination.Exists)
+                destination.Create();
+            else
+                ClearSafe(destination);
+            destination.Refresh();
+            foreach (var file in source.GetFiles())
+            {
+                file.MoveTo(Path.Combine(destination.FullName, file.Name));
+            }
+            try
+            {
+                source.Delete();
+            }
+            catch(Exception e) //Might fail because of directory locks
+            {
+
+            }
         }
 
         public void Preload()
@@ -96,14 +128,17 @@ namespace RoguelikeEngine
 
         public void Save(SceneGame world)
         {
-            if (!Directory.Exists)
-                Directory.Create();
-            WriteFileSafe(Directory.FullName, "main.json", world.WriteJson());
-            WriteFileSafe(Directory.FullName, "meta.json", WriteMeta());
+            if (!TempDirectory.Exists)
+                TempDirectory.Create();
+            else
+                ClearSafe(TempDirectory);
+            WriteFileSafe(TempDirectory.FullName, "main.json", world.WriteJson());
+            WriteFileSafe(TempDirectory.FullName, "meta.json", WriteMeta());
             foreach (var map in world.Maps.Values)
             {
-                WriteFileSafe(Directory.FullName, $"map_{map.ID.ToString()}.json", map.WriteJson());
+                WriteFileSafe(TempDirectory.FullName, $"map_{map.ID.ToString()}.json", map.WriteJson());
             }
+            MoveSafe(TempDirectory, Directory);
         }
         
         public void Load(SceneGame world)
