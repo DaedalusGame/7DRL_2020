@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.MapGeneration;
+using RoguelikeEngine.Menus;
 using RoguelikeEngine.Traits;
 
 namespace RoguelikeEngine

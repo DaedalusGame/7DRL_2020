@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.MapGeneration;
+using RoguelikeEngine.Menus;
 
 namespace RoguelikeEngine
 {
@@ -370,9 +371,31 @@ namespace RoguelikeEngine
         string Tooltip = "Test";
         Point? TileCursor;
 
+        public SceneGame(Game game, SaveFile saveFile) : base(game)
+        {
+            SaveFile = saveFile;
+
+            ActionQueue = new ActionQueue(this);
+            Menu = new PlayerUI(this);
+
+            Load();
+
+            Player = Entities.First(x => x is Hero);
+
+            CameraMap = MapHome;
+            CameraFocus = new CameraFocus(Player);
+
+            Spawner = new EnemySpawner(this, 60);
+        }
+
         public SceneGame(Game game) : base(game)
         {
-            SaveFile = new SaveFile(new DirectoryInfo("test"));
+            string saveName = $"save{DateTime.Now.ToString("ddMMyyyyHHmm")}";
+            SaveFile = new SaveFile(new DirectoryInfo(Path.Combine(SaveFile.SaveDirectory.FullName, saveName)))
+            {
+                Name = "Test",
+                CreateTime = DateTime.Now,
+            };
 
             ActionQueue = new ActionQueue(this);
             Menu = new PlayerUI(this);
@@ -380,13 +403,6 @@ namespace RoguelikeEngine
             CreateHome();
 
             PushObjects();
-
-            StreamWriter writer = File.CreateText("test.json");
-            JsonTextWriter jsonWriter = new JsonTextWriter(writer);
-            var mapJson = MapHome.WriteJson();
-            var strJson = mapJson.ToString();
-            mapJson.WriteTo(jsonWriter);
-            jsonWriter.Close();
 
             var startTile = MapHome.EnumerateTiles().Where(tile => !tile.Solid).Shuffle(Random).First();
 
@@ -433,7 +449,14 @@ namespace RoguelikeEngine
 
         public void Save()
         {
+            SaveFile.LastPlayedTime = DateTime.Now;
             SaveFile.Save(this);
+        }
+
+        public void Load()
+        {
+            SaveFile.Load(this);
+            PushObjects();
         }
 
         public void SetMapId(string id, Map map)

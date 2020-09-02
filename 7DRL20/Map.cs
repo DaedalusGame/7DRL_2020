@@ -414,21 +414,29 @@ namespace RoguelikeEngine
                 }
             }
 
-            JArray entities = json["entities"] as JArray;
-            JArray effects = json["effects"] as JArray;
+            JArray entitiesArray = json["entities"] as JArray;
+            JArray effectsArray = json["effects"] as JArray;
 
-            foreach (var entityJson in entities)
+            List<IJsonSerializable> entities = new List<IJsonSerializable>();
+
+            foreach (var entityJson in entitiesArray)
             {
-                context.CreateEntity(entityJson);
+                var entity = context.CreateEntity(entityJson);
+                entities.Add(entity);
             } 
 
-            foreach (var effectJson in effects)
+            foreach (var effectJson in effectsArray)
             {
                 var effect = context.CreateEffect(effectJson);
                 if(effect != null)
                 {
                     Effect.Apply(effect);
                 }
+            }
+
+            foreach (var entity in entities)
+            {
+                entity.AfterLoad();
             }
         }
 

@@ -900,6 +900,12 @@ namespace RoguelikeEngine
             SetMask(tile);
         }
 
+        public void UpdateVisualPosition()
+        {
+            VisualPosition = Static(new Vector2(X, Y) * 16);
+            VisualCamera = VisualPosition;
+        }
+
         public void MoveTo(Tile tile, int time)
         {
             Tile previousTile = Tile;
@@ -1231,6 +1237,12 @@ namespace RoguelikeEngine
             GlobalID = EffectManager.SetGlobalID(this, globalId);
             Name = json["name"].Value<string>();
             Description = json["description"].Value<string>();
+        }
+
+        public void AfterLoad()
+        {
+            AddControlTurn();
+            UpdateVisualPosition();
         }
     }
 

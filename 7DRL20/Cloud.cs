@@ -227,6 +227,11 @@ namespace RoguelikeEngine
                 Parts.Add(new CloudPart(this, partJson, context));
             }
         }
+
+        public void AfterLoad()
+        {
+            //NOOP
+        }
     }
 
     class CloudGeomancy : Cloud

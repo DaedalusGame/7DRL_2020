@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Menus;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -209,6 +210,11 @@ namespace RoguelikeEngine
         {
             Guid globalId = Guid.Parse(json["objectId"].Value<string>());
             GlobalID = EffectManager.SetGlobalID(this, globalId);
+        }
+
+        public void AfterLoad()
+        {
+            //NOOP
         }
     }
 
@@ -575,6 +581,7 @@ namespace RoguelikeEngine
         public override void ReadJson(JToken json, Context context)
         {
             base.ReadJson(json, context);
+            Material = Material.GetMaterial(json["material"].Value<string>());
             Count = json["count"].Value<int>();
         }
     }

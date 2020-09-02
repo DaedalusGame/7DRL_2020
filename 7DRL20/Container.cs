@@ -88,5 +88,10 @@ namespace RoguelikeEngine
             Guid globalId = Guid.Parse(json["objectId"].Value<string>());
             GlobalID = EffectManager.SetGlobalID(this, globalId);
         }
+
+        public void AfterLoad()
+        {
+            //NOOP
+        }
     }
 }

@@ -167,6 +167,8 @@ namespace RoguelikeEngine
         JToken WriteJson(Context context);
 
         void ReadJson(JToken json, Context context);
+
+        void AfterLoad();
     }
 
     class Serializer

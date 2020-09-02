@@ -94,7 +94,7 @@ namespace RoguelikeEngine
             Element.Init();
             Stat.Init();
 
-            Scene = new SceneLoading(this);
+            Scene = new SceneTitle(this);
 
             base.Initialize();
         }
