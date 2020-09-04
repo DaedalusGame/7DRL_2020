@@ -125,20 +125,20 @@ namespace RoguelikeEngine
         public virtual void OnAdd()
         {
             if(!Hidden && Stacks > 0)
-                PopupManager.Add(new MessageStatusBuildup(Creature, this, Stacks));
+                PopupHelper.Global.Add(new MessageStatusBuildup(Creature, this, Stacks));
         }
 
         public virtual void OnRemove()
         {
             if (!Hidden && Stacks > 0)
-                PopupManager.Add(new MessageStatusBuildup(Creature, this, -Stacks));
+                PopupHelper.Global.Add(new MessageStatusBuildup(Creature, this, -Stacks));
         }
 
         public virtual void OnStackChange(int delta)
         {
             LastChange += delta;
             if (!Hidden)
-                PopupManager.Add(new MessageStatusBuildup(Creature, this, delta));
+                PopupHelper.Global.Add(new MessageStatusBuildup(Creature, this, delta));
         }
 
         public virtual JToken WriteJson()

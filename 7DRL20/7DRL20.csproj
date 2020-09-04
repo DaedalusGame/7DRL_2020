@@ -74,6 +74,7 @@
     <Compile Include="Menus\Base.cs" />
     <Compile Include="Menus\Game.cs" />
     <Compile Include="Menus\Title.cs" />
+    <Compile Include="PopupHelper.cs" />
     <Compile Include="SaveFile.cs" />
     <Compile Include="SceneTitle.cs" />
     <Compile Include="Serializer.cs" />
@@ -133,7 +134,6 @@
     <Compile Include="MapTile.cs" />
     <Compile Include="Material.cs" />
     <Compile Include="Menu.cs" />
-    <Compile Include="PopupManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Creature.cs" />

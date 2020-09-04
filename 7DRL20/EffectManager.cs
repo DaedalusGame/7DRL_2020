@@ -430,10 +430,14 @@ namespace RoguelikeEngine
             return statBlock;
         }
 
-        public static void TakeDamage(this IEffectHolder holder, double damage, Element element, bool hidden = false)
+        public static void TakeDamage(this IEffectHolder holder, double damage, Element element)
         {
-            if(!hidden)
-                PopupManager.Add(new MessageDamage(holder, damage, element));
+            TakeDamage(holder, damage, element, PopupHelper.Global);
+        }
+
+        public static void TakeDamage(this IEffectHolder holder, double damage, Element element, PopupHelper popupHelper)
+        {
+            popupHelper?.Add(new MessageDamage(holder, damage, element));
             Effect.Apply(new EffectDamage(holder, damage, element));
         }
 
@@ -444,6 +448,11 @@ namespace RoguelikeEngine
         }
 
         public static void Heal(this IEffectHolder holder, double heal)
+        {
+            Heal(holder, heal, PopupHelper.Global);
+        }
+
+        public static void Heal(this IEffectHolder holder, double heal, PopupHelper popupHelper)
         {
             var damageEffects = holder.GetEffects<EffectDamage>().ToList();
             var totalDamage = damageEffects.Sum(x => x.Amount);
@@ -458,7 +467,7 @@ namespace RoguelikeEngine
                 i++;
             }
 
-            PopupManager.Add(new MessageHeal(holder, heal));
+            popupHelper?.Add(new MessageHeal(holder, heal));
         }
 
         public static Wait OnStartDefend(this IEffectHolder holder, Attack attack)

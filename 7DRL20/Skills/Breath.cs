@@ -66,20 +66,20 @@ namespace RoguelikeEngine.Skills
 
                 List<Wait> breaths = new List<Wait>();
                 HashSet<Tile> tiles = new HashSet<Tile>();
-                PopupManager.StartCollect();
+                PopupHelper popupHelper = new PopupHelper();
                 for (float slide = 0; slide <= arcLength; slide += arcSpeed)
                 {
                     float angle = MathHelper.Lerp(startAngle, endAngle, slide / arcLength);
-                    breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius, tiles)));
+                    breaths.Add(Scheduler.Instance.RunAndWait(RoutineBreath(user, angle, radius, tiles, popupHelper)));
                     yield return user.WaitSome(5);
                 }
                 yield return new WaitAll(breaths);
-                PopupManager.FinishCollect();
+                popupHelper.Finish();
                 AfterBreath(user, tiles);
             }
         }
 
-        public abstract IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles);
+        public abstract IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles, PopupHelper popupHelper);
 
         public virtual void AfterBreath(Creature user, IEnumerable<Tile> tiles)
         {
@@ -93,17 +93,17 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles)
+        public override IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles, PopupHelper popupHelper)
         {
             Tile tile = GetImpactTile(user, angle, radius);
             Vector2 direction = Util.AngleToVector(angle);
             Vector2 offset = direction * radius;
             new FireExplosion(user.World, user.VisualTarget, offset * 16f / 20f, angle, 20);
             if (tile != null)
-                yield return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1, tiles));
+                yield return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1, tiles, popupHelper));
         }
 
-        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles, PopupHelper popupHelper)
         {
             var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
             int chargeTime = Random.Next(10) + 30;
@@ -132,14 +132,15 @@ namespace RoguelikeEngine.Skills
             {
                 foreach (Creature target in tile.Creatures)
                 {
-                    user.Attack(target, Vector2.Zero, ExplosionAttack);
+                    user.Attack(target, Vector2.Zero, (a,b) => ExplosionAttack(a,b,popupHelper));
                 }
             }
         }
 
-        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender, PopupHelper popupHelper)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.PopupHelper = popupHelper;
             attack.Elements.Add(Element.Fire, 1.0);
             attack.Elements.Add(Element.Bludgeon, 1.0);
             return attack;
@@ -176,17 +177,17 @@ namespace RoguelikeEngine.Skills
         {
         }
 
-        public override IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles)
+        public override IEnumerable<Wait> RoutineBreath(Creature user, float angle, float radius, ICollection<Tile> tiles, PopupHelper popupHelper)
         {
             Tile tile = GetImpactTile(user, angle, radius);
             Vector2 direction = Util.AngleToVector(angle);
             Vector2 offset = direction * radius;
             new SteamExplosion(user.World, user.VisualTarget, offset * 16f / 20f, angle, 20);
             if (tile != null)
-                yield return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1, tiles));
+                yield return Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 1, tiles, popupHelper));
         }
 
-        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles, PopupHelper popupHelper)
         {
             var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
             int chargeTime = Random.Next(10) + 1;
@@ -216,16 +217,17 @@ namespace RoguelikeEngine.Skills
                 cloud.Add(tile, 20);
                 foreach (Creature target in tile.Creatures)
                 {
-                    user.Attack(target, Vector2.Zero, ExplosionAttack);
+                    user.Attack(target, Vector2.Zero, (a,b) => ExplosionAttack(a, b, popupHelper));
                 }
             }
         }
 
-        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender, PopupHelper popupHelper)
         {
             Attack attack = new Attack(attacker, defender);
             attack.Elements.Add(Element.Ice, 1.0);
             attack.Elements.Add(Element.Bludgeon, 1.0);
+            attack.PopupHelper = popupHelper;
             return attack;
         }
     }

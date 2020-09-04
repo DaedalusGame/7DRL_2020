@@ -130,7 +130,6 @@ namespace RoguelikeEngine.Attacks
                 }
                 yield return user.WaitSome(20);
                 List<Wait> waits = new List<Wait>();
-                PopupManager.StartCollect();
                 for (int i = 0; i < 10; i++)
                 {
                     targets.Add(targetCreature);
@@ -138,7 +137,6 @@ namespace RoguelikeEngine.Attacks
                     yield return user.WaitSome(4);
                 }
                 yield return new WaitAll(waits);
-                PopupManager.FinishCollect();
                 yield return new WaitAll(targets.Select(GetCurrentAction));
             }
         }

@@ -681,7 +681,7 @@ namespace RoguelikeEngine
 
         public WaitGameObject CurrentActions;
         public WaitGameObject CurrentHits;
-        public Wait CurrentPopups => PopupManager.Wait;
+        public Wait CurrentPopups => PopupHelper.Wait;
         public Wait DeadWait = Wait.NoWait;
 
         public CreatureRender Render;
@@ -961,10 +961,9 @@ namespace RoguelikeEngine
 
         public IEnumerable<Wait> RoutineAttack(int dx, int dy, AttackDelegate attackGenerator)
         {
-            yield return PopupManager.Wait;
+            yield return PopupHelper.Wait;
             var frontier = Mask.GetFrontier(dx, dy);
             List<Wait> waitForDamage = new List<Wait>();
-            PopupManager.StartCollect();
             foreach(var tile in frontier.Select(o => Tile.GetNeighbor(o.X,o.Y)))
             {
                 if (tile is IMineable mineable)
@@ -985,15 +984,13 @@ namespace RoguelikeEngine
             VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
             yield return new WaitFrames(this,10);
             yield return new WaitAll(waitForDamage);
-            PopupManager.FinishCollect();
         }
 
         public IEnumerable<Wait> RoutineShootArrow(int dx, int dy)
         {
-            yield return PopupManager.Wait;
+            yield return PopupHelper.Wait;
 
             List<Wait> waitForDamage = new List<Wait>();
-            PopupManager.StartCollect();
             var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
             Item quiver = EquipQuiver;
             if (quiver is ToolArrow arrow)
@@ -1008,7 +1005,6 @@ namespace RoguelikeEngine
                 yield return new WaitFrames(this, 10);
             }
             yield return new WaitAll(waitForDamage);
-            PopupManager.FinishCollect();
         }
 
         public IEnumerable<Wait> RoutineHit(Vector2 dir)

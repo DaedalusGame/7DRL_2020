@@ -13,10 +13,16 @@ namespace RoguelikeEngine
         {
             get;
         }
+        public Slider Frame = new Slider(5);
 
         public Message(IEffectHolder holder)
         {
             Holder = holder;
+        }
+
+        public void Update()
+        {
+            Frame += 1;
         }
 
         public virtual bool CanCombine(Message other)

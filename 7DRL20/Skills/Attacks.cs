@@ -397,7 +397,6 @@ namespace RoguelikeEngine.Skills
                 int creatureHits = 0;
                 int wallHits = 0;
                 List<Wait> waitForDamage = new List<Wait>();
-                PopupManager.StartCollect();
                 for (int i = 0; i < MaxDistance; i++)
                 {
                     if (!IsUnsafe(user))
@@ -425,7 +424,6 @@ namespace RoguelikeEngine.Skills
                 }
                 if (IsUnsafe(user))
                     user.MoveTo(lastSafeTile,10);
-                PopupManager.FinishCollect();
                 yield return new WaitAll(waitForDamage);
             }
         }

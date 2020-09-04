@@ -746,7 +746,7 @@ namespace RoguelikeEngine.Traits
             if (defender is Creature targetCreature && defender.HasFamily(Family.Slime) && targetCreature.CurrentHP / targetCreature.GetStat(Stat.HP) <= traitLvl * 0.2)
             {
                 attacker.Heal(20 * traitLvl);
-                targetCreature.TakeDamage(targetCreature.GetStat(Stat.HP), Element.Healing, true);
+                targetCreature.TakeDamage(targetCreature.GetStat(Stat.HP), Element.Healing, null);
             }
 
             yield return Wait.NoWait;

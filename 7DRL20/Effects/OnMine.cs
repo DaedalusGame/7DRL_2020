@@ -43,8 +43,6 @@ namespace RoguelikeEngine.Effects
 
         public IEnumerable<Wait> RoutineStart()
         {
-            PopupManager.StartCollect();
-
             double miningLevel = Miner.GetStat(Stat.MiningLevel);
 
             if (miningLevel >= RequiredMiningLevel)
@@ -68,8 +66,6 @@ namespace RoguelikeEngine.Effects
                 LootFunction(Miner);
                 Mineable.Destroy();
             }
-
-            PopupManager.FinishCollect();
 
             yield return new WaitAll(Waits);
         }

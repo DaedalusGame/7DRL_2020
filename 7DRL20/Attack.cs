@@ -67,7 +67,7 @@ namespace RoguelikeEngine
 
         public override Wait End(Attack attack)
         {
-            Weapon.TakeDamage(1, Element.Bludgeon, true);
+            Weapon.TakeDamage(1, Element.Bludgeon, null);
 
             return Wait.NoWait;
         }
@@ -111,7 +111,7 @@ namespace RoguelikeEngine
         {
             foreach(Item item in Armors)
             {
-                item.TakeDamage(1, Element.Bludgeon, true);
+                item.TakeDamage(1, Element.Bludgeon, null);
             }
 
             return Wait.NoWait;
@@ -140,6 +140,7 @@ namespace RoguelikeEngine
         public int ReactionLevel;
         public double Damage;
         public Dictionary<Element, double> FinalDamage = new Dictionary<Element, double>();
+        public PopupHelper PopupHelper = PopupHelper.Global;
 
         public bool CheckDeath = true;
         public Vector2 HitDirection;
@@ -179,9 +180,9 @@ namespace RoguelikeEngine
             foreach (var damage in FinalDamage)
             {
                 if (damage.Value >= 0)
-                    Defender.TakeDamage(damage.Value, damage.Key);
+                    Defender.TakeDamage(damage.Value, damage.Key, PopupHelper);
                 else
-                    Defender.Heal(-damage.Value);
+                    Defender.Heal(-damage.Value, PopupHelper);
             }
             foreach (var statusEffect in StatusEffects)
                 Defender.AddStatusEffect(statusEffect);

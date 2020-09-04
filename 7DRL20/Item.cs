@@ -1182,7 +1182,7 @@ namespace RoguelikeEngine
                 projectile.ExtraEffects.Add(new Skills.ProjectileCollideSolid());
                 creature.OnShoot(new ShootEvent(projectile, creature, creature.Tile));
                 waitForDamage.Add(Scheduler.Instance.RunAndWait(projectile.ShootStraight(creature, creature.Tile, new Point(dx, dy), 3, distance)));
-                this.TakeDamage(1, Element.Bludgeon, true);
+                this.TakeDamage(1, Element.Bludgeon, null);
                 yield return new WaitTime(5);
             }
         }

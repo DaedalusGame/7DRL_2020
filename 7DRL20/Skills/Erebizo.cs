@@ -193,14 +193,12 @@ namespace RoguelikeEngine.Skills
             var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 1).Shuffle(Random);
             List<Wait> quakes = new List<Wait>();
             HashSet<Tile> tiles = new HashSet<Tile>();
-            PopupManager.StartCollect();
             foreach (Tile tile in tileSet.Take(5))
             {
                 quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 2, tiles)));
             }
             new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
             yield return new WaitAll(quakes);
-            PopupManager.FinishCollect();
             yield return user.WaitSome(20);
         }
 
@@ -295,18 +293,18 @@ namespace RoguelikeEngine.Skills
             var tileSet = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 6).Shuffle(Random);
             List<Wait> quakes = new List<Wait>();
             HashSet<Tile> tiles = new HashSet<Tile>();
-            PopupManager.StartCollect();
+            PopupHelper popupHelper = new PopupHelper();
             foreach (Tile tile in tileSet.Take(8))
             {
-                quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3, tiles)));
+                quakes.Add(Scheduler.Instance.RunAndWait(RoutineQuake(user, tile, 3, tiles, popupHelper)));
             }
             new ScreenFlashLocal(user.World, () => ColorMatrix.Ender(), user.VisualTarget, 60, 150, 100, 50);
             yield return new WaitAll(quakes);
-            PopupManager.FinishCollect();
+            popupHelper.Finish();
             yield return user.WaitSome(20);
         }
 
-        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles)
+        private IEnumerable<Wait> RoutineQuake(Creature user, Tile impactTile, int radius, ICollection<Tile> tiles, PopupHelper popupHelper)
         {
             var tileSet = impactTile.GetNearby(radius).Where(tile => GetSquareDistance(impactTile, tile) <= radius * radius).Shuffle(Random);
             int chargeTime = Random.Next(10) + 60;
@@ -334,14 +332,15 @@ namespace RoguelikeEngine.Skills
             {
                 foreach (Creature creature in tile.Creatures)
                 {
-                    user.Attack(creature, Vector2.Zero, AttackQuake);
+                    user.Attack(creature, Vector2.Zero, (a,b) => AttackQuake(a, b, popupHelper));
                 }
             }
         }
 
-        private Attack AttackQuake(Creature attacker, IEffectHolder defender)
+        private Attack AttackQuake(Creature attacker, IEffectHolder defender, PopupHelper popupHelper)
         {
             Attack attack = new Attack(attacker, defender);
+            attack.PopupHelper = popupHelper;
             attack.Elements.Add(Element.TheEnd, 1.0);
             return attack;
         }

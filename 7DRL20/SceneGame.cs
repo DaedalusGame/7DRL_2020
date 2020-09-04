@@ -618,7 +618,8 @@ namespace RoguelikeEngine
             if (Player.Dead)
                 Menu.HandleInput(this);
 
-            PopupManager.Update(this);
+            PopupHelper.Global.Update(this);
+            //PopupManager.Update(this);
             Wait.Update();
 
             bool cancel = false;
