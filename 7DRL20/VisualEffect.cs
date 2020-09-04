@@ -2110,6 +2110,7 @@ namespace RoguelikeEngine
         Slider End;
         Creature Creature;
         int Period;
+        float Size;
 
         public ExperienceDrop(SceneGame world, Creature creature, Vector2 position, Vector2 velocity, int start, int end) : base(world, position)
         {
@@ -2119,6 +2120,7 @@ namespace RoguelikeEngine
             End = new Slider(end);
             Creature = creature;
             Period = Random.Next(10,30);
+            Size = MathHelper.Lerp(0.5f,1.0f,Random.NextFloat());
         }
 
         public override void Update()
@@ -2129,7 +2131,8 @@ namespace RoguelikeEngine
             {
                 Start += 1;
             }
-            else if(!End.Done)
+
+            if(!End.Done)
             {
                 End += 1;
             }
@@ -2143,15 +2146,16 @@ namespace RoguelikeEngine
         {
             var experience = SpriteLoader.Instance.AddSprite("content/exp_small");
             
-            Vector2 startOffset = Vector2.Lerp(Vector2.Zero, Velocity, Start.Slide);
-            Vector2 pos = Vector2.Lerp(Position + startOffset, Creature.VisualTarget, End.Slide);
+            Vector2 startOffset = Vector2.Lerp(Vector2.Zero, Velocity, (float)LerpHelper.CubicOut(0, 1, Start.Slide));
+            Vector2 pos = Vector2.Lerp(Position + startOffset, Creature.VisualTarget, (float)LerpHelper.Quadratic(0, 1, End.Slide));
+            float size = (float)Math.Sin(End.Slide * MathHelper.Pi) * Size;
 
-            scene.DrawSpriteExt(experience, scene.AnimationFrame(experience, Frame.Time, Frame.EndTime), Position - experience.Middle, experience.Middle, 0, Vector2.One, SpriteEffects.None, Color.LightGoldenrodYellow, 0);
+            scene.DrawSpriteExt(experience, scene.AnimationFrame(experience, Frame.Time, Frame.EndTime), pos - experience.Middle, experience.Middle, 0, new Vector2(size), SpriteEffects.None, Color.LightGoldenrodYellow, 0);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
-            yield return DrawPass.Effect;
+            yield return DrawPass.EffectAdditive;
         }
     }
 

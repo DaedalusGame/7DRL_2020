@@ -55,6 +55,7 @@ namespace RoguelikeEngine.Enemies
 
         public Enemy(SceneGame world) : base(world)
         {
+            Experience = 100;
         }
 
         public void MakeAggressive(Creature target)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -160,4 +161,38 @@ namespace RoguelikeEngine
             return base.Combine(other);
         }
     }
+
+    class MessageExperience : Message
+    {
+        double Experience;
+
+        public override string Text => GetMessage();
+
+        public MessageExperience(IEffectHolder holder, double experience) : base(holder)
+        {
+            Experience = experience;
+        }
+
+        public string GetMessage()
+        {
+            return $"{Game.FormatColor(Color.LightYellow)}+{Experience} EXP";
+        }
+
+        public override bool CanCombine(Message other)
+        {
+            if (other.Holder == Holder && other is MessageExperience experience)
+                return true;
+            return false;
+        }
+
+        public override Message[] Combine(Message other)
+        {
+            if (other is MessageExperience experience)
+            {
+                return new[] { new MessageExperience(Holder, Experience + experience.Experience) };
+            }
+            return base.Combine(other);
+        }
+    }
+
 }

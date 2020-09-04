@@ -722,12 +722,28 @@ namespace RoguelikeEngine
 
         public void DropExperience()
         {
+            Random random = new Random();
             var hits = new Dictionary<Creature, double>();
 
             foreach(var lastHit in GetEffects<EffectLastHit>())
             {
                 if(lastHit.Attacker.CurrentHP > 0)
                     hits.Add(lastHit.Attacker, lastHit.TotalDamage);
+            }
+
+            var totalDamage = hits.Sum(x => x.Value);
+            hits = hits.ToDictionary(x => x.Key, x => x.Value * Experience / totalDamage);
+
+            foreach(var expGain in hits)
+            {
+                expGain.Key.Experience += expGain.Value;
+                int orbs = (int)Math.Ceiling(Math.Log(expGain.Value, 3));
+                int time = orbs * 5 + 10;
+                for(int i = 0; i < orbs; i++)
+                {
+                    new ExperienceDrop(World, expGain.Key, VisualTarget, Util.AngleToVector(random.NextFloat() * MathHelper.TwoPi) * random.Next(10,40), random.Next(5, 10 + time / 3), random.Next(time / 2, time));
+                }
+                PopupHelper.Global.Add(new MessageExperience(expGain.Key, expGain.Value) { Frame = new Slider(time) });
             }
         }
 
@@ -840,6 +856,7 @@ namespace RoguelikeEngine
             {
                 Dead = true;
                 World.Wait.Add(this.OnDeath(new DeathEvent(this)));
+                DropExperience();
                 Scheduler.Instance.Run(RoutineDie(dir));
             }
         }
