@@ -2162,6 +2162,7 @@ namespace RoguelikeEngine
         public Message Message;
         public string Text;
         public TextParameters Parameters;
+        float StartAngle;
 
         public override Vector2 Position
         {
@@ -2182,7 +2183,21 @@ namespace RoguelikeEngine
             Message = message;
             Text = message.Text;
             Parameters = new TextParameters().SetColor(Color.White, Color.Black).SetBold(true);
+            StartAngle = Random.NextFloat() * MathHelper.TwoPi;
             Frame = new Slider(time);
+        }
+
+        private Vector2 CharOffset(int index)
+        {
+            float duration = Frame.EndTime;
+            var perChar = (duration / Text.Length) * 0.5f;
+            float time = (Frame.Time - index * perChar) / duration;
+            float tick = Frame.Time * 2;
+            float lerp = MathHelper.Clamp((tick - index * perChar) / duration, 0, 1);
+            if (lerp <= 0)
+                return new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+            var angle = StartAngle + time * Math.PI * 4;
+            return new Vector2((float)Math.Sin(angle), (float)Math.Cos(angle)) * 10 * (float)Math.Sin(Math.PI / 2 + lerp * Math.PI / 2);
         }
 
         public override void Update()
@@ -2201,7 +2216,9 @@ namespace RoguelikeEngine
         {
             var height = FontUtil.GetStringHeight(Text, Parameters);
             Vector2 pos = Vector2.Transform(Position + Offset, scene.WorldTransform);
-            scene.DrawText(Text, pos - new Vector2(0, height / 2), Alignment.Center, Parameters);
+            var parameters = Parameters.Copy();
+            parameters.SetOffset(CharOffset);
+            scene.DrawText(Text, pos - new Vector2(0, height / 2), Alignment.Center, parameters);
         }
     }
 }

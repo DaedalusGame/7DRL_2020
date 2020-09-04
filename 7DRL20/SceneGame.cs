@@ -459,6 +459,23 @@ namespace RoguelikeEngine
             PushObjects();
         }
 
+        public void ReturnToTitle()
+        {
+            Game.Scene = new SceneTitle(Game);
+            EffectManager.Reset();
+        }
+
+        public void Restart()
+        {
+            Game.Scene = new SceneLoading(Game);
+            EffectManager.Reset();
+        }
+
+        public void Quit()
+        {
+            Game.Exit();
+        }
+
         public void SetMapId(string id, Map map)
         {
             if(map.ID != null)
@@ -538,18 +555,6 @@ namespace RoguelikeEngine
         public Wait EndTurn(Turn turn)
         {
             return RoguelikeEngine.Wait.NoWait;
-        }
-
-
-        public void Restart()
-        {
-            Game.Scene = new SceneLoading(Game);
-            EffectManager.Reset();
-        }
-
-        public void Quit()
-        {
-            Game.Exit();
         }
 
         private Vector2 FitCamera(Vector2 camera, Vector2 size)

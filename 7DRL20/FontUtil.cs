@@ -32,6 +32,8 @@ namespace RoguelikeEngine
         public int ScriptOffset = 0;
         internal bool Underline;
 
+        public bool NoCache;
+
         public TextParameters SetBold(bool bold)
         {
             Bold = bold;
@@ -63,6 +65,7 @@ namespace RoguelikeEngine
         public TextParameters SetOffset(TextOffsetFunction offset)
         {
             Offset = offset;
+            NoCache = true;
             return this;
         }
 
@@ -519,7 +522,7 @@ namespace RoguelikeEngine
         public static void SetupString(string str, Vector2 drawpos, Alignment alignment, TextParameters parameters, Game game)
         {
             bool cache = false;
-            if (str != CachedString)
+            if (str != CachedString || parameters.NoCache)
                 cache = true;
 
             if (cache)
@@ -680,7 +683,7 @@ namespace RoguelikeEngine
                     
                     if (code is FormatCodeIcon icon)
                     {
-                        icon.Draw(game.Scene, drawpos + new Vector2(x, 0));
+                        icon.Draw(game.Scene, drawpos + new Vector2(x, 0) + parameters.Offset(index));
                     }
 
                     if (parameters.Underline)

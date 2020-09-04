@@ -720,6 +720,17 @@ namespace RoguelikeEngine
             EffectManager.DeleteHolder(this);
         }
 
+        public void DropExperience()
+        {
+            var hits = new Dictionary<Creature, double>();
+
+            foreach(var lastHit in GetEffects<EffectLastHit>())
+            {
+                if(lastHit.Attacker.CurrentHP > 0)
+                    hits.Add(lastHit.Attacker, lastHit.TotalDamage);
+            }
+        }
+
         public Func<T> Flick<T>(Func<T> on, Func<T> off, int time)
         {
             int startTime = Frame;
@@ -1228,6 +1239,7 @@ namespace RoguelikeEngine
             json["objectId"] = Serializer.GetHolderID(this);
             json["name"] = Name;
             json["description"] = Description;
+            json["experience"] = Experience;
             return json;
         }
 
@@ -1237,6 +1249,7 @@ namespace RoguelikeEngine
             GlobalID = EffectManager.SetGlobalID(this, globalId);
             Name = json["name"].Value<string>();
             Description = json["description"].Value<string>();
+            Experience = json["experience"].ValueOr<double>(0);
         }
 
         public void AfterLoad()

@@ -91,7 +91,7 @@ namespace RoguelikeEngine
 
         public bool Has(int id)
         {
-            return Has(IntToID.Forward[id]);
+            return IntToID.Forward.Contains(id) && Has(IntToID.Forward[id]);
         }
 
         public IEffectHolder Get(ReusableID id)

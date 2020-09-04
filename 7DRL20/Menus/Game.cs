@@ -122,9 +122,13 @@ namespace RoguelikeEngine.Menus
                 if (GameOver.Done && GameOverMenu == null)
                 {
                     GameOverMenu = new MenuTextSelection(string.Empty, new Vector2(Scene.Viewport.Width / 2, Scene.Viewport.Height * 3 / 4), 300, 2);
-                    GameOverMenu.Add(new ActAction("Restart", "Start over.", () =>
+                    /*GameOverMenu.Add(new ActAction("Restart", "Start over.", () =>
                     {
                         Scene.Restart();
+                    }));*/
+                    GameOverMenu.Add(new ActAction("Return to Title", "Return to Titlescreen.", () =>
+                    {
+                        Scene.ReturnToTitle();
                     }));
                     GameOverMenu.Add(new ActAction("Quit", "Quit to Desktop.", () =>
                     {
@@ -243,6 +247,12 @@ namespace RoguelikeEngine.Menus
                 {
                     selection.Close();
                     Scene.Save();
+                }));
+                selection.Add(new ActAction("Return to Title", "Returns to Titlescreen.", () =>
+                {
+                    selection.Close();
+                    //TODO: Require confirmation
+                    Scene.ReturnToTitle();
                 }));
                 selection.AddDefault(new ActAction("Cancel", "Closes this menu.", () => selection.Close()));
 

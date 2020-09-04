@@ -71,8 +71,14 @@ namespace RoguelikeEngine
                 Remove();
         }
 
+        public virtual void SetupEffects()
+        {
+            //NOOP
+        }
+
         public void Apply()
         {
+            SetupEffects();
             Effect.Apply(new EffectStatusEffect(this, Creature));
         }
 
@@ -334,15 +340,21 @@ namespace RoguelikeEngine
         public override int MaxStacks => 10;
 
         public DefenseUp() : base()
-        {
-            Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, 0.1));
-            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3) { Base = false });
+        {      
         }
 
         [Construct("defense_up")]
         public static DefenseUp Construct(Context context)
         {
             return new DefenseUp();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, 0.1));
+            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3) { Base = false });
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -363,7 +375,6 @@ namespace RoguelikeEngine
 
         public Poison() : base()
         {
-            
         }
 
         [Construct("poison")]
@@ -372,16 +383,32 @@ namespace RoguelikeEngine
             return new Poison();
         }
 
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new OnTurn(this, OnTick));
+        }
+
         public override bool CanCombine(StatusEffect other)
         {
             return other is Poison;
         }
 
-        public override void Update()
+        private IEnumerable<Wait> OnTick(TurnEvent turn)
         {
-            base.Update();
+            Creature creature = turn.Creature;
+
             if (Stacks >= 1)
-                Creature.TakeDamage(Math.Pow(2, Stacks - 1) * 5, Element.Poison);
+                yield return creature.AttackSelf(BurnAttack);
+        }
+
+        private Attack BurnAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(Math.Pow(2, Stacks - 1) * 5, 0, 1);
+            attack.Elements.Add(Element.Poison, 1);
+            return attack;
         }
 
         public override string ToString()
@@ -407,16 +434,32 @@ namespace RoguelikeEngine
             return new Aflame();
         }
 
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new OnTurn(this, OnBurn));
+        }
+
         public override bool CanCombine(StatusEffect other)
         {
             return other is Aflame;
         }
 
-        public override void Update()
+        private IEnumerable<Wait> OnBurn(TurnEvent turn)
         {
-            base.Update();
+            Creature creature = turn.Creature;
+
             if (Stacks >= 1)
-                Creature.TakeDamage(Math.Pow(2, Stacks - 1) * 5, Element.Fire);
+                yield return creature.AttackSelf(BurnAttack);
+        }
+
+        private Attack BurnAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(Math.Pow(2, Stacks - 1) * 5, 0, 1);
+            attack.Elements.Add(Element.Fire, 1);
+            return attack;
         }
 
         public override string ToString()
@@ -469,14 +512,20 @@ namespace RoguelikeEngine
 
         public Wet() : base()
         {
-            Effect.Apply(new EffectStatPercent(this, Element.Thunder.DamageRate, 0.5));
-            Effect.Apply(new EffectStatPercent(this, Element.Fire.DamageRate, -0.25));
         }
 
         [Construct("wet")]
         public static Wet Construct(Context context)
         {
             return new Wet();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatPercent(this, Element.Thunder.DamageRate, 0.5));
+            Effect.Apply(new EffectStatPercent(this, Element.Fire.DamageRate, -0.25));
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -634,13 +683,19 @@ namespace RoguelikeEngine
         public Undead() : base()
         {
             Hidden = true;
-            Effect.Apply(new EffectTrait(this, Trait.Undead));
         }
 
         [Construct("undead")]
         public static Undead Construct(Context context)
         {
             return new Undead();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectTrait(this, Trait.Undead));
         }
 
         public override bool CanCombine(StatusEffect other)
@@ -699,13 +754,19 @@ namespace RoguelikeEngine
 
         public DeltaMark()
         {
-            Effect.Apply(new EffectStatPercent(this, Element.Earth.DamageRate, 0.2));
         }
 
         [Construct("mark_delta")]
         public static DeltaMark Construct(Context context)
         {
             return new DeltaMark();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatPercent(this, Element.Earth.DamageRate, 0.2));
         }
     }
 
@@ -831,8 +892,6 @@ namespace RoguelikeEngine
 
         public Wedlock()
         {
-            Effect.Apply(new EffectFlag(this, Stat.SwapItem, false, 10));
-            Effect.Apply(new EffectFlag(this, Stat.UnequipItem, false, 10));
         }
 
         public Wedlock(Creature master) : this()
@@ -844,6 +903,14 @@ namespace RoguelikeEngine
         public static Wedlock Construct(Context context)
         {
             return new Wedlock();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectFlag(this, Stat.SwapItem, false, 10));
+            Effect.Apply(new EffectFlag(this, Stat.UnequipItem, false, 10));
         }
 
         public override void Update()

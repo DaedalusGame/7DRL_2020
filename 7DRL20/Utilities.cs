@@ -762,6 +762,11 @@ namespace RoguelikeEngine
             return json[key] != null;
         }
 
+        public static T ValueOr<T>(this JToken json, T _default)
+        {
+            return json != null ? json.Value<T>() : _default;
+        }
+
         public static JToken WriteColor(Color color)
         {
             JArray json = new JArray();
