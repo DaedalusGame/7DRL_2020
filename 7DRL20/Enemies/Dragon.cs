@@ -108,7 +108,7 @@ namespace RoguelikeEngine.Enemies
     {
         public GreenDragon(SceneGame world) : base(world)
         {
-            Name = "Verdant Dragon";
+            Name = "Viridian Dragon";
             Description = "Deadly halitosis";
 
             Render = new CreatureDragonRender()
