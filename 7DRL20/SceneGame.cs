@@ -382,7 +382,7 @@ namespace RoguelikeEngine
 
             Player = Entities.First(x => x is Hero);
 
-            CameraMap = MapHome;
+            CameraMap = Player.Map;
             CameraFocus = new CameraFocus(Player);
 
             Spawner = new EnemySpawner(this, 60);
@@ -491,7 +491,7 @@ namespace RoguelikeEngine
 
         private void CreateHome()
         {
-            GeneratorTemplate template = new TemplateHome();
+            GeneratorTemplate template = new TemplateHome(Random.Next());
             template.Build(this);
             Map map = template.Map;
             SetMapId("home", map);

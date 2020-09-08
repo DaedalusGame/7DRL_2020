@@ -136,6 +136,9 @@ namespace RoguelikeEngine
         public double AttackModifier = 1;
         public double DefenseModifier = 1;
 
+        public IEnumerable<Element> SplitElements => Deflected.Keys;
+        public Dictionary<Element, double> Deflected = new Dictionary<Element, double>();
+
         public IEffectHolder Fault;
         public int ReactionLevel;
         public double Damage;
@@ -277,7 +280,9 @@ namespace RoguelikeEngine
         {
             double damageRate = Defender.GetStat(element.DamageRate);
             double resistance = Defender.GetStat(element.Resistance);
-            return Math.Max(0, damage - resistance) * damageRate;
+            double finalDamage = Math.Max(0, damage - resistance) * damageRate;
+            Deflected[element] = Deflected.GetOrDefault(element, 0) + (damage - finalDamage); //Keep track of how much damage we reduced/increased
+            return finalDamage;
         }
     }
 }

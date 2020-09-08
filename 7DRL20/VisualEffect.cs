@@ -853,6 +853,47 @@ namespace RoguelikeEngine
         }
     }
 
+    class SmokeSpores : Particle
+    {
+        SpriteReference Sprite;
+        Vector2 Velocity;
+        Color Color;
+        int OffsetX, OffsetY;
+
+        public SmokeSpores(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, Color color, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Velocity = velocity;
+            Color = color;
+            Frame = new Slider(time);
+            OffsetX = Random.Next(sprite.Width);
+            OffsetY = Random.Next(sprite.Height);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            Position += Velocity;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            float alpha;
+            if (Frame.Time < Frame.EndTime / 2)
+                alpha = (float)LerpHelper.QuadraticIn(0, 1, Frame.GetSubSlide(0, Frame.EndTime / 7));
+            else
+                alpha = (float)LerpHelper.QuadraticOut(1, 0, Frame.GetSubSlide(Frame.EndTime / 2, Frame.EndTime));
+            scene.SpriteBatch.Draw(Sprite.Texture, Position - Sprite.Middle / 2, new Rectangle(OffsetX, OffsetY, Sprite.Width / 2, Sprite.Height / 2), Color.WithAlpha(alpha));
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
     class SmokeWave : Particle
     {
         SpriteReference Sprite;

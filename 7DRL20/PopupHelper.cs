@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,7 @@ namespace RoguelikeEngine
 
         public static PopupHelper Global = new PopupHelper();
 
+        Random Random = new Random();
         List<Message> Messages = new List<Message>();
         List<DamagePopup> CurrentMessages = new List<DamagePopup>();
         bool Dirty;
@@ -94,6 +96,12 @@ namespace RoguelikeEngine
                 {
                     CurrentMessages.Remove(current);
                     Messages.RemoveAt(i);
+                    /*if (message.Holder is Creature creature)
+                    {
+                        Vector2 offset = creature.Mask.GetRandomPixel(Random);
+                        Func<Vector2> anchor = () => creature.VisualPosition() + offset;
+                        CurrentMessages.Add(new DamagePopup(scene, anchor, message, 60));
+                    }*/
                     if (message.Holder is IHasPosition position)
                         CurrentMessages.Add(new DamagePopup(scene, () => position.VisualTarget, message, 60));
                     handled.Add(message.Holder);

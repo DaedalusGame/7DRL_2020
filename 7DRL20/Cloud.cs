@@ -15,7 +15,7 @@ namespace RoguelikeEngine
         public Cloud Parent;
         public Tile Tile => MapTile.Tile;
         public MapTile MapTile;
-        public int Duration;
+        public Slider Duration;
 
         public CloudPart(Cloud parent, JToken json, Context context)
         {
@@ -27,21 +27,21 @@ namespace RoguelikeEngine
         {
             Parent = parent;
             MapTile = mapTile;
-            Duration = duration;
+            Duration = new Slider(duration);
         }
 
         public JToken WriteJson()
         {
             JObject json = new JObject();
             json["tile"] = Serializer.GetHolderID(MapTile);
-            json["duration"] = Duration;
+            json["duration"] = Duration.WriteJson();
             return json;
         }
 
         public void ReadJson(JToken json, Context context)
         {
             MapTile = Serializer.GetHolder<MapTile>(json["tile"], context);
-            Duration = json["duration"].Value<int>();
+            Duration = new Slider(json["duration"]);
         }
     }
 
@@ -66,7 +66,7 @@ namespace RoguelikeEngine
             set;
         }
 
-        protected List<CloudPart> Parts = new List<CloudPart>();
+        public List<CloudPart> Parts = new List<CloudPart>();
 
         public string Name;
         public string Description;
@@ -122,6 +122,16 @@ namespace RoguelikeEngine
             }
         }
 
+        public void Remove(IEnumerable<Tile> tiles)
+        {
+            var set = tiles.Select(tile => tile.Parent).ToHashSet();
+            int removed = Parts.RemoveAll(part => set.Contains(part.MapTile));
+            if (removed > 0)
+            {
+                UpdateMask();
+            }
+        }
+
         public void UpdateMask()
         {
             foreach(var effect in GetEffects<OnTile>())
@@ -167,7 +177,7 @@ namespace RoguelikeEngine
         public virtual Wait NormalTurn(Turn turn)
         {
             foreach (var part in Parts)
-                part.Duration--;
+                part.Duration += 1;
 
             int removed = Parts.RemoveAll(part => part.Duration <= 0);
 
@@ -527,6 +537,65 @@ namespace RoguelikeEngine
             Attack attack = new Attack(attacker, defender);
 
             return attack;
+        }
+    }
+
+    class CloudCryptDust : Cloud
+    {
+        int Ticks;
+        int Turns;
+
+        public CloudCryptDust(Map map) : base(map)
+        {
+            Name = "Crypt Dust";
+            Description = $"Become Undead every turn.";
+        }
+
+        [Construct("cloud_crypt_dust")]
+        public static CloudCryptDust Construct(Context context)
+        {
+            return new CloudCryptDust(context.Map);
+        }
+
+        public override void Update()
+        {
+            SpriteReference smoke = SpriteLoader.Instance.AddSprite("content/cloud_mist");
+
+            Ticks++;
+
+            foreach (var part in Parts)
+            {
+                if ((part.GetHashCode() + Ticks) % 14 == 0)
+                {
+                    Vector2 pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new SmokeSpores(World, smoke, pos, Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * 0.1f, new Color(194, 184, 152), 120);
+                }
+            }
+            base.Update();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            HashSet<Creature> targets = new HashSet<Creature>();
+            List<Tile> summonArea = new List<Tile>();
+
+            Turns++;
+
+            foreach (var part in Parts)
+            {
+                targets.AddRange(part.Tile.Creatures);
+                if ((part.GetHashCode() + Turns) % 14 == 0)
+                    summonArea.Add(part.Tile);
+            }
+
+            SkillUtil.TrySpawnCryptDust(this, summonArea, Random);
+
+            Drift(0, 1, Parts.Count / 4);
+            Drift(0, -1, Parts.Count / 4);
+            Drift(1, 0, Parts.Count / 4);
+            Drift(-1, 0, Parts.Count / 4);
+
+            return base.NormalTurn(turn);
         }
     }
 }

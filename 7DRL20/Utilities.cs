@@ -549,6 +549,11 @@ namespace RoguelikeEngine
             return new Color((int)r, (int)g, (int)b, color.A);
         }
 
+        public static Color WithAlpha(this Color color, float alpha)
+        {
+            return new Color(color.R, color.G, color.B, (int)(color.A * alpha));
+        }
+
         public static string EnglishJoin(string seperator, string finalSeperator, IEnumerable<string> values)
         {
             values = values.ToList();

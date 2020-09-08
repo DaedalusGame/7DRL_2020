@@ -97,6 +97,11 @@ namespace RoguelikeEngine.MapGeneration
     {
         int Seed;
 
+        public TemplateHome(int seed)
+        {
+            Seed = seed;
+        }
+
         public override void Build(SceneGame world)
         {
             World = world;

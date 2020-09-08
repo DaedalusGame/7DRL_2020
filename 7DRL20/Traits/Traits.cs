@@ -818,6 +818,17 @@ namespace RoguelikeEngine.Traits
         {
             Effect.Apply(new EffectFamily(this, Family.Undead));
             Effect.Apply(new EffectStatMultiply(this, Element.Healing.DamageRate, -1));
+            Effect.Apply(new OnDeath(this, CreateCryptDust));
+        }
+
+        private IEnumerable<Wait> CreateCryptDust(DeathEvent death)
+        {
+            var creature = death.Creature;
+            var cloud = creature.Map.AddCloud(map => new CloudCryptDust(map));
+            foreach (var neighbor in SkillUtil.GetCircularArea(creature, 1))
+                if(!neighbor.Solid)
+                    cloud.Add(neighbor, 30);
+            yield return Wait.NoWait;
         }
     }
 

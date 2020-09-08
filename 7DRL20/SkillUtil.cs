@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,11 +9,111 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class CryptDustSpawn
+    {
+        public static List<CryptDustSpawn> AllSpawns = new List<CryptDustSpawn>();
+
+        public double Weight;
+        public int Size;
+        public int CloudsMin = 1;
+        public int CloudsMax = int.MaxValue;
+        public float TimeMin = 0;
+        public float TimeMax = float.PositiveInfinity;
+        Func<SceneGame, Enemy> EnemyFunction;
+
+        public CryptDustSpawn(double weight, int size, Func<SceneGame, Enemy> enemyFunction)
+        {
+            Weight = weight;
+            Size = size;
+            EnemyFunction = enemyFunction;
+            AllSpawns.Add(this);
+        }
+
+        public IEnumerable<Enemy> Spawn(SceneGame world, Tile tile)
+        {
+            Enemy enemy = EnemyFunction(world);
+            enemy.MoveTo(tile, 0);
+            yield return enemy;
+        }
+
+        public static CryptDustSpawn SpawnSkeleton = new CryptDustSpawn(10, 1, world => new Skeleton(world))
+        {
+            TimeMin = 15,
+            CloudsMin = 5,
+        };
+    }
+
     static class SkillUtil
     {
+        class CryptDustSpawnPos
+        {
+            public Tile Tile;
+            public int Count;
+            public CryptDustSpawn Spawn;
+
+            public int Size => Spawn.Size;
+
+            public bool Valid => Count >= Spawn.CloudsMin && Count <= Spawn.CloudsMax;
+
+            public CryptDustSpawnPos(CryptDustSpawn spawn, Tile tile)
+            {
+                Tile = tile;
+                Spawn = spawn;
+            }
+        }
+
+        
         static SkillUtil()
         {
 
+        }
+
+        public static void TrySpawnCryptDust(CloudCryptDust cloud, IEnumerable<Tile> tiles, Random random)
+        {
+            foreach (var tile in tiles)
+            {
+                TrySpawnCryptDust(cloud, tile, random);
+            }
+        }
+
+        public static void TrySpawnCryptDust(CloudCryptDust cloud, Tile tile, Random random)
+        {
+            var part = cloud.Get(tile);
+            List<CryptDustSpawnPos> spawnList = new List<CryptDustSpawnPos>();
+
+            if (part == null)
+                return;
+
+            foreach (var spawn in CryptDustSpawn.AllSpawns)
+            {
+                if (part.Duration >= spawn.TimeMin && part.Duration <= spawn.TimeMax)
+                {
+                    spawnList.Add(new CryptDustSpawnPos(spawn, part.Tile));
+                }
+            }
+
+            foreach (var partOther in cloud.Parts)
+            {
+                int dist = Math.Max(Math.Abs(partOther.MapTile.X - part.MapTile.X), Math.Abs(partOther.MapTile.Y - part.MapTile.Y));
+                foreach (var spawn in spawnList)
+                {
+                    if (spawn.Size >= dist)
+                        spawn.Count++;
+                }
+            }
+
+            spawnList.RemoveAll(spawn => !spawn.Valid);
+            if (spawnList.Any())
+            {
+                var picked = spawnList.Pick(random);
+                cloud.Remove(tile.GetNearby(picked.Size));
+
+                foreach (var enemy in picked.Spawn.Spawn(cloud.World, tile))
+                {
+                    enemy.AddControlTurn();
+                    new Smoke(cloud.World, enemy.VisualTarget, Vector2.Zero, 0, 15);
+                }
+            }
         }
 
         public static Vector2 SafeNormalize(Vector2 vec)

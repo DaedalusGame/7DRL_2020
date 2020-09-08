@@ -31,6 +31,13 @@ namespace RoguelikeEngine
             ReadJson(json);
         }
 
+        public float GetSubSlide(float start, float end)
+        {
+            float time = Time - start;
+            float delta = end - start;
+            return MathHelper.Clamp(time / delta, 0, 1);
+        }
+
         public static Slider operator +(Slider slider, float i)
         {
             slider.Time = MathHelper.Clamp(slider.Time + i, 0, slider.EndTime);

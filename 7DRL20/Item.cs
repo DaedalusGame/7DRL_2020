@@ -81,6 +81,8 @@ namespace RoguelikeEngine
 
         public string Description;
 
+        public bool CanPickup = true;
+
         List<Effect> EquipEffects = new List<Effect>();
 
         public Item(SceneGame world, string name, string description)
@@ -144,6 +146,7 @@ namespace RoguelikeEngine
 
         public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
+            if(CanPickup)
             selection.Add(new ActAction($"Pick up {Game.FormatIcon(this)}{BaseName}", "Picks up the item and stores it in your inventory.", () =>
             {
                 player.Pickup(this);
@@ -1185,6 +1188,77 @@ namespace RoguelikeEngine
                 this.TakeDamage(1, Element.Bludgeon, null);
                 yield return new WaitTime(5);
             }
+        }
+    }
+
+    abstract class AbstractShopItem : Item
+    {
+        public AbstractShopItem(SceneGame world, string name, string description) : base(world, name, description)
+        {
+        }
+
+        public abstract double GetCost(Creature player);
+
+        public abstract void Purchase(Creature player);
+
+        public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
+        {
+            base.AddActions(ui, player, selection);
+            double cost = GetCost(player);
+            selection.Add(new ActAction($"Buy {Game.FormatIcon(this)}{BaseName} ({cost} EXP)", Description, () =>
+            {
+                Purchase(player);
+                player.Experience -= GetCost(player);
+                selection.Close();
+            }, () => player.Experience >= GetCost(player)));
+        }
+    }
+
+    class ShopRefillHealthFull : AbstractShopItem
+    {
+        public ShopRefillHealthFull(SceneGame world) : base(world, "Full Life", "Restores all HP")
+        {
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            var ingot = SpriteLoader.Instance.AddSprite("content/item_potion_pink");
+            scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+
+        public override double GetCost(Creature player)
+        {
+            double missingHealth = player.GetStat(Stat.HP) - player.CurrentHP;
+
+            return missingHealth;
+        }
+
+        public override void Purchase(Creature player)
+        {
+            player.Heal(player.GetStat(Stat.HP));
+        }
+    }
+
+    class ShopRefillHealth : AbstractShopItem
+    {
+        public ShopRefillHealth(SceneGame world) : base(world, "Refill Health", "Consumes all EXP to restore as much HP as possible")
+        {
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            var ingot = SpriteLoader.Instance.AddSprite("content/item_potion_blue");
+            scene.DrawSprite(ingot, 0, position - ingot.Middle, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+        }
+
+        public override double GetCost(Creature player)
+        {
+            return player.Experience;
+        }
+
+        public override void Purchase(Creature player)
+        {
+            player.Heal(player.Experience);
         }
     }
 }
