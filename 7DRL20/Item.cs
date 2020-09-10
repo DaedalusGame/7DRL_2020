@@ -16,7 +16,7 @@ namespace RoguelikeEngine
     {
         public SceneGame World { get; set; }
         public double DrawOrder => 0;
-        bool IGameObject.Destroyed { get; set; }
+        public bool Destroyed { get; set; }
 
         public ReusableID ObjectID
         {
@@ -144,6 +144,17 @@ namespace RoguelikeEngine
             return list;
         }
 
+        public void AddNormalTurn()
+        {
+            ActionQueue queue = World.ActionQueue;
+            queue.Add(new TurnTakerItem(queue, this));
+        }
+
+        public virtual Wait NormalTurn(Turn turn)
+        {
+            return Wait.NoWait;
+        }
+
         public virtual void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
         {
             if(CanPickup)
@@ -177,12 +188,12 @@ namespace RoguelikeEngine
                 statBlock += $"{Description}\n";
         }
 
-        public IEnumerable<DrawPass> GetDrawPasses()
+        public virtual IEnumerable<DrawPass> GetDrawPasses()
         {
             yield return DrawPass.Item;
         }
 
-        public void Draw(SceneGame scene, DrawPass pass)
+        public virtual void Draw(SceneGame scene, DrawPass pass)
         {
             Tile tile = Tile;
             if(tile != null)
@@ -1259,6 +1270,82 @@ namespace RoguelikeEngine
         public override void Purchase(Creature player)
         {
             player.Heal(player.Experience);
+        }
+    }
+
+    class BurningBog : Item
+    {
+        Random Random = new Random();
+        int OffsetX, OffsetY;
+        public Slider Duration;
+
+        public BurningBog(SceneGame world) : base(world, "Burning Bog", "Releases burning clouds every turn")
+        {
+            AddNormalTurn();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            Proc();
+            Duration += 1;
+            if (Duration.Done)
+                this.Destroy();
+            return Wait.NoWait;
+        }
+
+        public void Proc()
+        {
+            CloudFire cloud = Map.AddCloud(map => new CloudFire(map));
+            foreach (var tile in SkillUtil.GetCircularArea(Tile, 1))
+            {
+                cloud.Add(tile, 5);
+            }
+        }
+
+        public override void DrawIcon(SceneGame scene, Vector2 position)
+        {
+            //NOOP
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            SpriteReference gunpowder = SpriteLoader.Instance.AddSprite("content/gunpowder");
+            if (Random.NextDouble() < 0.1)
+            {
+                OffsetX = Random.Next(gunpowder.Width);
+                OffsetY = Random.Next(gunpowder.Height);
+            }
+            Tile tile = Tile;
+            if (tile != null)
+                scene.SpriteBatch.Draw(gunpowder.Texture, new Vector2(tile.X * 16 + 8, tile.Y * 16 + 8) - gunpowder.Middle, new Rectangle(OffsetX, OffsetY, gunpowder.Width, gunpowder.Height), Color.White);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectLowAdditive;
+        }
+
+        public override void AddActions(PlayerUI ui, Creature player, MenuTextSelection selection)
+        {
+            //NOOP
+        }
+
+        public override void AddItemActions(InventoryItemList inventory, Creature player, MenuTextSelection selection)
+        {
+            //NOOP
+        }
+
+        public override JToken WriteJson(Context context)
+        {
+            JToken json = base.WriteJson(context);
+            json["duration"] = Duration.WriteJson();
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            Duration = new Slider(json["duration"]);
         }
     }
 }

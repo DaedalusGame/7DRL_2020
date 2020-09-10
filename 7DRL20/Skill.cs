@@ -115,12 +115,12 @@ namespace RoguelikeEngine
             return false;
         }
 
-        protected bool InLineOfSight(Creature user, Creature target, int distance)
+        protected bool InLineOfSight(Creature user, Creature target, int distance, int width)
         {
-            return InLineOfSight(user, target, user.Facing, distance);
+            return InLineOfSight(user, target, user.Facing, distance, width);
         }
 
-        protected bool InLineOfSight(Creature user, Creature target, Facing facing, int distance)
+        protected bool InLineOfSight(Creature user, Creature target, Facing facing, int distance, int width)
         {
             if (target == null || target.Tile == null)
                 return false;
@@ -134,14 +134,14 @@ namespace RoguelikeEngine
             if (!InRange(user, target, distance))
                 return false;
 
-            if(dx == 0)
+            if(Math.Abs(dx) <= width)
             {
                 if (dy > 0)
                     return facing == Facing.South;
                 if (dy < 0)
                     return facing == Facing.North;
             }
-            else if(dy == 0)
+            if(Math.Abs(dy) <= width)
             {
                 if (dx > 0)
                     return facing == Facing.East;

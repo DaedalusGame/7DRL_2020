@@ -154,4 +154,33 @@ namespace RoguelikeEngine.Traits
             yield return Wait.NoWait;
         }
     }
+
+    class TraitBog : Trait
+    {
+        Random Random = new Random();
+
+        public TraitBog() : base("on_bog", "On Bog",
+            $"Become muddied every turn.", new Color(133, 121, 92))
+        {
+            Effect.Apply(new OnTurn(this, OnBog));
+        }
+
+        private IEnumerable<Wait> OnBog(TurnEvent turn)
+        {
+            Creature creature = turn.Creature;
+
+            yield return creature.AttackSelf(BogAttack);
+        }
+
+        private Attack BogAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.StatusEffects.Add(new Muddy()
+            {
+                Buildup = 1,
+                Duration = new Slider(20),
+            });
+            return attack;
+        }
+    }
 }

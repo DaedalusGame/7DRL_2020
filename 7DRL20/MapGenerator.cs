@@ -51,6 +51,7 @@ namespace RoguelikeEngine
         public static GeneratorTile SuperLava = new GeneratorTile('.', Color.Orange, PrintSuperLava, TileTag.Liquid);
         public static GeneratorTile HyperLava = new GeneratorTile('.', Color.Yellow, PrintHyperLava, TileTag.Liquid);
         public static GeneratorTile DarkLava = new GeneratorTile('.', Color.Yellow, PrintDarkLava, TileTag.Liquid);
+        public static GeneratorTile Bog = new GeneratorTile('.', Color.Brown, PrintBog, TileTag.Liquid);
         public static GeneratorTile Carpet = new GeneratorTile('.', Color.Yellow, PrintCarpet, TileTag.Floor, TileTag.Artificial);
 
         public char Character;
@@ -160,6 +161,11 @@ namespace RoguelikeEngine
         private static void PrintDarkLava(MapGenerator generator, Tile tile, GeneratorCell cell)
         {
             tile.Replace(new DarkLava());
+        }
+
+        private static void PrintBog(MapGenerator generator, Tile tile, GeneratorCell cell)
+        {
+            tile.Replace(new Bog());
         }
 
         private static void PrintBasalt(MapGenerator generator, Tile tile, GeneratorCell cell)

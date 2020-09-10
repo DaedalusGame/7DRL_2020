@@ -73,12 +73,14 @@ namespace RoguelikeEngine.Traits
         public static Trait Undead = new TraitUndead();
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
         public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
+        public static Trait Broiling = new TraitBroil();
 
         public static Trait Water = new TraitWater();
         public static Trait Lava = new TraitLava();
         public static Trait SuperLava = new TraitSuperLava();
         public static Trait HyperLava = new TraitHyperLava();
         public static Trait Acid = new TraitAcid();
+        public static Trait Bog = new TraitBog();
     }
 
     class TraitSplintering : Trait

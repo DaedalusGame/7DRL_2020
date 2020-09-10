@@ -533,9 +533,40 @@ namespace RoguelikeEngine
             return other is Wet;
         }
 
-        public override void Update()
+        public override string ToString()
         {
-            base.Update();
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class Muddy : StatusEffect
+    {
+        public override string Name => $"Muddy";
+        public override string Description => $"Reduces speed by 10%. Reduces {Element.Water.FormatString} damage.";
+
+        public override int MaxStacks => 1;
+
+        public Muddy() : base()
+        {
+        }
+
+        [Construct("muddy")]
+        public static Muddy Construct(Context context)
+        {
+            return new Muddy();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatMultiply(this, Stat.Speed, 0.9));
+            Effect.Apply(new EffectStatPercent(this, Element.Water.DamageRate, -0.25));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Muddy;
         }
 
         public override string ToString()
@@ -932,6 +963,57 @@ namespace RoguelikeEngine
         {
             base.ReadJson(json, context);
             Master = Serializer.GetHolder<Creature>(json["master"], context);
+        }
+    }
+
+    class HagsFlesh : StatusEffect
+    {
+        public override string Name => $"Stolen Flesh";
+        public override string Description => $"Required for other Skills.";
+
+        public override int MaxStacks => 5;
+
+        public HagsFlesh()
+        {
+        }
+
+        [Construct("hags_flesh")]
+        public static HagsFlesh Construct(Context context)
+        {
+            return new HagsFlesh();
+        }
+    }
+
+    abstract class Boiling : StatusEffect
+    {
+        public abstract void Broil();
+    }
+
+    class BoilingFlesh : Boiling
+    {
+        public override string Name => $"Boiling Flesh";
+        public override string Description => $"Boiling: Gains 1 stack every turn.";
+
+        public BoilingFlesh()
+        {
+        }
+
+        [Construct("boiling_flesh")]
+        public static BoilingFlesh Construct(Context context)
+        {
+            return new BoilingFlesh();
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            Broil();
+        }
+
+        public override void Broil()
+        {
+            Buildup += 1;
         }
     }
 }

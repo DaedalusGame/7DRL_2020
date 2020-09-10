@@ -179,7 +179,7 @@ namespace RoguelikeEngine
             foreach (var part in Parts)
                 part.Duration += 1;
 
-            int removed = Parts.RemoveAll(part => part.Duration <= 0);
+            int removed = Parts.RemoveAll(part => part.Duration.Done);
 
             if (removed > 0)
                 UpdateMask();
@@ -536,6 +536,79 @@ namespace RoguelikeEngine
         {
             Attack attack = new Attack(attacker, defender);
 
+            return attack;
+        }
+    }
+
+    class CloudFire : Cloud
+    {
+        int Ticks;
+
+        public CloudFire(Map map) : base(map)
+        {
+            Name = "Fire Cloud";
+            Description = $"Deals {Element.Fire.FormatString} damage and applies Aflame every turn.";
+        }
+
+        [Construct("cloud_fire")]
+        public static CloudFire Construct(Context context)
+        {
+            return new CloudFire(context.Map);
+        }
+
+        public override void Update()
+        {
+            SpriteReference smoke = SpriteLoader.Instance.AddSprite("content/cloud_big");
+
+            Ticks++;
+
+            foreach (var part in Parts)
+            {
+                if ((part.GetHashCode() + Ticks) % 14 == 0)
+                {
+                    Vector2 pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new SmokeSmallAdditive(World, smoke, pos, Vector2.Zero, new Color(255, 128, 16), 24);
+                    pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new FlameSmall(World, pos, Vector2.Zero, 0, 12);
+                    pos = new Vector2(16 * part.Tile.X + Random.Next(16), 16 * part.Tile.Y + Random.Next(16));
+                    new FlameBig(World, pos, Vector2.Zero, 0, 24);
+                }
+            }
+            base.Update();
+        }
+
+        public override Wait NormalTurn(Turn turn)
+        {
+            HashSet<Creature> targets = new HashSet<Creature>();
+
+            foreach (var part in Parts)
+            {
+                targets.AddRange(part.Tile.Creatures);
+            }
+
+            foreach (var target in targets)
+            {
+                target.AttackSelf(FireAttack);
+            }
+
+            Drift(0, 1, (int)Math.Ceiling(Parts.Count / 2.0));
+            Drift(0, -1, (int)Math.Ceiling(Parts.Count / 2.0));
+            Drift(1, 0, (int)Math.Ceiling(Parts.Count / 2.0));
+            Drift(-1, 0, (int)Math.Ceiling(Parts.Count / 2.0));
+
+            return base.NormalTurn(turn);
+        }
+
+        private Attack FireAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(10, 0, 1);
+            attack.Elements.Add(Element.Fire, 1.0);
+            attack.StatusEffects.Add(new Aflame()
+            {
+                Duration = new Slider(5),
+                Buildup = 1,
+            });
             return attack;
         }
     }

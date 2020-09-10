@@ -404,6 +404,41 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class CreatureStaticRender : CreatureRender
+    {
+        public SpriteReference Sprite;
+        public ColorMatrix Color = ColorMatrix.Identity;
+
+        public override void Draw(SceneGame scene, Creature creature)
+        {
+            var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
+
+            int frameOffset = 0;
+            switch (creature.VisualPose())
+            {
+                case (CreaturePose.Stand):
+                    frameOffset = creature.Frame / 6;
+                    break;
+                case (CreaturePose.Walk):
+                    frameOffset = creature.Frame / 4;
+                    break;
+                case (CreaturePose.Attack):
+                    frameOffset = 0;
+                    break;
+                case (CreaturePose.Cast):
+                    frameOffset = 0;
+                    break;
+            }
+
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
+            {
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+            });
+            scene.DrawSprite(Sprite, frameOffset, creature.VisualPosition(), mirror, 0);
+            scene.PopSpriteBatch();
+        }
+    }
+
     class BlastCannon : Enemy
     {
         public BlastCannon(SceneGame world) : base(world)
@@ -426,6 +461,68 @@ namespace RoguelikeEngine.Enemies
         public static BlastCannon Construct(Context context)
         {
             return new BlastCannon(context.World);
+        }
+    }
+
+    class SwampHag : Enemy
+    {
+        public SwampHag(SceneGame world) : base(world)
+        {
+            Name = "Swamp Hag";
+            Description = "A nice grandma to bake cookies from your entrails";
+
+            Render = new CreaturePaperdollRender()
+            {
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_hag"),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_robe"),
+                BodyColor = ColorMatrix.TwoColor(new Color(95, 61, 92), new Color(107, 139, 86)),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 250));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 30));
+
+            Skills.Add(new SkillHagsKnife());
+            Skills.Add(new SkillBoilTallow());
+            Skills.Add(new SkillTallowCurse());
+            Skills.Add(new SkillRaisePeatMummy());
+            Skills.Add(new SkillIgniteBog());
+        }
+
+        [Construct("hag_swamp")]
+        public static SwampHag Construct(Context context)
+        {
+            return new SwampHag(context.World);
+        }
+    }
+
+    class WalkingCauldron : Enemy
+    {
+        public WalkingCauldron(SceneGame world) : base(world)
+        {
+            Name = "Walking Cauldron";
+            Description = "Humpty Dumpty";
+
+            Render = new CreatureStaticRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/walking_cauldron"),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
+
+            Effect.ApplyInnate(new EffectStatPercent(this, Element.Fire.DamageRate, -0.5));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Broiling));
+        }
+
+        [Construct("walking_cauldron")]
+        public static WalkingCauldron Construct(Context context)
+        {
+            return new WalkingCauldron(context.World);
         }
     }
 }

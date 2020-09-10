@@ -150,6 +150,25 @@ namespace RoguelikeEngine
         }
     }
 
+    class TurnTakerItem : TurnTaker
+    {
+        Item Entity;
+
+        public TurnTakerItem(ActionQueue queue, Item entity) : base(queue)
+        {
+            Entity = entity;
+        }
+
+        public override object Owner => Entity;
+        public override double Speed => 1;
+        public override bool RemoveFromQueue => Entity.Destroyed;
+
+        public override Wait TakeTurn(Turn turn)
+        {
+            return Entity.NormalTurn(turn);
+        }
+    }
+
     class TurnTakerCloud : TurnTaker
     {
         Cloud Cloud;

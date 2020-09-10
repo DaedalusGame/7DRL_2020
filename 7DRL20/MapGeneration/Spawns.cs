@@ -42,6 +42,8 @@ namespace RoguelikeEngine.MapGeneration
 
         public static EnemySpawn PoisonBlob = new SingleSpawn("poison_blob", (world) => new PoisonBlob(world));
         public static EnemySpawn AcidBlob = new SingleSpawn("acid_blob", (world) => new AcidBlob(world));
+
+        public static EnemySpawn SwampHag = new HagSpawn("swamp_hag", (world) => new SwampHag(world), (world) => new WalkingCauldron(world));
     }
 
     class SingleSpawn : EnemySpawn
@@ -58,6 +60,33 @@ namespace RoguelikeEngine.MapGeneration
             Enemy enemy = EnemyFunction(world);
             enemy.MoveTo(tile,0);
             yield return enemy;
+        }
+    }
+
+    class HagSpawn : EnemySpawn
+    {
+        Random Random = new Random();
+        Func<SceneGame, Enemy> SpawnHag;
+        Func<SceneGame, Enemy> SpawnCauldron;
+
+        public HagSpawn(string id, Func<SceneGame, Enemy> spawnHag, Func<SceneGame, Enemy> spawnCauldron) : base(id)
+        {
+            SpawnHag = spawnHag;
+            SpawnCauldron = spawnCauldron;
+        }
+
+        public override IEnumerable<Enemy> Spawn(SceneGame world, Tile tile)
+        {
+            Enemy hag = SpawnHag(world);
+            hag.MoveTo(tile, 0);
+            yield return hag;
+            var validSpawns = tile.GetNearby(1).Where(x => !x.Solid && x.Creatures.Empty()).Shuffle(Random);
+            if(validSpawns.Any())
+            {
+                Enemy cauldron = SpawnCauldron(world);
+                cauldron.MoveTo(validSpawns.First(), 0);
+                yield return cauldron;
+            }
         }
     }
 }

@@ -20,8 +20,7 @@ namespace RoguelikeEngine.Enemies
             Render = new CreaturePaperdollRender()
             {
                 Head = SpriteLoader.Instance.AddSprite("content/paperdoll_skull"),
-                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_robe"),
-                BodyColor = ColorMatrix.TwoColor(new Color(69, 56, 37), new Color(223, 213, 198)),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_skeleton"),
             };
             Mask.Add(Point.Zero);
 
@@ -39,6 +38,38 @@ namespace RoguelikeEngine.Enemies
         public static Skeleton Construct(Context context)
         {
             return new Skeleton(context.World);
+        }
+    }
+
+    class SkeletonRobe : Enemy
+    {
+        public SkeletonRobe(SceneGame world) : base(world)
+        {
+            Name = "Skeleton";
+            Description = "Dread mummy";
+
+            Render = new CreaturePaperdollRender()
+            {
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_skull"),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_robe"),
+                BodyColor = ColorMatrix.TwoColor(new Color(69, 56, 37), new Color(223, 213, 198)),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
+
+            Skills.Add(new SkillDrainTouch2());
+            Skills.Add(new SkillAttack());
+        }
+
+        [Construct("skeleton_robe")]
+        public static SkeletonRobe Construct(Context context)
+        {
+            return new SkeletonRobe(context.World);
         }
     }
 
@@ -63,6 +94,7 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillMudTouch());
+            Skills.Add(new SkillMudBath());
         }
 
         [Construct("peat_mummy")]

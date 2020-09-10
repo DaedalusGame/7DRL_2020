@@ -66,6 +66,10 @@ namespace RoguelikeEngine.MapGeneration
         {
             Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
         };
+        public static GroupGenerator Bog = new GroupGenerator(MakeBog)
+        {
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 60) },
+        };
         public static GroupGenerator FireCave = new GroupGenerator(MakeFireCave)
         {
             Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
@@ -121,6 +125,16 @@ namespace RoguelikeEngine.MapGeneration
                 BrickColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 Spawns = { EnemySpawn.Skeleton },
+            };
+        }
+        public static GeneratorGroup MakeBog(MapGenerator generator)
+        {
+            return new CaveBog(generator) //Bog
+            {
+                CaveColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
+                BrickColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
+                WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
+                Spawns = { EnemySpawn.PeatMummy, EnemySpawn.SwampHag },
             };
         }
         public static GeneratorGroup MakeFireCave(MapGenerator generator)

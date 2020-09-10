@@ -29,9 +29,28 @@ namespace RoguelikeEngine
         void Destroy();
     }
 
+    enum TileFlag
+    {
+        Floor,
+        Wall,
+        Pool, //Any liquid
+        Pit, //Deep pools and pits
+        Artificial, //Manmade
+        Furniture, //Like spikes, altars, stairs
+    }
+
     [SerializeInfo]
     abstract class Tile : IEffectHolder, IHasPosition, IDrawable
     {
+        protected static IEnumerable<TileFlag> FlagsEmpty = Enumerable.Empty<TileFlag>();
+        protected static IEnumerable<TileFlag> FlagsFloor = new List<TileFlag>() { TileFlag.Floor };
+        protected static IEnumerable<TileFlag> FlagsFloorArtificial = new List<TileFlag>() { TileFlag.Floor, TileFlag.Artificial };
+        protected static IEnumerable<TileFlag> FlagsWall = new List<TileFlag>() { TileFlag.Wall };
+        protected static IEnumerable<TileFlag> FlagsWallArtificial = new List<TileFlag>() { TileFlag.Wall, TileFlag.Artificial };
+        protected static IEnumerable<TileFlag> FlagsPool = new List<TileFlag>() { TileFlag.Pool };
+        protected static IEnumerable<TileFlag> FlagsDeepPool = new List<TileFlag>() { TileFlag.Pool, TileFlag.Pit };
+        protected static IEnumerable<TileFlag> FlagsFurniture = new List<TileFlag>() { TileFlag.Artificial, TileFlag.Furniture };
+
         protected static Random Random = new Random();
 
         public class FakeOutside : Tile //Subtype that handles the tiles outside the map.
@@ -57,6 +76,7 @@ namespace RoguelikeEngine
             public override int X => _X;
             public override int Y => _Y;
             public override Tile Under => null;
+            public override IEnumerable<TileFlag> Tags => FlagsEmpty;
 
             public FakeOutside(Map map, int x, int y) : base()
             {
@@ -86,11 +106,12 @@ namespace RoguelikeEngine
         public virtual Map Map => Parent.Map;
         public virtual int X => Parent.X;
         public virtual int Y => Parent.Y;
-        public Vector2 VisualPosition => new Vector2(X*16,Y*16);
+        public Vector2 VisualPosition => new Vector2(X * 16, Y * 16);
         public Vector2 VisualTarget => VisualPosition + new Vector2(8, 8);
         public virtual Tile Under => Parent.UnderTile;
         public bool Orphaned => false;
         public double DrawOrder => Y;
+        public abstract IEnumerable<TileFlag> Tags { get; }
 
         public Func<Color> VisualUnderColor = () => Color.TransparentBlack;
 
@@ -527,10 +548,13 @@ namespace RoguelikeEngine
 
     abstract class Stair : Tile
     {
+        static IEnumerable<TileFlag> Flags = new List<TileFlag>() { TileFlag.Floor, TileFlag.Artificial, TileFlag.Furniture };
+
         public int Seed;
         public StairType Type;
         RemoteTile TargetTile;
         public List<StairBonus> Bonuses = new List<StairBonus>();
+        public override IEnumerable<TileFlag> Tags => Flags;
 
         public Tile Target
         {
@@ -757,6 +781,8 @@ namespace RoguelikeEngine
 
     class FloorCave : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsFloor;
+
         public FloorCave() : base("Cave Floor")
         {
         }
@@ -781,6 +807,8 @@ namespace RoguelikeEngine
 
     class FloorTiles : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsFloorArtificial;
+
         public FloorTiles() : base("Tiled Floor")
         {
         }
@@ -805,10 +833,12 @@ namespace RoguelikeEngine
 
     class FloorBigTile : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsFloorArtificial;
+
         public FloorBigTile() : base("Tiled Floor")
         {
         }
-
+        
         [Construct("floor_big_tile")]
         public static FloorBigTile Construct(Context context)
         {
@@ -830,6 +860,7 @@ namespace RoguelikeEngine
     class FloorBridge : Tile
     {
         public ConnectivityHelper Connectivity;
+        public override IEnumerable<TileFlag> Tags => FlagsFloorArtificial;
 
         public FloorBridge() : base("Bridge")
         {
@@ -871,6 +902,7 @@ namespace RoguelikeEngine
     {
         public TileColor Color = new TileColor(new Color(85, 107, 168), new Color(198, 190, 55));
         public Connectivity Connectivity;
+        public override IEnumerable<TileFlag> Tags => FlagsFloorArtificial;
 
         public FloorCarpet() : base("Carpet")
         {
@@ -913,6 +945,8 @@ namespace RoguelikeEngine
 
     class FloorPlank : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsFloorArtificial;
+
         public FloorPlank() : base("Plank Floor")
         {
         }
@@ -938,6 +972,7 @@ namespace RoguelikeEngine
     class WallCave : Tile, IMineable
     {
         public override double Durability => 100;
+        public override IEnumerable<TileFlag> Tags => FlagsWall;
 
         public WallCave() : base("Cave Wall")
         {
@@ -988,6 +1023,7 @@ namespace RoguelikeEngine
     class WallPlank : Tile, IMineable
     {
         public override double Durability => 200;
+        public override IEnumerable<TileFlag> Tags => FlagsWallArtificial;
 
         public WallPlank() : base("Plank Wall")
         {
@@ -1038,6 +1074,7 @@ namespace RoguelikeEngine
     class WallOre : Tile, IMineable
     {
         public override double Durability => (Under?.Durability ?? 0) + 50;
+        public override IEnumerable<TileFlag> Tags => FlagsWall;
 
         int Frame = Random.Next(1000);
         Material Material;
@@ -1114,6 +1151,7 @@ namespace RoguelikeEngine
     class WallObsidiorite : Tile, IMineable
     {
         public override double Durability => 2000;
+        public override IEnumerable<TileFlag> Tags => FlagsWall;
 
         public WallObsidiorite() : base("Obsidiorite")
         {
@@ -1174,6 +1212,7 @@ namespace RoguelikeEngine
     class WallMeteorite : Tile, IMineable
     {
         public override double Durability => 4500;
+        public override IEnumerable<TileFlag> Tags => FlagsWall;
 
         public WallMeteorite() : base("Meteorite")
         {
@@ -1234,6 +1273,7 @@ namespace RoguelikeEngine
     class WallBasalt : Tile, IMineable
     {
         public override double Durability => 500;
+        public override IEnumerable<TileFlag> Tags => FlagsWall;
 
         public WallBasalt() : base("Basalt")
         {
@@ -1294,6 +1334,7 @@ namespace RoguelikeEngine
     class WallBrick : Tile, IMineable
     {
         public override double Durability => 1000;
+        public override IEnumerable<TileFlag> Tags => FlagsWallArtificial;
 
         public WallBrick() : base("Brick Wall")
         {
@@ -1342,6 +1383,8 @@ namespace RoguelikeEngine
 
     class Water : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsDeepPool;
+
         public ConnectivityHelper Connectivity;
 
         public Water() : base("Water")
@@ -1412,6 +1455,8 @@ namespace RoguelikeEngine
 
     class WaterShallow : Water
     {
+        public override IEnumerable<TileFlag> Tags => FlagsPool;
+
         public WaterShallow() : base()
         {
             Name = "Shallow Water";
@@ -1460,6 +1505,8 @@ namespace RoguelikeEngine
 
     class Lava : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsDeepPool;
+
         public Lava() : base("Lava")
         {
             Effect.ApplyInnate(new EffectTrait(this, Trait.Lava));
@@ -1495,6 +1542,8 @@ namespace RoguelikeEngine
 
     class SuperLava : Tile
     {
+        public override IEnumerable<TileFlag> Tags => FlagsDeepPool;
+
         static ColorMatrix ColorMatrix = new ColorMatrix(new Matrix(
             1.2f, 0, 0, 0,
             0, 1, 0, 0,
@@ -1549,6 +1598,8 @@ namespace RoguelikeEngine
             0, 0, 0, 1),
             new Vector4(0, 0, 0.4f, 0));
 
+        public override IEnumerable<TileFlag> Tags => FlagsDeepPool;
+
         public HyperLava() : base("Hyper Lava")
         {
             Effect.ApplyInnate(new EffectTrait(this, Trait.HyperLava));
@@ -1590,6 +1641,8 @@ namespace RoguelikeEngine
     class DarkLava : Tile
     {
         static ColorMatrix ColorMatrix = ColorMatrix.Identity;
+
+        public override IEnumerable<TileFlag> Tags => FlagsDeepPool;
 
         ConnectivityHelper Connectivity;
 
@@ -1647,9 +1700,49 @@ namespace RoguelikeEngine
         }
     }
 
+    class Bog : Tile
+    {
+        public override IEnumerable<TileFlag> Tags => FlagsPool;
+
+        public Bog() : base("Bog")
+        {
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Bog));
+        }
+
+        [Construct("pool_bog")]
+        public static Bog Construct(Context context)
+        {
+            return new Bog();
+        }
+
+        public override void AddTooltip(ref string tooltip)
+        {
+            tooltip += $"{Game.FORMAT_BOLD}{Name}{Game.FORMAT_BOLD}\n";
+            base.AddTooltip(ref tooltip);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            SpriteReference mud = SpriteLoader.Instance.AddSprite("content/mud");
+            var color = Group.BrickColor;
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(mud.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), Color.White);
+        }
+
+        public void Destroy()
+        {
+            Replace(new FloorCave());
+        }
+    }
+
+
     class Coral : Tile
     {
         protected int Frame = Random.Next(1000);
+        public override IEnumerable<TileFlag> Tags => FlagsFloor;
 
         public static List<Color> Colors = new List<Color>()
         {
@@ -1750,6 +1843,8 @@ namespace RoguelikeEngine
 
         ConnectivityHelper Connectivity;
 
+        public override IEnumerable<TileFlag> Tags => FlagsDeepPool;
+
         public AcidPool() : base("Acid")
         {
             Effect.ApplyInnate(new EffectTrait(this, Trait.Acid));
@@ -1817,6 +1912,8 @@ namespace RoguelikeEngine
     class Anvil : Tile
     {
         public Container Container;
+
+        public override IEnumerable<TileFlag> Tags => FlagsFurniture;
 
         public Anvil() : base("Anvil")
         {
@@ -1897,6 +1994,8 @@ namespace RoguelikeEngine
         public int FuelAmount => Fuels.Sum(fuel => fuel.Value);
         public int FuelCapacity => FuelCapacities.Sum(fuel => fuel.Value);
         public double SpeedBoost => 1.0f;
+
+        public override IEnumerable<TileFlag> Tags => FlagsFurniture;
 
         public Smelter(SceneGame world) : base("Smelter")
         {

@@ -121,4 +121,24 @@ namespace RoguelikeEngine.Traits
 
         
     }
+
+    class TraitBroil : Trait
+    {
+        public TraitBroil() : base("broil", "Broil", $"When targetted by an attack that would deal {Element.Fire.FormatString} damage, activate each Boiling status effect once.", new Color(255, 64, 16))
+        {
+            Effect.Apply(new OnDefend(this, RoutineBroil));
+        }
+
+        private IEnumerable<Wait> RoutineBroil(Attack attack)
+        {
+            if(attack.SplitElements.Contains(Element.Fire))
+            {
+                foreach(var statusEffect in attack.Defender.GetStatusEffects().OfType<Boiling>())
+                {
+                    statusEffect.Broil();
+                }
+            }
+            yield return Wait.NoWait;
+        }
+    }
 }

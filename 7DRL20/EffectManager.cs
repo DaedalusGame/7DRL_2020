@@ -559,6 +559,12 @@ namespace RoguelikeEngine
                 effect.Remove();
         }
 
+        public static void ClearStatusEffects(this IEffectHolder holder, Func<StatusEffect, bool> match)
+        {
+            foreach (var effect in holder.GetEffects<EffectStatusEffect>().Where(effect => match(effect.StatusEffect)))
+                effect.Remove();
+        }
+
         public static void AddStatusEffect(this IEffectHolder holder, StatusEffect statusEffect)
         {
             statusEffect.Creature = holder;
@@ -579,6 +585,8 @@ namespace RoguelikeEngine
                 statusEffect.Apply();
             }
         }
+
+
 
         public static int GetStatusStacks<T>(this IEffectHolder holder) where T : StatusEffect
         {

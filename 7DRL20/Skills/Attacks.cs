@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
@@ -105,6 +106,34 @@ namespace RoguelikeEngine.Skills
             attack.Elements.Add(Element.Slash, 0.5);
             attack.Elements.Add(Element.Thunder, 0.5);
             return attack;
+        }
+    }
+
+    class SkillHagsKnife : SkillAttackBase
+    {
+        public SkillHagsKnife() : base("Hag's Knife", "Attack", 0, 0, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.ExtraEffects.Add(new AttackEndFunction(RoutineHagKnife));
+            attack.Elements.Add(Element.Slash, 1.0);
+            return attack;
+        }
+
+        private IEnumerable<Wait> RoutineHagKnife(Attack attack)
+        {
+            if(attack.FinalDamage.GetOrDefault(Element.Slash, 0) > 0)
+            {
+                attack.Attacker.AddStatusEffect(new HagsFlesh()
+                {
+                    Buildup = 1,
+                });
+            }
+            yield return Wait.NoWait;
         }
     }
 
@@ -228,7 +257,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance);
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance, 0);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)
@@ -275,7 +304,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance);
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance, 0);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)
@@ -320,8 +349,15 @@ namespace RoguelikeEngine.Skills
 
     class SkillDeathSword : SkillProjectileBase
     {
+        int MaxDistance = 10;
+
         public SkillDeathSword() : base("Death Blade", $"Wide-range {Element.Slash.FormatString} attack", 1, 3, float.PositiveInfinity)
         {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance, 1);
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)
@@ -350,7 +386,7 @@ namespace RoguelikeEngine.Skills
             Projectile projectile = new Projectile(bullet);
             projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
             projectile.ExtraEffects.Add(new ProjectileCollideSolid());
-            return projectile.ShootStraight(user, tile, velocity, 3, 10);
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
         }
 
         private Attack BulletAttack(Creature attacker, IEffectHolder defender)
@@ -377,7 +413,7 @@ namespace RoguelikeEngine.Skills
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && user.AggroTarget != null && (!CheckTarget || InLineOfSight(user, user.AggroTarget, MaxDistance));
+            return base.CanEnemyUse(user) && user.AggroTarget != null && (!CheckTarget || InLineOfSight(user, user.AggroTarget, MaxDistance, 0));
         }
 
         public override object GetEnemyTarget(Enemy user)
@@ -863,6 +899,244 @@ namespace RoguelikeEngine.Skills
                 });
                 yield return user.WaitSome(20);
             }
+        }
+    }
+
+    class SkillMudBath : Skill
+    {
+        int MaxDistance = 4;
+
+        public SkillMudBath() : base("Mud Bath", $"Replaces a 4 tile long carpet in front of the caster with Bog tiles.", 5, 5, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, 4, 1);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.Facing;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Facing facing)
+            {
+                Point offset = facing.ToOffset();
+                Point lateral = facing.ToLateral();
+                Consume();
+                ShowSkill(user);
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(50);
+                Vector2 pos = new Vector2(user.X * 16, user.Y * 16);
+                user.VisualPosition = user.Slide(pos + new Vector2(offset.X * -8, offset.Y * -8), pos, LerpHelper.Linear, 10);
+                Rectangle rect = user.Mask.GetRectangle(user.X, user.Y);
+                for(int dx = 1; dx <= 4; dx++)
+                {
+                    Point left = rect.GetLeft(facing) - lateral;
+                    Point right = rect.GetRight(facing) + lateral;
+                    foreach (Point dy in Util.Between(left,right))
+                    {
+                        Point totalPos = dy + new Point(offset.X * dx, offset.Y * dx);
+                        var tile = user.Map.GetTile(totalPos.X, totalPos.Y);
+                        if (tile.Tags.Contains(TileFlag.Floor) && !tile.Tags.Contains(TileFlag.Artificial))
+                        {
+                            tile.Replace(new Bog());
+                        }
+                    }
+                    yield return user.WaitSome(10);
+                }
+            }
+        }
+    }
+
+    class SkillBoilTallow : Skill
+    {
+        public SkillBoilTallow() : base("Boil Tallow", "Boils stolen flesh in a nearby Walking Cauldron.", 0, 0, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && user.GetStatusStacks<HagsFlesh>() >= 1 && GetValidTargets(user).Any();
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return GetValidTargets(user).Shuffle(Random).First();
+        }
+
+        private IEnumerable<WalkingCauldron> GetValidTargets(Creature user)
+        {
+            IEnumerable<Tile> tiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 4);
+            return tiles.SelectMany(x => x.Creatures.OfType<WalkingCauldron>().Where(creature => !creature.HasStatusEffect<Boiling>())).Distinct();
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if(target is WalkingCauldron cauldron)
+            {
+                var pos = new Vector2(user.X * 16, user.Y * 16);
+                var offset = user.Facing.ToOffset();
+                Consume();
+                ShowSkill(user);
+                yield return user.WaitSome(50);
+                user.VisualPosition = user.Slide(pos + new Vector2(offset.X * 8, offset.Y * 8), pos, LerpHelper.Linear, 10);
+                user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+                cauldron.AddStatusEffect(new BoilingFlesh()
+                {
+                    Buildup = 1,
+                });
+                user.GetStatusEffect<HagsFlesh>().AddBuildup(-1);
+                yield return user.WaitSome(20);
+            }
+        }
+    }
+
+    class SkillTallowCurse : Skill
+    {
+        struct Target
+        {
+            public Creature CurseTarget;
+            public Creature Cauldron;
+
+            public Target(Creature curseTarget, Creature cauldron)
+            {
+                CurseTarget = curseTarget;
+                Cauldron = cauldron;
+            }
+        }
+
+        public SkillTallowCurse() : base("Tallow Curse", $"Consumes Boiling Flesh from a nearby Walking Cauldron. Restores all HP and curses enemy with {Stat.HP.FormatString} down.", 0, 0, float.PositiveInfinity)
+        {
+        }
+
+        private IEnumerable<Creature> GetValidCauldrons(Creature user)
+        {
+            IEnumerable<Tile> tiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 4);
+            return tiles.SelectMany(x => x.Creatures.Where(creature => creature.GetStatusStacks<BoilingFlesh>() >= 15)).Distinct();
+        }
+
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 6) && GetValidCauldrons(user).Any();
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            var cauldron = GetValidCauldrons(user).Shuffle(Random).First();
+            return new Target(user.AggroTarget, cauldron);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Target tgt)
+            {
+                var curseTarget = tgt.CurseTarget;
+                var cauldron = tgt.Cauldron;
+                Consume();
+                ShowSkill(user);
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(50);
+                cauldron.ClearStatusEffects(statusEffect => statusEffect is BoilingFlesh && statusEffect.Buildup >= 15);
+                Effect.Apply(new EffectStat(curseTarget, Stat.HP, -10));
+                curseTarget.TakeStatDamage(90, Stat.HP);
+                yield return user.WaitSome(20);
+            }
+        }
+    }
+
+    class SkillIgniteBog : Skill
+    {
+        public SkillIgniteBog() : base("Ignite Bog", $"Ignite a random Bog tile within 4 tiles radius of the caster and deals {Element.Fire.FormatString} damage in a 1 tile radius. Ignited bog tile will produce fire clouds for 20 turns.", 5, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4) && GetValidTargets(user).Any() && user.CurrentHP < user.GetStat(Stat.HP) / 2;
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        private IEnumerable<Tile> GetValidTargets(Creature user)
+        {
+            IEnumerable<Tile> tiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X,user.Y), 4);
+            return tiles.Where(tile => tile is Bog);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            var targetTile = GetValidTargets(user).Shuffle(Random).First();
+            new FireExplosion(user.World, targetTile.VisualTarget, Vector2.Zero, 0, 15);
+            new ScreenShakeRandom(user.World, 6, 30, LerpHelper.Linear);
+            if (!targetTile.Items.Any(x => x is BurningBog))
+            {
+                BurningBog burningBog = new BurningBog(targetTile.World)
+                {
+                    Duration = new Slider(20),
+                };
+                burningBog.MoveTo(targetTile);
+            }
+            var explosion = new Skills.Explosion(user, SkillUtil.GetCircularArea(targetTile, 1), targetTile.VisualTarget);
+            explosion.Attack = ExplosionAttack;
+            explosion.Fault = user;
+            yield return explosion.Run();
+            yield return user.WaitSome(20);
+        }
+
+        private static Attack ExplosionAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.SetParameters(40, 1, 1);
+            attack.Elements.Add(Element.Fire, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillRaisePeatMummy : Skill
+    {
+        public SkillRaisePeatMummy() : base("Raise Peat Mummy", "Raise a Peat Mummy on a random Bog tile within 4 tiles radius of the caster.", 5, 20, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8) && GetValidTargets(user).Any();
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        private IEnumerable<Tile> GetValidTargets(Creature user)
+        {
+            IEnumerable<Tile> tiles = user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 4);
+            return tiles.Where(tile => tile is Bog);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            var targetTile = GetValidTargets(user).Shuffle(Random).First();
+            var peatMummy = new PeatMummy(targetTile.World);
+            peatMummy.MoveTo(targetTile, 0);
+            peatMummy.AddControlTurn();
+            yield return user.WaitSome(20);
         }
     }
 

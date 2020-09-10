@@ -664,6 +664,83 @@ namespace RoguelikeEngine
             }
         }
 
+        public static Point ToLateral(this Facing facing)
+        {
+            switch (facing)
+            {
+                case (Facing.North):
+                    return new Point(1, 0);
+                case (Facing.East):
+                    return new Point(0, 1);
+                case (Facing.South):
+                    return new Point(-1, 0);
+                case (Facing.West):
+                    return new Point(0, -1);
+                default:
+                    return Point.Zero;
+            }
+        }
+
+        public static int GetWidth(this Rectangle rect, Facing facing)
+        {
+            switch (facing)
+            {
+                case (Facing.North):
+                case (Facing.South):
+                    return rect.Width;
+                case (Facing.East):
+                case (Facing.West):
+                    return rect.Height;
+                default:
+                    return 0;
+            }
+        }
+
+        public static Point GetLeft(this Rectangle rect, Facing facing)
+        {
+            switch (facing)
+            {
+                case (Facing.North):
+                    return new Point(rect.Left, rect.Top);
+                case (Facing.East):
+                    return new Point(rect.Right - 1, rect.Top);
+                case (Facing.South):
+                    return new Point(rect.Right - 1, rect.Bottom - 1);
+                case (Facing.West):
+                    return new Point(rect.Left, rect.Bottom - 1);
+                default:
+                    return Point.Zero;
+            }
+        }
+
+        public static Point GetRight(this Rectangle rect, Facing facing)
+        {
+            switch (facing)
+            {
+                case (Facing.North):
+                    return new Point(rect.Right - 1, rect.Top);
+                case (Facing.East):
+                    return new Point(rect.Right - 1, rect.Bottom - 1);
+                case (Facing.South):
+                    return new Point(rect.Left, rect.Bottom - 1);
+                case (Facing.West):
+                    return new Point(rect.Left, rect.Top);
+                default:
+                    return Point.Zero;
+            }
+        }
+
+        public static IEnumerable<Point> Between(Point a, Point b)
+        {
+            if(a.X == b.X || a.Y == b.Y)
+            {
+                Point d = new Point(Math.Sign(b.X - a.X), Math.Sign(b.Y - a.Y));
+                for (Point x = a; x != b; x += d)
+                    yield return x;
+                yield return b;
+            }
+        }
+
         internal static Color AddColor(Color a, Color b)
         {
             return new Color(a.R + b.R, a.G + b.G, a.B + b.B, a.A + b.A);

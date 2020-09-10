@@ -28,6 +28,26 @@ namespace RoguelikeEngine
         }
     }
 
+    class AttackEndFunction : AttackSpecial
+    {
+        Func<Attack, IEnumerable<Wait>> Function;
+
+        public AttackEndFunction(Func<Attack, IEnumerable<Wait>> function)
+        {
+            Function = function;
+        }
+
+        public override Wait End(Attack attack)
+        {
+            return Scheduler.Instance.RunAndWait(Function(attack));
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
     class AttackDrain : AttackSpecial
     {
         double Rate;

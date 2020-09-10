@@ -325,6 +325,31 @@ namespace RoguelikeEngine.MapGeneration
             }
         }
 
+        protected void MakeLargeBogs()
+        {
+            var rooms = GetCells().Where(cell => cell.Room != null).Select(cell => cell.Room).Distinct();
+
+            foreach (var room in rooms)
+            {
+                var cell = room.Origin;
+                cell.AddSpread(new SpreadLake(null, 5, 0.8f, GeneratorTile.Bog));
+            }
+
+            Generator.Expand();
+        }
+
+        protected void MakeSmallBogs()
+        {
+            int rooms = Rooms.Count();
+            var validArea = GetCells().Where(cell => cell.Tile == GeneratorTile.Floor).Where(cell => cell.GetNeighbors().Any(neighbor => neighbor.Tile.HasTag(TileTag.Wall)));
+            validArea = validArea.Shuffle(Random);
+            foreach (var cell in validArea.Take(rooms / 3))
+            {
+                cell.AddSpread(new SpreadLake(null, 3, 0.8f, GeneratorTile.Bog));
+            }
+            Generator.Expand();
+        }
+
         protected void MakeStoneBridges()
         {
             var rooms = GetCells().Where(cell => cell.Room != null).Select(cell => cell.Room).Distinct();
@@ -697,6 +722,39 @@ namespace RoguelikeEngine.MapGeneration
         public override GeneratorGroup Copy(MapGenerator generator)
         {
             return new CaveWater(generator)
+            {
+                CaveColor = CaveColor,
+                BrickColor = BrickColor,
+                WoodColor = WoodColor,
+                GlowColor = GlowColor,
+                Spawns = Spawns,
+                Atmosphere = Atmosphere,
+            };
+        }
+    }
+
+    class CaveBog : Cave
+    {
+        public CaveBog(MapGenerator generator) : base(generator)
+        {
+        }
+
+        [Construct("group_cave_bog")]
+        public static CaveBog Construct(Context context)
+        {
+            return new CaveBog(null);
+        }
+
+        protected override IEnumerator<Action> GetTechniques()
+        {
+            yield return MakeLargeBogs;
+            yield return MakeSmallBogs;
+            yield return MakeBridges;
+        }
+
+        public override GeneratorGroup Copy(MapGenerator generator)
+        {
+            return new CaveBog(generator)
             {
                 CaveColor = CaveColor,
                 BrickColor = BrickColor,
