@@ -1413,6 +1413,64 @@ namespace RoguelikeEngine
         }
     }
 
+    class BulletNormal : Bullet
+    {
+        protected SpriteReference Sprite;
+        protected ColorMatrix Color;
+        protected double AnimationSpeed;
+
+        public BulletNormal(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix color, float animationSpeed, int time) : base(world, positionStart, time)
+        {
+            Sprite = sprite;
+            Color = color;
+            AnimationSpeed = animationSpeed;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
+            {
+                scene.SetupColorMatrix(Color, matrix, projection);
+            });
+            scene.DrawSpriteExt(Sprite, (int)(Frame.Time * AnimationSpeed), Position - Sprite.Middle, Sprite.Middle, 0, SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
+    class BulletRandom : Bullet
+    {
+        protected SpriteReference Sprite;
+        protected ColorMatrix Color;
+        protected float Angle;
+
+        public BulletRandom(SceneGame world, SpriteReference sprite, Vector2 positionStart, ColorMatrix color, int time) : base(world, positionStart, time)
+        {
+            Sprite = sprite;
+            Color = color;
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
+            {
+                scene.SetupColorMatrix(Color, matrix, projection);
+            });
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Angle, SpriteEffects.None, 0);
+            scene.PopSpriteBatch();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+    }
+
     class BulletAngular : Bullet
     {
         protected SpriteReference Sprite;
@@ -1630,21 +1688,22 @@ namespace RoguelikeEngine
         }
     }
     
-    class Lightning : Projectile
+    class Beam : Projectile
     {
         public int TrailLength;
         public Vector2 TweenTrail => Vector2.Lerp(PositionStart, PositionEnd, MathHelper.Clamp((float)(Frame.Time - TrailLength) / (Frame.EndTime - TrailLength * 2), 0, 1));
         public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MathHelper.Clamp((float)(Frame.Time) / (Frame.EndTime - TrailLength * 2), 0, 1));
+        public SpriteReference Sprite;
 
-        public Lightning(SceneGame world, Vector2 positionStart, Vector2 positionEnd, int time, int trail) : base(world, positionStart, positionEnd, time + trail * 2)
+        public Beam(SceneGame world, SpriteReference sprite, Vector2 positionStart, Vector2 positionEnd, int time, int trail) : base(world, positionStart, positionEnd, time + trail * 2)
         {
+            Sprite = sprite;
             TrailLength = trail;
         }
 
         public override void Impact(Vector2 position)
         {
             Hit = true;
-            new LightningFlash(World, position, Vector2.Zero, 0, 6);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
@@ -1654,16 +1713,27 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            var beam = SpriteLoader.Instance.AddSprite("content/lightning");
-
             Vector2 point1 = TweenTrail;
             Vector2 point2 = Tween;
 
             float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
             int length = (int)(point2 - point1).Length();
             scene.PushSpriteBatch(samplerState: SamplerState.PointWrap);
-            scene.SpriteBatch.Draw(beam.Texture, point1, new Rectangle((int)Frame.Time * 2, 0, length, beam.Height), Color.White, angle, new Vector2(0, beam.Height / 2), 1.0f, SpriteEffects.None, 0);
+            scene.SpriteBatch.Draw(Sprite.Texture, point1, new Rectangle((int)Frame.Time * 2, 0, length, Sprite.Height), Color.White, angle, new Vector2(0, Sprite.Height / 2), 1.0f, SpriteEffects.None, 0);
             scene.PopSpriteBatch();
+        }
+    }
+
+    class Lightning : Beam
+    {
+        public Lightning(SceneGame world, Vector2 positionStart, Vector2 positionEnd, int time, int trail) : base(world, SpriteLoader.Instance.AddSprite("content/lightning"), positionStart, positionEnd, time, trail)
+        {
+        }
+
+        public override void Impact(Vector2 position)
+        {
+            Hit = true;
+            new LightningFlash(World, position, Vector2.Zero, 0, 6);
         }
     }
 

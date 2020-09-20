@@ -575,6 +575,41 @@ namespace RoguelikeEngine
         }
     }
 
+    class Oiled : StatusEffect
+    {
+        public override string Name => $"Oiled";
+        public override string Description => $"Triples {Element.Fire.FormatString} damage.";
+
+        public override int MaxStacks => 1;
+
+        public Oiled() : base()
+        {
+        }
+
+        [Construct("oiled")]
+        public static Oiled Construct(Context context)
+        {
+            return new Oiled();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatMultiply(this, Element.Fire.DamageRate, 3.0));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Oiled;
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
     class HealSlimed : StatusEffect
     {
         public override string Name => $"Slimed";

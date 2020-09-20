@@ -736,6 +736,8 @@ namespace RoguelikeEngine
 
             foreach(var expGain in hits)
             {
+                if (expGain.Value <= 0)
+                    continue;
                 expGain.Key.Experience += expGain.Value;
                 int orbs = (int)Math.Ceiling(Math.Log(expGain.Value, 3));
                 int time = orbs * 5 + 10;

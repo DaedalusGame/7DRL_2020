@@ -44,6 +44,12 @@ namespace RoguelikeEngine.MapGeneration
         public static EnemySpawn AcidBlob = new SingleSpawn("acid_blob", (world) => new AcidBlob(world));
 
         public static EnemySpawn SwampHag = new HagSpawn("swamp_hag", (world) => new SwampHag(world), (world) => new WalkingCauldron(world));
+
+        public static EnemySpawn ArmorTenmoku = new SingleSpawn("armor_tenmoku", (world) => new ArmorTenmoku(world));
+        public static EnemySpawn ArmorParis = new SingleSpawn("armor_paris", (world) => new ArmorParis(world));
+        public static EnemySpawn ArmorBrine = new SingleSpawn("armor_brine", (world) => new ArmorBrine(world));
+        public static EnemySpawn ArmorCrystal = new SingleSpawn("armor_crystal", (world) => new ArmorCrystal(world));
+        public static EnemySpawn ArmorSullen = new SingleSpawn("armor_sullen", (world) => new ArmorSullen(world));
     }
 
     class SingleSpawn : EnemySpawn

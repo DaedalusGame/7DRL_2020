@@ -39,6 +39,7 @@ namespace RoguelikeEngine.Enemies
         public static Family Undead = new Family("undead", "Undead");
         public static Family Dragon = new Family("dragon", "Dragon");
         public static Family Slime = new Family("slime", "Slime");
+        public static Family Construct = new Family("construct", "Construct");
 
         public static Family GreenSlime = new Family("slime_green", "Green Slime");
     }
@@ -449,10 +450,11 @@ namespace RoguelikeEngine.Enemies
             Render = new CreatureCannonRender(ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen));
             Mask.Add(Point.Zero);
 
+            Effect.ApplyInnate(new EffectFamily(this, Family.Construct));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
+
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 600));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 25));
-
-            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Skills.Add(new SkillCannonShot());
         }
@@ -509,6 +511,7 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
+            Effect.ApplyInnate(new EffectFamily(this, Family.Construct));
             Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));

@@ -294,6 +294,225 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    abstract class SkillVolleyBase : SkillProjectileBase
+    {
+        protected int MaxDistance = 10;
+        protected int VolleysMin = 1;
+        protected int VolleysMax = 1;
+
+        public SkillVolleyBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance, 0);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Facing facing)
+            {
+                Point velocity = facing.ToOffset();
+                Consume();
+                ShowSkill(user);
+                yield return user.WaitSome(20);
+                var pos = new Vector2(user.X * 16, user.Y * 16);
+                var waits = new List<Wait>();
+                int volleys = Random.Next(VolleysMin, VolleysMax + 1);
+                for (int i = 0; i < volleys; i++)
+                {
+                    user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
+                    user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+                    waits.Add(Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity)));
+                    yield return new WaitTime(10);
+                }
+                yield return new WaitAll(waits);
+            }
+        }
+
+        protected abstract IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity);
+    }
+
+    class SkillPetrolVolley : SkillVolleyBase
+    {
+        public SkillPetrolVolley() : base("Petrol Volley", "Inflicts Oiled", 1, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletNormal(user.World, SpriteLoader.Instance.AddSprite("content/bullet_oil"), Vector2.Zero, ColorMatrix.Identity, 0, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+            //new Color(225, 174, 210)
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            attack.StatusEffects.Add(new Oiled()
+            {
+                Buildup = 1.0,
+                Duration = new Slider(20),
+            });
+            return attack;
+        }
+    }
+
+    class SkillSaltVolley : SkillVolleyBase
+    {
+        public SkillSaltVolley() : base("Salt Blast Volley", "", 1, 3, float.PositiveInfinity)
+        {
+            VolleysMin = 3;
+            VolleysMax = 6;
+        }
+
+        protected override IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletRandom(user.World, SpriteLoader.Instance.AddSprite("content/bullet_salt"), Vector2.Zero, ColorMatrix.Identity, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+            //new Color(225, 174, 210)
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillPoisonVolley : SkillVolleyBase
+    {
+        public SkillPoisonVolley() : base("Poison Spit Volley", "", 1, 3, float.PositiveInfinity)
+        {
+            VolleysMin = 1;
+            VolleysMax = 3;
+        }
+
+        protected override IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletNormal(user.World, SpriteLoader.Instance.AddSprite("content/bullet_poison"), Vector2.Zero, ColorMatrix.Identity, 0, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+            //new Color(225, 174, 210)
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            attack.StatusEffects.Add(new Poison()
+            {
+                Duration = new Slider(15),
+                Buildup = 0.4,
+            });
+            return attack;
+        }
+    }
+
+    class SkillAcidVolley : SkillVolleyBase
+    {
+        public SkillAcidVolley() : base("Acid Arrow Volley", "", 1, 3, float.PositiveInfinity)
+        {
+            VolleysMin = 2;
+            VolleysMax = 7;
+        }
+
+        protected override IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletAngular(user.World, SpriteLoader.Instance.AddSprite("content/bullet_acid_bolt"), Vector2.Zero, ColorMatrix.Identity, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+            //new Color(225, 174, 210)
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Pierce, 1.0);
+            attack.StatusEffects.Add(new DefenseDown()
+            {
+                Duration = new Slider(15),
+                Buildup = 0.3,
+            });
+            return attack;
+        }
+    }
+
+    class SkillChainLightningVolley : SkillVolleyBase
+    {
+        public SkillChainLightningVolley() : base("Chain Lightning", "", 1, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletNormal(user.World, SpriteLoader.Instance.AddSprite("content/bullet_lightning"), Vector2.Zero, ColorMatrix.Identity, 0.5f, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactFunction(Impact));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+            //new Color(225, 174, 210)
+        }
+
+        private IEnumerable<Wait> Impact(Projectile projectile, Tile tile)
+        {
+            Creature targetCreature = tile.Creatures.FirstOrDefault();
+            if (targetCreature != null)
+            {
+                CascadeHelper cascade = new CascadeHelper(CascadeNearby, Arc, 3)
+                {
+                    ArcDelay = 1,
+                };
+                cascade.Hits.Add(projectile.Shooter, 10000);
+                yield return Scheduler.Instance.RunAndWait(cascade.Start(targetCreature));
+                var waits = new List<Wait>();
+                foreach (var hit in cascade.Hits)
+                {
+                    if (hit.Key == projectile.Shooter) //Don't damage the originator
+                        continue;
+                    var wait = projectile.Shooter.Attack(hit.Key, Vector2.Zero, (a,b) => ThunderAttack(a, b, hit.Value));
+                    waits.Add(wait);
+                }
+            }
+        }
+
+        private IEnumerable<Creature> CascadeNearby(Creature creature, CascadeHelper helper)
+        {
+            return CascadeHelper.GetNearbyCircular(creature, helper, 3, 2);
+        }
+
+        private IEnumerable<Wait> Arc(Creature start, Creature end)
+        {
+            //new Lightning(start.World, start.VisualTarget, end.VisualTarget, 10, 10);
+            //new LightningSpark(start.World, SpriteLoader.Instance.AddSprite("content/lightning"), start.VisualTarget, end.VisualTarget, 3);
+            new Beam(start.World, SpriteLoader.Instance.AddSprite("content/lightning"), start.VisualTarget, end.VisualTarget, 5, 10);
+            yield return new WaitTime(5);
+            //var wait = origin.Attack(end, SkillUtil.SafeNormalize(end.VisualTarget - start.VisualTarget), ThunderAttack);
+            //yield return wait;
+        }
+
+        private Attack ThunderAttack(Creature attacker, IEffectHolder defender, int hits)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(hits * 10, 1, 1);
+            attack.Elements.Add(Element.Thunder, 1.0);
+            return attack;
+        }
+    }
+
     class SkillCannonShot : SkillProjectileBase
     {
         int MaxDistance = 8;
@@ -1040,6 +1259,7 @@ namespace RoguelikeEngine.Skills
                 Consume();
                 ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                cauldron.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
                 cauldron.ClearStatusEffects(statusEffect => statusEffect is BoilingFlesh && statusEffect.Buildup >= 15);
                 Effect.Apply(new EffectStat(curseTarget, Stat.HP, -10));

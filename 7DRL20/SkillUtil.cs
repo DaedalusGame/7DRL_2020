@@ -43,6 +43,90 @@ namespace RoguelikeEngine
         };
     }
 
+    class CascadeHelper
+    {
+        public delegate IEnumerable<Creature> GetNearbyDelegate(Creature creature, CascadeHelper cascade);
+        public delegate IEnumerable<Wait> ArcDelegate(Creature start, Creature end);
+
+        GetNearbyDelegate GetNearby;
+        ArcDelegate Arc;
+        public Dictionary<Creature, int> Hits = new Dictionary<Creature, int>();
+        public int StrikesMax = 1; //How often we can hit the same target total
+        public int LoopsMax = 1; //How often we can hit the same target on the same branch
+        public int TotalMax = int.MaxValue; //How often we can hit total
+        int MaxDepth; //Maximum recursion depth
+        public int ArcDelay; //Delay before shooting off the next arc
+
+        static Random Random = new Random();
+
+        public CascadeHelper(GetNearbyDelegate getNearby, ArcDelegate arc, int maxDepth)
+        {
+            GetNearby = getNearby;
+            Arc = arc;
+            MaxDepth = maxDepth;
+        }
+
+        public IEnumerable<Wait> Start(Creature start)
+        {
+            AddHit(start);
+            List<Wait> waitForArcs = new List<Wait>();
+            foreach(var nearby in GetNearby(start, this))
+            {
+                if (!CanHit(nearby) || Hits.Sum(pair => pair.Value) >= TotalMax)
+                    continue;
+                waitForArcs.Add(Scheduler.Instance.RunAndWait(Branch(start, nearby, new Dictionary<Creature, int>(), 0)));
+                yield return new WaitTime(ArcDelay);
+            }
+            yield return new WaitAll(waitForArcs);
+        }
+
+        public IEnumerable<Wait> Branch(Creature start, Creature end, Dictionary<Creature, int> branchHits, int depth)
+        {
+            AddHit(end, branchHits);
+            yield return Scheduler.Instance.RunAndWait(Arc(start, end));
+            if (depth < MaxDepth) //We can blast more targets, cascade
+            {
+                List<Wait> waitForArcs = new List<Wait>();
+                foreach (var nearby in GetNearby(end, this))
+                {
+                    if (!CanHit(nearby, branchHits) || Hits.Sum(pair => pair.Value) >= TotalMax)
+                        continue;
+                    var hits = new Dictionary<Creature, int>(branchHits);
+                    waitForArcs.Add(Scheduler.Instance.RunAndWait(Branch(end, nearby, hits, depth + 1)));
+                    yield return new WaitTime(ArcDelay);
+                }
+                yield return new WaitAll(waitForArcs);
+            }
+        }
+
+        private void AddHit(Creature target)
+        {
+            Hits.Operate(target, 1, (a, b) => a + b);
+        }
+
+        private void AddHit(Creature target, Dictionary<Creature, int> branchHits)
+        {
+            AddHit(target);
+            branchHits.Operate(target, 1, (a, b) => a + b);
+        }
+
+        private bool CanHit(Creature target)
+        {
+            return Hits.GetOrDefault(target, 0) < StrikesMax;
+        }
+
+        private bool CanHit(Creature target, Dictionary<Creature, int> branchHits)
+        {
+            return branchHits.GetOrDefault(target, 0) < LoopsMax && CanHit(target);
+        }
+
+        public static IEnumerable<Creature> GetNearbyCircular(Creature creature, CascadeHelper cascade, int radius, int count)
+        {
+            var creatures = SkillUtil.GetCircularArea(creature, radius).SelectMany(x => x.Creatures).Distinct().Where(x => cascade.CanHit(x));
+            return creatures.Shuffle(Random).Take(count);
+        }
+    }
+
     static class SkillUtil
     {
         class CryptDustSpawnPos
