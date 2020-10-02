@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
+using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,6 +73,15 @@ namespace RoguelikeEngine.Effects
         public virtual void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
             //NOOP
+        }
+
+        public Color GetStatColor(IEffectHolder holder)
+        {
+            if(holder is Trait trait)
+            {
+                return trait.Color;
+            }
+            return Color.White;
         }
 
         //TODO: Mark abstract so I can't make mistakes

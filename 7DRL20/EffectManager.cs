@@ -394,10 +394,10 @@ namespace RoguelikeEngine
         public static double CalculateStat(IEffectHolder holder, IEnumerable<Effect> effects, double defaultStat)
         {
             var groups = effects.ToTypeLookup();
-            var baseStat = defaultStat + groups.Get<EffectStat>().Where(stat => stat.Base).Sum(stat => stat.Amount(holder));
-            var add = groups.Get<EffectStat>().Where(stat => !stat.Base).Sum(stat => stat.Amount(holder));
-            var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
-            var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
+            var baseStat = defaultStat + groups.Get<EffectStatBase>().Where(stat => stat.Base).Sum(stat => stat.Amount(holder));
+            var add = groups.Get<EffectStatBase>().Where(stat => !stat.Base).Sum(stat => stat.Amount(holder));
+            var percentage = groups.Get<EffectStatPercentBase>().Sum(stat => stat.Percentage(holder));
+            var multiplier = groups.Get<EffectStatMultiplyBase>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier(holder));
             var locks = groups.Get<EffectStatLock>();
             var min = locks.Any() ? locks.Max(stat => stat.MinValue) : double.NegativeInfinity;
             var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
-    class EffectStatPercent : Effect, IStat
+    abstract class EffectStatPercentBase : Effect, IStat
     {
         public IEffectHolder Holder;
         public Stat Stat
@@ -15,24 +15,9 @@ namespace RoguelikeEngine.Effects
             get;
             set;
         }
-        public virtual double Percentage
-        {
-            get;
-            set;
-        }
+        public abstract double Percentage(IEffectHolder holder);
 
         public override double VisualPriority => Stat.Priority + 0.1;
-
-        public EffectStatPercent()
-        {
-        }
-
-        public EffectStatPercent(IEffectHolder holder, Stat stat, double percentage)
-        {
-            Holder = holder;
-            Stat = stat;
-            Percentage = percentage;
-        }
 
         public override void Apply()
         {
@@ -47,7 +32,7 @@ namespace RoguelikeEngine.Effects
 
         public override bool StatEquals(Effect other)
         {
-            return other is EffectStatPercent stat && stat.Stat == Stat;
+            return other is EffectStatPercentBase stat && stat.Stat == Stat;
         }
 
         public override int GetStatHashCode()
@@ -59,14 +44,40 @@ namespace RoguelikeEngine.Effects
         {
             if (Stat.Hidden)
                 return;
-            var percentage = equalityGroup.OfType<EffectStatPercent>().Sum(stat => stat.Percentage);
+
+            var stats = equalityGroup.OfType<EffectStatPercentBase>();
+            AddStatLine(ref statBlock, stats);
+        }
+
+        public abstract void AddStatLine(ref string statBlock, IEnumerable<Effect> equalityGroup);
+    }
+
+    class EffectStatPercent : EffectStatPercentBase
+    {
+        public double BasePercentage;
+        public override double Percentage(IEffectHolder holder) => BasePercentage;
+
+        public EffectStatPercent()
+        {
+        }
+
+        public EffectStatPercent(IEffectHolder holder, Stat stat, double percentage)
+        {
+            Holder = holder;
+            Stat = stat;
+            BasePercentage = percentage;
+        }
+
+        public override void AddStatLine(ref string statBlock, IEnumerable<Effect> equalityGroup)
+        {
+            var percentage = equalityGroup.OfType<EffectStatPercent>().Sum(stat => stat.BasePercentage);
             if (percentage != 0)
                 statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}%\n";
         }
 
         public override string ToString()
         {
-            return $"{Stat} {Percentage*100:+0;-#}% ({Holder})";
+            return $"{Stat} {BasePercentage * 100:+0;-#}% ({Holder})";
         }
 
         [Construct("stat_percent")]
@@ -81,7 +92,7 @@ namespace RoguelikeEngine.Effects
             json["id"] = Serializer.GetID(this);
             json["holder"] = Serializer.GetHolderID(Holder);
             json["stat"] = Stat.ID;
-            json["percentage"] = Percentage;
+            json["percentage"] = BasePercentage;
             return json;
         }
 
@@ -89,53 +100,52 @@ namespace RoguelikeEngine.Effects
         {
             Holder = Serializer.GetHolder<IEffectHolder>(json["holder"], context);
             Stat = Stat.GetStat(json["stat"].Value<string>());
-            Percentage = json["percentage"].Value<double>();
+            BasePercentage = json["percentage"].Value<double>();
         }
 
-        public class Stackable : EffectStatPercent
+        public class Stackable : EffectStatPercentBase
         {
             double PerStack;
 
-            public Stackable(StatusEffect holder, Stat stat, double perStack) : base(holder, stat, perStack)
+            public override double Percentage(IEffectHolder holder) => PerStack * ((StatusEffect)Holder).Stacks;
+
+            public Stackable(StatusEffect holder, Stat stat, double perStack)
             {
+                Holder = holder;
+                Stat = stat;
                 PerStack = perStack;
             }
 
-            public override double Percentage
+            public override void AddStatLine(ref string statBlock, IEnumerable<Effect> equalityGroup)
             {
-                get
-                {
-                    return PerStack * ((StatusEffect)Holder).Stacks;
-                }
-                set
-                {
-                    //NOOP
-                }
+                var percentage = equalityGroup.OfType<Stackable>().Sum(stat => stat.PerStack);
+                if (percentage != 0)
+                    statBlock += $"{Game.FormatColor(GetStatColor(Holder))}{Game.FormatStat(Stat)} {Stat.Name} {((int)Math.Round(percentage * 100)).ToString("+0;-#")}% per Stack{Game.FormatColor()}\n";
             }
         }
 
-        public class Randomized : EffectStatPercent
+        public class Randomized : EffectStatPercentBase
         {
             Random Random = new Random();
             double Lower;
             double Upper;
 
-            public Randomized(IEffectHolder holder, Stat stat, double lower, double upper) : base(holder, stat, 0)
+            public override double Percentage(IEffectHolder holder) => Lower + Random.NextDouble() * (Upper - Lower);
+
+            public Randomized(IEffectHolder holder, Stat stat, double lower, double upper)
             {
+                Holder = holder;
+                Stat = stat;
                 Lower = lower;
                 Upper = upper;
             }
 
-            public override double Percentage
+            public override void AddStatLine(ref string statBlock, IEnumerable<Effect> equalityGroup)
             {
-                get
-                {
-                    return Lower + Random.NextDouble() * (Upper - Lower);
-                }
-                set
-                {
-                    //NOOP
-                }
+                var lower = equalityGroup.OfType<Randomized>().Sum(stat => stat.Lower);
+                var upper = equalityGroup.OfType<Randomized>().Sum(stat => stat.Upper);
+                if (lower != 0 || upper != 0)
+                    statBlock += $"{Game.FormatColor(GetStatColor(Holder))}{Game.FormatStat(Stat)} {Stat.Name} {((int)Math.Round(lower * 100)).ToString("+0;-#")}% ~ {((int)Math.Round(upper * 100)).ToString("+0;-#")}%{Game.FormatColor()}\n";
             }
         }
     }

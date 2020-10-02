@@ -62,7 +62,7 @@ namespace RoguelikeEngine.Effects
         public override void AddStatBlock(ref string statBlock, IEnumerable<Effect> equalityGroup)
         {
             var total = equalityGroup.OfType<EffectElement>().Sum(element => element.Percentage);
-            statBlock += $"{Game.FormatElement(Element)} {Game.FORMAT_BOLD}{Element}{Game.FORMAT_BOLD} {((int)Math.Round(total * 100)).ToString("0;-#")}%\n";
+            statBlock += $"{Game.FormatColor(GetStatColor(Holder))}{Game.FormatElement(Element)} {Game.FORMAT_BOLD}{Element}{Game.FORMAT_BOLD} {((int)Math.Round(total * 100)).ToString("0;-#")}%{Game.FormatColor()}\n";
         }
 
         [Construct("element")]

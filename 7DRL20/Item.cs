@@ -762,7 +762,7 @@ namespace RoguelikeEngine
 
         private void AddStatBlock(ref string statBlock, IEnumerable<Effect> effects)
         {
-            var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
+            var effectGroups = effects.SplitEffects<Effect>().GroupBy(effect => effect, Effect.StatEquality);
 
             foreach (var group in effectGroups.OrderBy(group => group.Key.VisualPriority))
             {

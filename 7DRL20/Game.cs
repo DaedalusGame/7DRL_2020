@@ -305,6 +305,15 @@ namespace RoguelikeEngine
             return builder.ToString();
         }
 
+        public static string FormatColor()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FORMAT_COLOR);
+            builder.Append(StringUtil.ToFormatString(Color.White));
+            return builder.ToString();
+        }
+
+
         public static string FormatBorder(Color color)
         {
             StringBuilder builder = new StringBuilder();

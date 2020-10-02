@@ -78,7 +78,7 @@ namespace RoguelikeEngine.Effects
             var baseText = isBase ? "Base" : string.Empty;
             var amount = equalityGroup.OfType<EffectStat>().Sum(stat => stat.BaseAmount);
             if (amount != 0)
-                statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {amount.ToString("+0;-#")} {baseText}\n";
+                statBlock += $"{Game.FormatColor(GetStatColor(Holder))}{Game.FormatStat(Stat)} {Stat.Name} {amount.ToString("+0;-#")} {baseText}{Game.FormatColor()}\n";
         }
 
         public override string ToString()
@@ -126,7 +126,7 @@ namespace RoguelikeEngine.Effects
                 var baseText = isBase ? "Base" : string.Empty;
                 var amount = equalityGroup.OfType<Stackable>().Sum(stat => stat.PerStack);
                 if (amount != 0)
-                    statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {amount.ToString("+0;-#")} {baseText} per Stack\n";
+                    statBlock += $"{Game.FormatColor(GetStatColor(Holder))}{Game.FormatStat(Stat)} {Stat.Name} {amount.ToString("+0;-#")} {baseText} per Stack{Game.FormatColor()}\n";
             }
 
             public override bool StatEquals(Effect other)
@@ -161,7 +161,7 @@ namespace RoguelikeEngine.Effects
                 var lower = equalityGroup.OfType<Randomized>().Sum(stat => stat.Lower);
                 var upper = equalityGroup.OfType<Randomized>().Sum(stat => stat.Upper);
                 if (lower != 0 || upper != 0)
-                    statBlock += $"{Game.FormatStat(Stat)} {Stat.Name} {lower.ToString("+0;-#")} - {upper.ToString("+0;-#")} {baseText}\n";
+                    statBlock += $"{Game.FormatColor(GetStatColor(Holder))}{Game.FormatStat(Stat)} {Stat.Name} {lower.ToString("+0;-#")} ~ {upper.ToString("+0;-#")} {baseText}{Game.FormatColor()}\n";
             }
         }
 
