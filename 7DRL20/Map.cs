@@ -361,7 +361,7 @@ namespace RoguelikeEngine
             var effects = effectHolders.SelectMany(holder => EffectManager.GetEffects<Effect>(holder, false)).Distinct().ToList();
             foreach (var effect in effects)
             {
-                if (!effect.Innate)
+                if (!effect.Type.HasFlag(EffectType.NoSerialize))
                     effectsArray.Add(effect.WriteJson());
             }
 

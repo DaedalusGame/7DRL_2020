@@ -28,9 +28,9 @@ namespace RoguelikeEngine
             get;
             private set;
         }
-        public string EffectsString => string.Join(",\n", GetEffects<Effect>().Select(x => x.ToString()));
-        public string StatString => string.Join(",\n", GetEffects<EffectStat>().GroupBy(stat => stat.Stat).Select(stat => $"{stat.Key} {stat.Sum(x => x.Amount)}"));
-        public string EquipEffectsString => string.Join(",\n", GetEquipEffects(EquipSlot.Body).Select(x => x.ToString()));
+        //public string EffectsString => string.Join(",\n", GetEffects<Effect>().Select(x => x.ToString()));
+        //public string StatString => string.Join(",\n", GetEffects<EffectStat>().GroupBy(stat => stat.Stat).Select(stat => $"{stat.Key} {stat.Sum(x => x.Amount)}"));
+        //public string EquipEffectsString => string.Join(",\n", GetEquipEffects(EquipSlot.Body).Select(x => x.ToString()));
 
         public int X => Tile.X;
         public int Y => Tile.Y;

@@ -7,6 +7,17 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    [Flags]
+    enum EffectType
+    {
+        None = 0,
+        NoSerialize = 1,
+        NoApply = 2,
+
+        Innate = NoSerialize, //Doesn't serialize
+        Transient = NoSerialize | NoApply, //Doesn't serialize and doesn't apply directly
+    }
+
     [SerializeInfo]
     abstract class Effect
     {
@@ -25,7 +36,7 @@ namespace RoguelikeEngine.Effects
 
         public static IEqualityComparer<Effect> StatEquality = new StatEqualityComparer();
 
-        public bool Innate = false;
+        public EffectType Type = EffectType.None;
         public bool Removed = false;
         public virtual double VisualPriority => 0;
 
@@ -43,7 +54,7 @@ namespace RoguelikeEngine.Effects
 
         public static void ApplyInnate(Effect effect)
         {
-            effect.Innate = true;
+            effect.Type = EffectType.Innate;
             effect.Apply();
         }
 

@@ -122,6 +122,28 @@ namespace RoguelikeEngine.Traits
         
     }
 
+    class TraitOverclock : Trait
+    {
+        public TraitOverclock() : base("overclock", "Overclock", $"When Oiled, gain extra turns.", new Color(255, 64, 16))
+        {
+            Effect.Apply(new EffectStat.Special(this, Stat.Speed, GetSpeedBonus, GetSpeedBonusLine, "OverclockBonus"));
+        }
+
+        private double GetSpeedBonus(Effect effect, IEffectHolder holder)
+        {
+            return holder.HasStatusEffect<Oiled>() ? holder.GetTrait(this) : 0;
+        }
+
+        private void GetSpeedBonusLine(ref string statBlock, IEnumerable<Effect> equalityGroup, bool isBase)
+        {
+            var baseText = isBase ? "Base" : string.Empty;
+            var myStat = Stat.Speed;
+            var amount = 1;
+            if (amount != 0)
+                statBlock += $"{Game.FormatStat(myStat)} {myStat.Name} {amount.ToString("+0;-#")} {baseText} (if Oiled)\n";
+        }
+    }
+
     class TraitBroil : Trait
     {
         public TraitBroil() : base("broil", "Broil", $"When targetted by an attack that would deal {Element.Fire.FormatString} damage, activate each Boiling status effect once.", new Color(255, 64, 16))

@@ -51,6 +51,7 @@
     <Compile Include="Effects\EffectLastHit.cs" />
     <Compile Include="Effects\EffectName.cs" />
     <Compile Include="Effects\EffectStatDamage.cs" />
+    <Compile Include="Effects\Enchantment.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Effects\OnShoot.cs" />
     <Compile Include="Effects\OnTurn.cs" />
@@ -1063,6 +1064,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\projectile_chaos.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\pugnbaba_strip3.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\rain_strip4.png">

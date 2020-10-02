@@ -273,6 +273,52 @@ namespace RoguelikeEngine
             return targetTiles;
         }
 
+        struct Circle
+        {
+            public Vector2 Position;
+            public float Radius;
+
+            public Circle(Vector2 position, float radius)
+            {
+                Position = position;
+                Radius = radius;
+            }
+
+            public bool Contains(Vector2 pos)
+            {
+                return (pos - Position).LengthSquared() <= Radius * Radius;
+            }
+        }
+
+        public static IEnumerable<Tile> GetShieldedExplosionTiles(Creature origin, int radius, int shieldRadius)
+        {
+            return GetShieldedExplosionTiles(origin.Tile, origin.Mask.GetRectangle(origin.X, origin.Y), origin.VisualTarget, radius, shieldRadius);
+        }
+
+        public static IEnumerable<Tile> GetShieldedExplosionTiles(Tile origin, int radius, int shieldRadius)
+        {
+            return GetShieldedExplosionTiles(origin, new Rectangle(origin.X, origin.Y, 1, 1), origin.VisualTarget, radius, shieldRadius);
+        }
+
+        public static IEnumerable<Tile> GetShieldedExplosionTiles(Tile origin, Rectangle rectangle, Vector2 center, int radius, int shieldRadius)
+        {
+            var circle = GetCircularArea(origin, rectangle, center, radius).ToList();
+            var shields = new List<Circle>();
+            foreach (var shieldTile in circle.Where(tile => tile.Solid))
+            {
+                var normal = Vector2.Normalize(shieldTile.VisualTarget - center);
+                var circleCenter = shieldTile.VisualTarget + normal * shieldRadius;
+                shields.Add(new Circle(circleCenter, shieldRadius + 0.5f));
+            }
+            foreach (var tile in circle.Where(tile => !tile.Solid))
+            {
+                var tileCenter = tile.VisualTarget;
+                var shielded = shields.Any(shield => shield.Contains(tileCenter));
+                if (!shielded)
+                    yield return tile;
+            }
+        }
+
         public static IEnumerable<Wait> Spark(Creature user, Random random, AttackDelegate attack)
         {
             var lightning = SpriteLoader.Instance.AddSprite("content/lightning");

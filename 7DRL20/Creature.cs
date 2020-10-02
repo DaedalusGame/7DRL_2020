@@ -336,6 +336,7 @@ namespace RoguelikeEngine
                 return $"x{value}";
         }
 
+        public static Stat Level = new Stat("level", "Level", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_level"));
         public static Stat HP = new Stat("hp", "HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"))
         {
             Format = FormatHP,
@@ -1255,6 +1256,7 @@ namespace RoguelikeEngine
             json["name"] = Name;
             json["description"] = Description;
             json["experience"] = Experience;
+            json["facing"] = new JValue(Facing);
             return json;
         }
 
@@ -1265,6 +1267,7 @@ namespace RoguelikeEngine
             Name = json["name"].Value<string>();
             Description = json["description"].Value<string>();
             Experience = json["experience"].ValueOr<double>(0);
+            Facing = (Facing)json["facing"].ValueOr<int>((int)Facing.South);
         }
 
         public void AfterLoad()

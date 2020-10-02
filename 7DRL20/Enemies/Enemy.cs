@@ -405,6 +405,77 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class MardukeRender : CreatureRender
+    {
+        public SpriteReference Sprite;
+        public ColorMatrix Color = ColorMatrix.Identity;
+
+        public override void Draw(SceneGame scene, Creature creature)
+        {
+            var mirror = GetMirror(creature);
+            int facingOffset = GetFacingOffset(creature);
+            int frameOffset = GetFrameOffset(creature);
+
+            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
+            {
+                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+            });
+            scene.DrawSprite(Sprite, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
+            scene.PopSpriteBatch();
+        }
+
+        protected static Microsoft.Xna.Framework.Graphics.SpriteEffects GetMirror(Creature creature)
+        {
+            return creature.VisualFacing() == Facing.East ? Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally : Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
+        }
+
+        protected static int GetFacingOffset(Creature creature)
+        {
+            int facingOffset = 0;
+            switch (creature.VisualFacing())
+            {
+                case (Facing.North):
+                    facingOffset = 0;
+                    break;
+                case (Facing.East):
+                    facingOffset = 5;
+                    break;
+                case (Facing.South):
+                    facingOffset = 10;
+                    break;
+                case (Facing.West):
+                    facingOffset = 5;
+                    break;
+            }
+
+            return facingOffset;
+        }
+
+        protected static int GetFrameOffset(Creature creature)
+        {
+            int frameOffset = 0;
+
+            switch (creature.VisualPose())
+            {
+                case (CreaturePose.Stand):
+                    frameOffset = 1;
+                    break;
+                case (CreaturePose.Walk):
+                    double lerp = LerpHelper.ForwardReverse(0, 2, (creature.Frame / 50.0) % 1);
+                    frameOffset = (int)Math.Round(lerp);
+                    break;
+                case (CreaturePose.Attack):
+                    frameOffset = 3;
+                    break;
+                case (CreaturePose.Cast):
+                    frameOffset = 4;
+                    break;
+            }
+
+            return frameOffset;
+        }
+    }
+
     class CreatureStaticRender : CreatureRender
     {
         public SpriteReference Sprite;

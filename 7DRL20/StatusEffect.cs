@@ -864,10 +864,11 @@ namespace RoguelikeEngine
         {
             string statBlock = String.Empty;
             var effects = GetEffects<Effect>();
-            var statGroups = effects.OfType<IStat>().GroupBy(stat => stat.Stat, stat => (Effect)stat).OrderBy(group => group.Key.Priority);
-            foreach (var stat in statGroups)
+            var effectGroups = effects.GroupBy(effect => effect, Effect.StatEquality);
+
+            foreach (var group in effectGroups.OrderBy(group => group.Key.VisualPriority))
             {
-                statBlock += stat.GetStatBonus(stat.Key);
+                group.Key.AddStatBlock(ref statBlock, group);
             }
             return statBlock.TrimEnd('\n');
         }

@@ -91,6 +91,105 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class Pugnbaba : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public Pugnbaba(SceneGame world) : base(world)
+        {
+            Name = "Pugnbaba";
+            Description = "Something smell in here?";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/pugnbaba"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 900));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Skills.Add(new SkillAttack());
+        }
+
+        [Construct("pugnbaba")]
+        public static Pugnbaba Construct(Context context)
+        {
+            return new Pugnbaba(context.World);
+        }
+    }
+
+    class Leo : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public Leo(SceneGame world) : base(world)
+        {
+            Name = "Leo";
+            Description = "Something smell in here?";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/pugnbaba"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 900));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Skills.Add(new SkillAttack());
+        }
+
+        [Construct("leo")]
+        public static Leo Construct(Context context)
+        {
+            return new Leo(context.World);
+        }
+    }
+
+    class Marduke : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public Marduke(SceneGame world) : base(world)
+        {
+            Name = "Marduke";
+            Description = "BAAAAH";
+
+            Render = new BigCreatureRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/marduke"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1200));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 170));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Skills.Add(new SkillAttack());
+        }
+
+        [Construct("marduke")]
+        public static Marduke Construct(Context context)
+        {
+            return new Marduke(context.World);
+        }
+    }
+
     class Wallhach : Enemy
     {
         public Func<float> WingOpen = () => 0;

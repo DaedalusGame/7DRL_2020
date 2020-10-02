@@ -307,7 +307,7 @@ namespace RoguelikeEngine
         {
             if (holder.ObjectID == ReusableID.Null)
                 return Enumerable.Empty<T>();
-            var effects = GetDrawer(typeof(Effect)).Get(holder);
+            var effects = GetDrawer(typeof(Effect)).Get(holder).Where(x => !x.Type.HasFlag(EffectType.NoApply));
             if (split)
                 return effects.SplitEffects<T>();
             else
@@ -394,8 +394,8 @@ namespace RoguelikeEngine
         public static double CalculateStat(IEffectHolder holder, IEnumerable<Effect> effects, double defaultStat)
         {
             var groups = effects.ToTypeLookup();
-            var baseStat = defaultStat + groups.Get<EffectStat>().Where(stat => stat.Base).Sum(stat => stat.Amount);
-            var add = groups.Get<EffectStat>().Where(stat => !stat.Base).Sum(stat => stat.Amount);
+            var baseStat = defaultStat + groups.Get<EffectStat>().Where(stat => stat.Base).Sum(stat => stat.Amount(holder));
+            var add = groups.Get<EffectStat>().Where(stat => !stat.Base).Sum(stat => stat.Amount(holder));
             var percentage = groups.Get<EffectStatPercent>().Sum(stat => stat.Percentage);
             var multiplier = groups.Get<EffectStatMultiply>().Aggregate(1.0, (seed, stat) => seed * stat.Multiplier);
             var locks = groups.Get<EffectStatLock>();
@@ -406,7 +406,7 @@ namespace RoguelikeEngine
             return Math.Max(min, Math.Min((baseStat + percentage * baseStat + add) * multiplier - damage, max));
         }
 
-        public static string GetStatBonus(this IEnumerable<Effect> effects, Stat statName)
+        /*public static string GetStatBonus(this IEnumerable<Effect> effects, Stat statName)
         {
             string statBlock = string.Empty;
             var groups = effects.ToTypeLookup();
@@ -428,7 +428,7 @@ namespace RoguelikeEngine
             var max = locks.Any() ? locks.Min(stat => stat.MaxValue) : double.PositiveInfinity;
 
             return statBlock;
-        }
+        }*/
 
         public static void TakeDamage(this IEffectHolder holder, double damage, Element element)
         {
