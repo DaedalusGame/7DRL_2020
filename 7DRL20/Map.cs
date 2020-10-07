@@ -351,6 +351,7 @@ namespace RoguelikeEngine
 
             JArray effectsArray = new JArray();
             JArray entitiesArray = new JArray();
+            JArray bonusArray = new JArray();
 
             var gameObjects = World.GameObjects.OfType<IJsonSerializable>().Where(obj => obj.Map == this);
             effectHolders.AddRange(gameObjects.OfType<IEffectHolder>());
@@ -366,8 +367,17 @@ namespace RoguelikeEngine
                     effectsArray.Add(effect.WriteJson());
             }
 
+            foreach (var bonus in Bonuses)
+            {
+                JObject bonusJson = new JObject();
+                bonusJson["id"] = bonus.Bonus.ID;
+                bonusJson["levelsActive"] = bonus.LevelsActive;
+                bonusArray.Add(bonusJson);
+            }
+
             json["entities"] = entitiesArray;
             json["effects"] = effectsArray;
+            json["bonuses"] = bonusArray;
             return json;
         }
 
@@ -417,6 +427,7 @@ namespace RoguelikeEngine
 
             JArray entitiesArray = json["entities"] as JArray;
             JArray effectsArray = json["effects"] as JArray;
+            JArray bonusArray = json["bonuses"] as JArray;
 
             List<IJsonSerializable> entities = new List<IJsonSerializable>();
 
@@ -433,6 +444,13 @@ namespace RoguelikeEngine
                 {
                     Effect.Apply(effect);
                 }
+            }
+
+            foreach (var bonusJson in bonusArray)
+            {
+                string id = bonusJson["id"].Value<string>();
+                int levelsActive = bonusJson["levelsActive"].Value<int>();
+                Bonuses.Add(new AppliedBonus(StairBonus.GetStairBonus(id), levelsActive));
             }
 
             foreach (var entity in entities)

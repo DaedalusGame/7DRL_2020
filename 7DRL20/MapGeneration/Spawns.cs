@@ -36,9 +36,11 @@ namespace RoguelikeEngine.MapGeneration
         public static EnemySpawn Vorrax = new SingleSpawn("vorrax", (world) => new Vorrax(world));
         public static EnemySpawn Ctholoid = new SingleSpawn("cthuloid", (world) => new Ctholoid(world));
 
+        public static EnemySpawn RedDragon = new SingleSpawn("red_dragon", (world) => new RedDragon(world));
+        public static EnemySpawn WhiteDragon = new SingleSpawn("white_dragon", (world) => new WhiteDragon(world));
         public static EnemySpawn BlueDragon = new SingleSpawn("blue_dragon", (world) => new BlueDragon(world));
         public static EnemySpawn YellowDragon = new SingleSpawn("yellow_dragon", (world) => new YellowDragon(world));
-        public static EnemySpawn RedDragon = new SingleSpawn("red_dragon", (world) => new RedDragon(world));
+        public static EnemySpawn GreenDragon = new SingleSpawn("green_dragon", (world) => new GreenDragon(world));
 
         public static EnemySpawn PoisonBlob = new SingleSpawn("poison_blob", (world) => new PoisonBlob(world));
         public static EnemySpawn AcidBlob = new SingleSpawn("acid_blob", (world) => new AcidBlob(world));
@@ -50,6 +52,7 @@ namespace RoguelikeEngine.MapGeneration
         public static EnemySpawn ArmorBrine = new SingleSpawn("armor_brine", (world) => new ArmorBrine(world));
         public static EnemySpawn ArmorCrystal = new SingleSpawn("armor_crystal", (world) => new ArmorCrystal(world));
         public static EnemySpawn ArmorSullen = new SingleSpawn("armor_sullen", (world) => new ArmorSullen(world));
+        public static EnemySpawn ArmorBone = new SingleSpawn("armor_bone", (world) => new ArmorBone(world));
 
         public static EnemySpawn WizardImpact = new SingleSpawn("wizard_impact", (world) => new WizardImpact(world));
         public static EnemySpawn WizardFire = new SingleSpawn("wizard_fire", (world) => new WizardFire(world));

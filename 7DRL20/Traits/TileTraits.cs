@@ -169,7 +169,15 @@ namespace RoguelikeEngine.Traits
         {
             Creature creature = turn.Creature;
 
-            yield return creature.AttackSelf(BogAttack);
+            creature.AddStatusEffect(new Muddy()
+            {
+                Buildup = 1.0,
+                Duration = new Slider(20),
+            });
+
+            yield return Wait.NoWait;
+
+            //yield return creature.AttackSelf(BogAttack);
         }
 
         private Attack BogAttack(Creature attacker, IEffectHolder defender)

@@ -446,15 +446,6 @@ namespace RoguelikeEngine.MapGeneration
                 spawnArray.Add(spawn.ID);
             }
             json["spawns"] = spawnArray;
-            JArray bonusArray = new JArray();
-            foreach(var bonus in Bonuses)
-            {
-                JObject bonusJson = new JObject();
-                bonusJson["id"] = bonus.Bonus.ID;
-                bonusJson["levelsActive"] = bonus.LevelsActive;
-                bonusArray.Add(bonusJson);
-            }
-            json["bonuses"] = bonusArray;
             return json;
         }
 
@@ -468,13 +459,6 @@ namespace RoguelikeEngine.MapGeneration
             foreach(var spawnJson in spawnArray)
             {
                 Spawns.Add(EnemySpawn.GetSpawn(spawnJson.Value<string>()));
-            }
-            JArray bonusArray = json["bonuses"] as JArray;
-            foreach (var bonusJson in bonusArray)
-            {
-                string id = bonusJson["id"].Value<string>();
-                int levelsActive = bonusJson["levelsActive"].Value<int>();
-                Bonuses.Add(new AppliedBonus(StairBonus.GetStairBonus(id), levelsActive));
             }
         }
 
@@ -845,7 +829,7 @@ namespace RoguelikeEngine.MapGeneration
 
             public override void Place(MapGenerator generator, GeneratorCell cell)
             {
-                cell.AddSpread(new SpreadCastle(null, generator.Random.Next(DistanceMin, DistanceMax), Floor, Wall));
+                cell.AddSpread(new SpreadCastle(null, generator.Random.Next(DistanceMin, DistanceMax + 1), Floor, Wall));
             }
         }
 
@@ -862,7 +846,7 @@ namespace RoguelikeEngine.MapGeneration
 
             public override void Place(MapGenerator generator, GeneratorCell cell)
             {
-                cell.AddSpread(new SpreadCave(null, generator.Random.Next(DistanceMin, DistanceMax), Floor, Wall));
+                cell.AddSpread(new SpreadCave(null, generator.Random.Next(DistanceMin, DistanceMax + 1), Floor, Wall));
             }
         }
 
@@ -883,7 +867,7 @@ namespace RoguelikeEngine.MapGeneration
 
             public override void Place(MapGenerator generator, GeneratorCell cell)
             {
-                cell.AddSpread(new SpreadTower(null, generator.Random.Next(DistanceMin, DistanceMax), generator.Random.Next(RadiusMin, RadiusMax) + 0.5f, Floor, Wall));
+                cell.AddSpread(new SpreadTower(null, generator.Random.Next(DistanceMin, DistanceMax + 1), generator.Random.Next(RadiusMin, RadiusMax + 1) + 0.5f, Floor, Wall));
             }
         }
     }

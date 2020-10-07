@@ -451,6 +451,33 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillBoneVolley : SkillVolleyBase
+    {
+        public SkillBoneVolley() : base("Bone Dart Volley", "", 1, 3, float.PositiveInfinity)
+        {
+            VolleysMin = 3;
+            VolleysMax = 5;
+        }
+
+        protected override IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletAngular(user.World, SpriteLoader.Instance.AddSprite("content/bullet_bone_dart"), Vector2.Zero, ColorMatrix.Identity, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+            //new Color(225, 174, 210)
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Pierce, 0.5);
+            attack.Elements.Add(Element.Dark, 0.5);
+            return attack;
+        }
+    }
+
     class SkillChainLightningVolley : SkillVolleyBase
     {
         public SkillChainLightningVolley() : base("Chain Lightning", "", 1, 3, float.PositiveInfinity)

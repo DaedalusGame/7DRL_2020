@@ -827,7 +827,7 @@ namespace RoguelikeEngine
 
             foreach (var cell in path.Take(path.Count-1))
             {
-                int width = Random.Next(group.ConnectionMin, group.ConnectionMax);
+                int width = Random.Next(group.ConnectionMin, group.ConnectionMax + 1);
                 cell.Tile = GeneratorTile.Floor;
                 cell.Group = group;
                 cell.Group.PlaceConnection(this, cell, width);

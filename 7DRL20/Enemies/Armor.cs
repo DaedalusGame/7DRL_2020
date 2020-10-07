@@ -200,4 +200,42 @@ namespace RoguelikeEngine.Enemies
             return new ArmorSullen(context.World);
         }
     }
+
+    class ArmorBone : Enemy
+    {
+        public ArmorBone(SceneGame world) : base(world)
+        {
+            Name = "Bone Armor";
+            Description = "It rots on its own";
+
+            ColorMatrix bone = ColorMatrix.TwoColor(new Color(98, 23, 23), new Color(163, 163, 163));
+
+            Render = new CreaturePaperdollRender()
+            {
+                Head = SpriteLoader.Instance.AddSprite("content/paperdoll_machine_head5"),
+                Body = SpriteLoader.Instance.AddSprite("content/paperdoll_machine_double"),
+                HeadColor = bone,
+                BodyColor = bone,
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Construct));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Undead, 1));
+
+            Effect.ApplyInnate(new EffectStatPercent(this, Element.Dark.DamageRate, -0.5));
+
+            Skills.Add(new SkillBoneVolley());
+        }
+
+        [Construct("armor_bone")]
+        public static ArmorBone Construct(Context context)
+        {
+            return new ArmorBone(context.World);
+        }
+    }
 }
