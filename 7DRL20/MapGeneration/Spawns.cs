@@ -50,6 +50,9 @@ namespace RoguelikeEngine.MapGeneration
         public static EnemySpawn ArmorBrine = new SingleSpawn("armor_brine", (world) => new ArmorBrine(world));
         public static EnemySpawn ArmorCrystal = new SingleSpawn("armor_crystal", (world) => new ArmorCrystal(world));
         public static EnemySpawn ArmorSullen = new SingleSpawn("armor_sullen", (world) => new ArmorSullen(world));
+
+        public static EnemySpawn WizardImpact = new SingleSpawn("wizard_impact", (world) => new WizardImpact(world));
+        public static EnemySpawn WizardFire = new SingleSpawn("wizard_fire", (world) => new WizardFire(world));
     }
 
     class SingleSpawn : EnemySpawn

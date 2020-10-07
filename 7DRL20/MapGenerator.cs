@@ -408,10 +408,11 @@ namespace RoguelikeEngine
         public int PointCount = 50;
         public int PointDeviation = 10;
         public GroupSet GroupGenerator;
-        public LevelFeelingSet Feelings;
+        public LevelFeelingSet Feelings = new LevelFeelingSet();
+        public List<AppliedBonus> Bonuses = new List<AppliedBonus>();
         public List<Decorator> Decorators = new List<Decorator>();
 
-        public MapGenerator(int width, int height, int seed, GroupSet groupGenerator, LevelFeelingSet feelings)
+        public MapGenerator(int width, int height, int seed, GroupSet groupGenerator, IEnumerable<AppliedBonus> bonuses)
         {
             Random = new Random(seed);
             Cells = new GeneratorCell[width, height];
@@ -424,7 +425,11 @@ namespace RoguelikeEngine
                 }
             }
             GroupGenerator = groupGenerator;
-            Feelings = feelings;
+            Bonuses.AddRange(bonuses);
+            foreach(var bonus in Bonuses)
+            {
+                bonus.Bonus.Apply(this);
+            }
         }
 
         public void AddCollapse(CollapseTile cell)
@@ -544,8 +549,12 @@ namespace RoguelikeEngine
             foreach (GeneratorGroup group in Groups)
             {
                 group.StartTechniques();
+                foreach (var bonus in Bonuses)
+                {
+                    bonus.Bonus.ApplyPost(group);
+                }
             }
-            while (Groups.Any(group => group.Techniques != null))
+            while (Groups.Any(group => group.RunningTechniques != null))
             {
                 foreach (GeneratorGroup group in Groups)
                 {
@@ -717,6 +726,14 @@ namespace RoguelikeEngine
                 GetCell(closest.Item2).Group = GetCell(closest.Item1).Group;
             }
 
+            foreach(var group in Groups)
+            {
+                foreach (var bonus in Bonuses)
+                {
+                    bonus.Bonus.ApplyPre(group);
+                }
+            }
+
             foreach (var point in colored.Select(GetCell))
             {
                 point.Group.PlaceRoom(this, point);
@@ -810,9 +827,10 @@ namespace RoguelikeEngine
 
             foreach (var cell in path.Take(path.Count-1))
             {
+                int width = Random.Next(group.ConnectionMin, group.ConnectionMax);
                 cell.Tile = GeneratorTile.Floor;
                 cell.Group = group;
-                cell.Group.PlaceConnection(this, cell);
+                cell.Group.PlaceConnection(this, cell, width);
             }
 
             baseTile.Room.AddConnection(otherTile);

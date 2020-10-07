@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Skills;
+using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,9 +34,12 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
 
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Overclock, 1));
+
             Effect.ApplyInnate(new EffectStatPercent(this, Element.Earth.DamageRate, -0.5));
 
             Skills.Add(new SkillPetrolVolley());
+            Skills.Add(new SkillOilBlast());
         }
 
         [Construct("armor_tenmoku")]
@@ -68,6 +72,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Overclock, 1));
 
             Effect.ApplyInnate(new EffectStatPercent(this, Element.Acid.DamageRate, -0.5));
 
@@ -105,6 +111,8 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
 
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Overclock, 1));
+
             Effect.ApplyInnate(new EffectStatPercent(this, Element.Water.DamageRate, -0.5));
 
             Skills.Add(new SkillSaltVolley());
@@ -141,6 +149,8 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
 
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Overclock, 1));
+
             Effect.ApplyInnate(new EffectStatPercent(this, Element.Thunder.DamageRate, -0.5));
 
             Skills.Add(new SkillChainLightningVolley());
@@ -176,6 +186,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 400));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 5));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.Overclock, 1));
 
             Effect.ApplyInnate(new EffectStatPercent(this, Element.Water.DamageRate, -0.5));
 

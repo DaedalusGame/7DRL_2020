@@ -449,6 +449,19 @@ namespace RoguelikeEngine
             return pick;
         }
 
+        public static T PickWeighted<T>(this IList<T> enumerable, Func<T,double> weight, Random random)
+        {
+            double totalWeight = enumerable.Sum(item => weight(item));
+            double selection = random.NextDouble() * totalWeight;
+            foreach(var item in enumerable)
+            {
+                selection -= weight(item);
+                if (selection <= 0)
+                    return item;
+            }
+            return enumerable.First();
+        }
+
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
         {
             return new HashSet<T>(enumerable);

@@ -74,6 +74,7 @@ namespace RoguelikeEngine.Traits
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
         public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
         public static Trait Broiling = new TraitBroil();
+        public static Trait Overclock = new TraitOverclock();
 
         public static Trait Water = new TraitWater();
         public static Trait Lava = new TraitLava();

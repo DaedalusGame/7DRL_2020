@@ -12,14 +12,25 @@ namespace RoguelikeEngine.MapGeneration
         protected Random Random;
         public Map Map;
         public List<IGrouping<RoomGroup, Tile>> Rooms;
-        public LevelFeelingSet Feelings = new LevelFeelingSet();
+        public List<AppliedBonus> Bonuses = new List<AppliedBonus>();
+        //public LevelFeelingSet Feelings = new LevelFeelingSet();
 
         public abstract void Build(SceneGame world);
 
-        public void SetFeelings(LevelFeelingSet feelings)
+        public void InheritBonuses(IEnumerable<AppliedBonus> bonuses)
+        {
+            Bonuses.AddRange(bonuses);
+        }
+
+        public void AddBonuses(IEnumerable<StairBonus> bonuses)
+        {
+            Bonuses.AddRange(bonuses.Select(bonus => new AppliedBonus(bonus, 0)));
+        }
+
+        /*public void SetFeelings(LevelFeelingSet feelings)
         {
             Feelings = feelings.Copy();
-        }
+        }*/
 
         public Tile BuildStairRoom()
         {
@@ -66,9 +77,15 @@ namespace RoguelikeEngine.MapGeneration
             Random = new Random(Seed);
 
             Map = world.CreateMap(100, 100);
-            world.SetMapId(Guid.NewGuid(), Map);
+            Map.Bonuses = Bonuses;
+            world.SetMapId(Guid.NewGuid(), Map); 
 
-            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Seed, GroupGenerator, Feelings);
+            foreach (var bonus in Bonuses)
+            {
+                bonus.Bonus.Apply(GroupGenerator);
+            }
+
+            MapGenerator generator = new MapGenerator(Map.Width, Map.Height, Seed, GroupGenerator, Bonuses);
             generator.SetupDefaultOres();
             generator.Generate();
             generator.Print(Map);
@@ -108,8 +125,9 @@ namespace RoguelikeEngine.MapGeneration
             Random = new Random(Seed);
 
             Map = world.CreateMap(100, 100);
+            Map.Bonuses = Bonuses;
 
-            MapGenerator generatorHome = new MapGenerator(Map.Width, Map.Height, Seed, new GroupSet(GroupGenerator.Home), new LevelFeelingSet())
+            MapGenerator generatorHome = new MapGenerator(Map.Width, Map.Height, Seed, new GroupSet(GroupGenerator.Home), Bonuses)
             {
                 PointCount = 7,
                 PointDeviation = 35,

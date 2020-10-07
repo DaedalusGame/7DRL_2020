@@ -497,55 +497,6 @@ namespace RoguelikeEngine
         public static StairType Random = new StairType("random", "Random", stair => new TemplateRandomLevel(new GroupRandom(stair.Group.MakeTemplate()), stair.Seed));
     }
 
-    class StairBonus
-    {
-        public static List<StairBonus> AllStairBonuses = new List<StairBonus>();
-
-        public int Index;
-        public string ID;
-        public string Name;
-        Action<GeneratorTemplate> Function;
-
-        public StairBonus(string id, string name, Action<GeneratorTemplate> function)
-        {
-            Index = AllStairBonuses.Count;
-            ID = id;
-            Name = name;
-            Function = function;
-            AllStairBonuses.Add(this);
-        }
-
-        public static StairBonus NoBonus = new StairBonus("no_bonus", "No Bonus", feelings => { });
-
-        public static StairBonus Difficult = new StairBonus("difficult", "Difficult Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, +30); });
-        public static StairBonus Easy = new StairBonus("easy", "Easy Level", template => { template.Feelings.Add(LevelFeeling.Difficulty, -30); });
-
-        public static StairBonus Hell = new StairBonus("hell", "Hellish Environment", template => {
-            template.Feelings.Add(LevelFeeling.Fire, +30);
-            template.Feelings.Add(LevelFeeling.Hell, +50);
-            template.Feelings.Add(LevelFeeling.Difficulty, +10);
-        });
-
-        public static StairBonus Dungeon = new StairBonus("dungeon", "Dungeon", template => {
-            if (template is TemplateRandomLevel level)
-                level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.Dungeon }));
-        });
-        public static StairBonus SeaOfDirac = new StairBonus("sea_of_dirac", "Sea of Dirac", template => {
-            if (template is TemplateRandomLevel level)
-                level.GroupGenerator = new GroupSet(level.GroupGenerator.Groups.Concat(new[] { GroupGenerator.SeaOfDirac }));
-        });
-
-        public void Apply(GeneratorTemplate template)
-        {
-            Function(template);
-        }
-
-        public static StairBonus GetStairBonus(string id)
-        {
-            return AllStairBonuses.Find(x => x.ID == id);
-        }
-    }
-
     abstract class Stair : Tile
     {
         static IEnumerable<TileFlag> Flags = new List<TileFlag>() { TileFlag.Floor, TileFlag.Artificial, TileFlag.Furniture };
@@ -578,8 +529,9 @@ namespace RoguelikeEngine
         public void InitBonuses()
         {
             List<StairBonus> validBonuses = new List<StairBonus>(StairBonus.AllStairBonuses);
-            int amount = Random.Next(3) + 2;
-            for(int i = 0; i < amount && validBonuses.Any(); i++)
+            int amount = Random.Next(2,5);
+            amount = Random.Next(4, 7);
+            for (int i = 0; i < amount && validBonuses.Any(); i++)
             {
                 Bonuses.Add(validBonuses.PickAndRemove(Random));
             }
@@ -621,8 +573,10 @@ namespace RoguelikeEngine
             if (Target == null && Type != null)
             {
                 var template = Type.Generate(this);
-                template.SetFeelings(Map.Feelings);
-                bonus.Apply(template);
+                //template.SetFeelings(Map.Feelings);
+                //bonus.Apply(template);
+                template.InheritBonuses(Map.Bonuses);
+                template.AddBonuses(new[] { bonus });
                 template.Build(World);
                 var stair = template.BuildStairRoom(Group.GetType());
                 BuildTarget(stair);

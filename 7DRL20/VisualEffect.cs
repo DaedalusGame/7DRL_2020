@@ -292,6 +292,42 @@ namespace RoguelikeEngine
         }
     }
 
+    class Blob : Particle
+    {
+        public SpriteReference Sprite;
+        public Vector2 EndPosition;
+        public float Size;
+        public Color Color;
+
+        public Blob(SceneGame world, SpriteReference sprite, Vector2 position, Vector2 velocity, float size, Color color, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            Frame = new Slider(time);
+            EndPosition = Position + velocity * time;
+            Size = size;
+            Color = color;
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            Vector2 truePos = Vector2.Lerp(Position, EndPosition, (float)LerpHelper.QuadraticOut(0, 1, Frame.Slide));
+            float trueSize = (float)LerpHelper.QuadraticOut(Size, 0, Frame.Slide);
+            scene.DrawSpriteExt(Sprite, scene.AnimationFrame(Sprite, Frame.Time, Frame.EndTime), truePos - Sprite.Middle, Sprite.Middle, 0, new Vector2(trueSize), SpriteEffects.None, Color, 0);
+        }
+    }
+
     class Explosion : Particle
     {
         public SpriteReference Sprite;

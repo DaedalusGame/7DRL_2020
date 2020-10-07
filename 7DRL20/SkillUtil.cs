@@ -230,6 +230,11 @@ namespace RoguelikeEngine
             return attack.ExtraEffects.Any(x => x is AttackWeapon);
         }
 
+        public static bool IsSpell(this Attack attack)
+        {
+            return attack.ExtraEffects.Any(x => x is AttackSkill skill && skill.Skill.SkillType == SkillType.Spell);
+        }
+
         public static IEnumerable<Tile> GetCircularArea(Creature origin, int radius)
         {
             return GetCircularArea(origin.Tile, origin.Mask.GetRectangle(origin.X, origin.Y), origin.VisualTarget, radius);

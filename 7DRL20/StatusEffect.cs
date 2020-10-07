@@ -368,6 +368,39 @@ namespace RoguelikeEngine
         }
     }
 
+    class MagicPower : StatusEffect
+    {
+        public override string Name => $"Magic Power";
+        public override string Description => $"Spell Damage is increased by 100%";
+
+        public override int MaxStacks => 1;
+
+        public MagicPower() : base()
+        {
+            Effect.Apply(new OnStartAttack(this, OnSpellAttack));
+        }
+
+        private IEnumerable<Wait> OnSpellAttack(Attack attack)
+        {
+            if(attack.IsSpell())
+            {
+                attack.Damage *= 2;
+            }
+            return Enumerable.Empty<Wait>();
+        }
+
+        [Construct("magic_power")]
+        public static MagicPower Construct(Context context)
+        {
+            return new MagicPower();
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
     class Poison : StatusEffect
     {
         public override string Name => $"Poison";

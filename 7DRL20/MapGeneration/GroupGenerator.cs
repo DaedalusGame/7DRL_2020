@@ -114,7 +114,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 BrickColor = new TileColor(new Color(129, 64, 41), new Color(224, 175, 158)),
                 WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
-                Spawns = { EnemySpawn.ArmorBrine, EnemySpawn.ArmorCrystal, EnemySpawn.ArmorParis, EnemySpawn.ArmorTenmoku },
+                Spawns = { EnemySpawn.ArmorBrine, EnemySpawn.ArmorCrystal, EnemySpawn.ArmorParis, EnemySpawn.ArmorTenmoku, EnemySpawn.WizardImpact, EnemySpawn.WizardFire },
             };
         }
         public static GeneratorGroup MakeDirtCave(MapGenerator generator)
@@ -263,6 +263,16 @@ namespace RoguelikeEngine.MapGeneration
 
     class GroupRandom : GroupSet
     {
+        double ChanceRequired = 0.1;
+        double ChanceMultiple = 0.7;
+        double ChanceStripe = 0.3;
+
+        int GroupMin = 2;
+        int GroupMax = 5;
+
+        int RepeatMin = 1;
+        int RepeatMax = 4;
+
         public GroupRandom() : base()
         {
         }
@@ -283,13 +293,13 @@ namespace RoguelikeEngine.MapGeneration
 
             bool canStripe = true;
 
-            if (Groups.Any() && x < 0.1) //Just the required one
+            if (Groups.Any() && x < ChanceRequired) //Just the required one
             {
                 canStripe = false;
             }
-            else if (x < 0.8) //Multiple
+            else if (x < ChanceRequired + ChanceMultiple) //Multiple
             {
-                int groups = random.Next(2, 5);
+                int groups = random.Next(GroupMin, GroupMax + 1);
                 for(int i = 0; i < groups; i++)
                 {
                     if (selection.Count > 0)
@@ -306,10 +316,10 @@ namespace RoguelikeEngine.MapGeneration
                 canStripe = Groups.Count >= 2;
             }
 
-            if(canStripe && random.NextDouble() < 0.3)
+            if(canStripe && random.NextDouble() < ChanceStripe)
             {
                 int n = Groups.Count;
-                int repeats = random.Next(1, 4);
+                int repeats = random.Next(RepeatMin, RepeatMax + 1);
                 for(int e = 0; e < repeats; e++)
                     for (int i = 0; i < n; i++)
                         Groups.Add(Groups[i]);

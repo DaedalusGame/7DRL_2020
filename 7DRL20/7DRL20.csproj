@@ -51,7 +51,7 @@
     <Compile Include="Effects\EffectLastHit.cs" />
     <Compile Include="Effects\EffectName.cs" />
     <Compile Include="Effects\EffectStatDamage.cs" />
-    <Compile Include="Effects\Enchantment.cs" />
+    <Compile Include="Effects\EffectEnchantment.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Effects\OnShoot.cs" />
     <Compile Include="Effects\OnTurn.cs" />
@@ -62,6 +62,7 @@
     <Compile Include="Enemies\Slime.cs" />
     <Compile Include="Enemies\Skeleton.cs" />
     <Compile Include="Enemies\Fish.cs" />
+    <Compile Include="Enemies\Wizard.cs" />
     <Compile Include="EventBus.cs" />
     <Compile Include="Events\CreatureEvents.cs" />
     <Compile Include="Events\ItemEvents.cs" />
@@ -73,6 +74,7 @@
     <Compile Include="MapGeneration\Groups.cs" />
     <Compile Include="MapGeneration\Spawns.cs" />
     <Compile Include="MapGeneration\Spreads.cs" />
+    <Compile Include="MapGeneration\StairBonus.cs" />
     <Compile Include="Menus\Base.cs" />
     <Compile Include="Menus\Game.cs" />
     <Compile Include="Menus\Title.cs" />
@@ -81,10 +83,13 @@
     <Compile Include="SceneTitle.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="Skills\Breath.cs" />
+    <Compile Include="Skills\Buff.cs" />
     <Compile Include="Skills\Erebizo.cs" />
     <Compile Include="Skills\Explosion.cs" />
     <Compile Include="Skills\Movements.cs" />
     <Compile Include="Skills\Projectile.cs" />
+    <Compile Include="Skills\Spells.cs" />
+    <Compile Include="Skills\Summon.cs" />
     <Compile Include="Skills\Wallhach.cs" />
     <Compile Include="BossData.cs" />
     <Compile Include="ColorMatrix.cs" />
@@ -277,6 +282,9 @@
     <Content Include="Content\blade_rip.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Content\blob.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Content\blob_acid_strip4.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -353,6 +361,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\bullet_wave.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\bullet_wave2.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\cannon_strip3.png">

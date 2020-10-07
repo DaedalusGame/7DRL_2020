@@ -167,6 +167,7 @@ namespace RoguelikeEngine
         public IEnumerable<Cloud> Clouds => World.GameObjects.OfType<Cloud>().Where(cloud => cloud.Map == this);
 
         public LevelFeelingSet Feelings = new LevelFeelingSet();
+        public List<AppliedBonus> Bonuses = new List<AppliedBonus>();
 
         public Map(SceneGame world, int width, int height)
         {

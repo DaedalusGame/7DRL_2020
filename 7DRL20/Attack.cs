@@ -78,7 +78,7 @@ namespace RoguelikeEngine
 
     class AttackWeapon : AttackSpecial
     {
-        Item Weapon;
+        public Item Weapon;
 
         public AttackWeapon(Item weapon)
         {
@@ -89,6 +89,26 @@ namespace RoguelikeEngine
         {
             Weapon.TakeDamage(1, Element.Bludgeon, null);
 
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
+    class AttackSkill : AttackSpecial
+    {
+        public Skill Skill;
+
+        public AttackSkill(Skill skill)
+        {
+            Skill = skill;
+        }
+
+        public override Wait End(Attack attack)
+        {
             return Wait.NoWait;
         }
 

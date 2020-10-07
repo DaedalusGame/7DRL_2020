@@ -8,6 +8,12 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    enum SkillType
+    {
+        Skill,
+        Spell,
+    }
+
     abstract class Skill
     {
         public const int SkillInfoTime = 200;
@@ -15,6 +21,8 @@ namespace RoguelikeEngine
 
         public string Name;
         public string Description;
+
+        public SkillType SkillType = SkillType.Skill; //TODO: Make it a tag system
 
         public int Priority;
         protected Slider Warmup;

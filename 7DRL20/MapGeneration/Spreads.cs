@@ -25,12 +25,16 @@ namespace RoguelikeEngine.MapGeneration
         bool WallOutside;
         int Distance;
         float Chance;
+        GeneratorTile Floor;
+        GeneratorTile Wall;
 
-        public SpreadCave(GeneratorCell origin, int distance, bool wallOutside = true, float chance = 0.6f) : base(origin)
+        public SpreadCave(GeneratorCell origin, int distance, GeneratorTile floor, GeneratorTile wall, bool wallOutside = true, float chance = 0.6f) : base(origin)
         {
             Distance = distance;
             WallOutside = wallOutside;
             Chance = chance;
+            Floor = floor;
+            Wall = wall;
         }
 
         public override void Spread(Random random)
@@ -44,7 +48,7 @@ namespace RoguelikeEngine.MapGeneration
                 {
                     if (tile.Tile == GeneratorTile.Empty)
                     {
-                        tile.Tile = GeneratorTile.Wall;
+                        tile.Tile = Wall;
                         tile.Group = Cell.Group;
                     }
                 }
@@ -60,9 +64,9 @@ namespace RoguelikeEngine.MapGeneration
                         {
                             if (Origin.Room != null)
                                 tile.Room = Origin.Room;
-                            tile.Tile = GeneratorTile.Floor;
+                            tile.Tile = Floor;
                             tile.Group = Cell.Group;
-                            tile.AddSpread(new SpreadCave(Origin, Distance - 1, WallOutside, Chance));
+                            tile.AddSpread(new SpreadCave(Origin, Distance - 1, Floor, Wall, WallOutside, Chance));
                         }
                         else
                         {
@@ -73,7 +77,7 @@ namespace RoguelikeEngine.MapGeneration
                 }
                 if (oneEmpty)
                 {
-                    Cell.AddSpread(new SpreadCave(Origin, Distance - 1, WallOutside, Chance));
+                    Cell.AddSpread(new SpreadCave(Origin, Distance - 1, Floor, Wall, WallOutside, Chance));
                 }
             }
             //Cell.Tile = GeneratorTile.Floor;
@@ -86,13 +90,17 @@ namespace RoguelikeEngine.MapGeneration
         bool IsRoom;
         int Distance;
         float Radius;
+        GeneratorTile Floor;
+        GeneratorTile Wall;
 
-        public SpreadTower(GeneratorCell origin, int distance, float radius, bool wallOutside = true, bool isRoom = true) : base(origin)
+        public SpreadTower(GeneratorCell origin, int distance, float radius, GeneratorTile floor, GeneratorTile wall, bool wallOutside = true, bool isRoom = true) : base(origin)
         {
             Distance = distance;
             Radius = radius;
             WallOutside = wallOutside;
             IsRoom = isRoom;
+            Floor = floor;
+            Wall = wall;
         }
 
         public override void Spread(Random random)
@@ -107,7 +115,7 @@ namespace RoguelikeEngine.MapGeneration
                     {
                         if (IsRoom && Origin.Room != null)
                             tile.Room = Origin.Room;
-                        tile.Tile = GeneratorTile.WallBrick;
+                        tile.Tile = Wall;
                         tile.Group = Cell.Group;
                     }
                 }
@@ -124,15 +132,15 @@ namespace RoguelikeEngine.MapGeneration
                         {
                             if (IsRoom && Origin.Room != null)
                                 tile.Room = Origin.Room;
-                            tile.Tile = GeneratorTile.FloorBrick;
+                            tile.Tile = Floor;
                             tile.Group = Cell.Group;
-                            tile.AddSpread(new SpreadTower(Origin, Distance - 1, Radius, WallOutside, IsRoom));
+                            tile.AddSpread(new SpreadTower(Origin, Distance - 1, Radius, Floor, Wall, WallOutside, IsRoom));
                         }
                         else if (tile.Tile == GeneratorTile.Empty && WallOutside)
                         {
                             if (IsRoom && Origin.Room != null)
                                 tile.Room = Origin.Room;
-                            tile.Tile = GeneratorTile.WallBrick;
+                            tile.Tile = Wall;
                             tile.Group = Cell.Group;
                         }
                     }
