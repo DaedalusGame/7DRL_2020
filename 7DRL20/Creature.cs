@@ -1027,7 +1027,7 @@ namespace RoguelikeEngine
             yield return new WaitAll(waitForDamage);
         }
 
-        public IEnumerable<Wait> RoutineHit(Vector2 dir)
+        public IEnumerable<Wait> RoutineHit(Vector2 dir, bool fast)
         {
             if (dir.X != 0 || dir.Y != 0)
             {
@@ -1036,7 +1036,10 @@ namespace RoguelikeEngine
                 VisualPose = Static(CreaturePose.Stand);
                 yield return new WaitFrames(this, 10);
             }
-            yield return CurrentPopups;
+            if (!fast)
+            {
+                yield return CurrentPopups;
+            }
         }
 
         public virtual IEnumerable<Wait> RoutineDie(Vector2 dir)
@@ -1100,7 +1103,7 @@ namespace RoguelikeEngine
             Attack attack = attackGenerator(this, target);
             attack.HitDirection = dir;
             var waitAttack = Scheduler.Instance.RunAndWait(attack.RoutineStart());
-            var waitHit = Scheduler.Instance.RunAndWait(target.RoutineHit(dir));
+            var waitHit = Scheduler.Instance.RunAndWait(target.RoutineHit(dir, false));
             var wait = new WaitAll(new[] { waitAttack, waitHit });
             target.CurrentActions.Add(wait);
             target.CurrentHits.Add(wait);
@@ -1115,7 +1118,7 @@ namespace RoguelikeEngine
         public Wait AttackSelf(Attack attack)
         {
             var waitAttack =  Scheduler.Instance.RunAndWait(attack.RoutineStart());
-            Scheduler.Instance.RunAndWait(RoutineHit(Vector2.Zero));
+            Scheduler.Instance.RunAndWait(RoutineHit(Vector2.Zero, true));
 
             return waitAttack;
         }

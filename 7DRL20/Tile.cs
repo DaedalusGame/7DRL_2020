@@ -115,7 +115,11 @@ namespace RoguelikeEngine
 
         public Func<Color> VisualUnderColor = () => Color.TransparentBlack;
 
-        public string Name;
+        public virtual string Name
+        {
+            get;
+            set;
+        }
         public virtual double Durability => double.PositiveInfinity;
         public double Damage {
             get;
@@ -1027,6 +1031,17 @@ namespace RoguelikeEngine
 
     class WallOre : Tile, IMineable
     {
+        public override string Name
+        {
+            get
+            {
+                return $"{Material.Name} Vein";
+            }
+            set
+            {
+            }
+        }
+
         public override double Durability => (Under?.Durability ?? 0) + 50;
         public override IEnumerable<TileFlag> Tags => FlagsWall;
 

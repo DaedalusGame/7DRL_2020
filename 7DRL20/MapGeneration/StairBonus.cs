@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.MapGeneration
 {
-    struct AppliedBonus
+    class AppliedBonus
     {
         public StairBonus Bonus;
         public int LevelsActive;
@@ -31,6 +31,7 @@ namespace RoguelikeEngine.MapGeneration
         Action<MapGenerator> ModifyGenerator = (generator) => { }; 
         Action<GeneratorGroup> ModifyGroupPre = (group) => { };
         Action<GeneratorGroup> ModifyGroupPost = (group) => { };
+        Func<Random, int> LevelDuration = (random) => 0;
 
         public StairBonus(string id, string name)
         {
@@ -40,15 +41,63 @@ namespace RoguelikeEngine.MapGeneration
             AllStairBonuses.Add(this);
         }
 
+        /*public void Apply(GeneratorTemplate template)
+        {
+            ModifyTemplate(template);
+        }*/
+
+        public void Apply(GroupSet set)
+        {
+            ModifySet(set);
+        }
+
+        public void Apply(MapGenerator generator)
+        {
+            ModifyGenerator(generator);
+        }
+
+        public void ApplyPre(GeneratorGroup group)
+        {
+            ModifyGroupPre(group);
+        }
+
+        public void ApplyPost(GeneratorGroup group)
+        {
+            ModifyGroupPost(group);
+        }
+
+        public int GetDuration(Random random)
+        {
+            return LevelDuration(random);
+        }
+
         public static StairBonus NoBonus = new StairBonus("no_bonus", "No Bonus");
 
         public static StairBonus Difficult = new StairBonus("difficult", "Difficult Level")
         {
-            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, +30); }
+            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, +50); }
         };
         public static StairBonus Easy = new StairBonus("easy", "Easy Level")
         {
-            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, -30); }
+            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, -50); }
+        };
+        public static StairBonus Extend = new StairBonus("extend", "Extend Feelings")
+        {
+            ModifyGenerator = generator => {
+                foreach(var feeling in generator.Bonuses)
+                {
+                    feeling.LevelsActive += 3;
+                }
+            }
+        };
+        public static StairBonus Shorten = new StairBonus("shorten", "Shorten Feelings")
+        {
+            ModifyGenerator = generator => {
+                foreach (var feeling in generator.Bonuses)
+                {
+                    feeling.LevelsActive -= 3;
+                }
+            }
         };
 
         public static StairBonus Hell = new StairBonus("hell", "Hellish Environment")
@@ -131,31 +180,6 @@ namespace RoguelikeEngine.MapGeneration
         {
             ColorMatrix colorMatrix = ColorMatrix.Saturate(slide);
             return new TileColor(colorMatrix.Transform(color.Background), colorMatrix.Transform(color.Foreground));
-        }
-
-        /*public void Apply(GeneratorTemplate template)
-        {
-            ModifyTemplate(template);
-        }*/
-
-        public void Apply(GroupSet set)
-        {
-            ModifySet(set);
-        }
-
-        public void Apply(MapGenerator generator)
-        {
-            ModifyGenerator(generator);
-        }
-
-        public void ApplyPre(GeneratorGroup group)
-        {
-            ModifyGroupPre(group);
-        }
-
-        public void ApplyPost(GeneratorGroup group)
-        {
-            ModifyGroupPost(group);
         }
 
         public static StairBonus GetStairBonus(string id)

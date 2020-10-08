@@ -127,7 +127,7 @@ namespace RoguelikeEngine
         public IEnumerable<Tile> GetValidSpawnLocations(Tile center, Func<Tile,bool> condition, int minRadius)
         {
             return center.GetNearby(SpawnRadius)
-                .Where(tile => Math.Abs(tile.X - center.X) >= minRadius && Math.Abs(tile.Y - center.Y) >= minRadius)
+                .Where(tile => Math.Abs(tile.X - center.X) >= minRadius || Math.Abs(tile.Y - center.Y) >= minRadius)
                 .Where(condition)
                 .Shuffle(Random);
         }

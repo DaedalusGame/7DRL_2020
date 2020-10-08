@@ -19,12 +19,19 @@ namespace RoguelikeEngine.MapGeneration
 
         public void InheritBonuses(IEnumerable<AppliedBonus> bonuses)
         {
-            Bonuses.AddRange(bonuses);
+            foreach(var bonus in bonuses)
+            {
+                if (bonus.LevelsActive > 0)
+                    Bonuses.Add(new AppliedBonus(bonus.Bonus, bonus.LevelsActive - 1));
+            }
         }
 
         public void AddBonuses(IEnumerable<StairBonus> bonuses)
         {
-            Bonuses.AddRange(bonuses.Select(bonus => new AppliedBonus(bonus, 0)));
+            foreach(var bonus in bonuses)
+            {
+                Bonuses.Add(new AppliedBonus(bonus, bonus.GetDuration(Random)));
+            }
         }
 
         /*public void SetFeelings(LevelFeelingSet feelings)
