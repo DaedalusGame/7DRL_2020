@@ -26,11 +26,11 @@ namespace RoguelikeEngine.MapGeneration
             }
         }
 
-        public void AddBonuses(IEnumerable<StairBonus> bonuses)
+        public void AddBonuses(IEnumerable<StairBonus> bonuses, Random random)
         {
             foreach(var bonus in bonuses)
             {
-                Bonuses.Add(new AppliedBonus(bonus, bonus.GetDuration(Random)));
+                Bonuses.Add(new AppliedBonus(bonus, bonus.GetDuration(random)));
             }
         }
 

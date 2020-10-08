@@ -5,6 +5,7 @@ using RoguelikeEngine.Skills;
 using RoguelikeEngine.Traits;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -106,6 +107,30 @@ namespace RoguelikeEngine.Enemies
                 FaceTowards(target.Mask.GetRectangle(target.X,target.Y));
         }
 
+        public double GetWeightStraight(Point start, Point end)
+        {
+            var tiles = Mask.Select(o => Map.GetTile(end.X + o.X, end.Y + o.Y));
+            return tiles.Select(GetTileWeight).Sum();
+        }
+
+        private double GetTileWeight(Tile tile)
+        {
+            if (tile.Solid)
+                return 100;
+            else if(tile.Creatures.Any())
+                return 10;
+            else
+                return 1;
+        }
+
+        public IEnumerable<Point> GetNeighbors(Point point)
+        {
+            yield return new Point(point.X, point.Y - 1);
+            yield return new Point(point.X, point.Y + 1);
+            yield return new Point(point.X - 1, point.Y);
+            yield return new Point(point.X + 1, point.Y);
+        }
+
         public override Wait TakeTurn(Turn turn)
         {
             Wait wait = Wait.NoWait;
@@ -126,6 +151,20 @@ namespace RoguelikeEngine.Enemies
             else
             {
                 var move = new[] { Facing.North, Facing.East, Facing.South, Facing.West }.Pick(Random).ToOffset();
+                if (AggroTarget != null)
+                {
+                    var targetPoint = new Point(AggroTarget.X, AggroTarget.Y);
+                    var stopwatch = Stopwatch.StartNew();
+                    var dijkstra = Util.Dijkstra(new Point(X, Y), targetPoint, Map.Width, Map.Height, new Rectangle(X - 20, Y - 20, 41, 41), 50, GetWeightStraight, GetNeighbors);
+                    if (dijkstra.Reachable(targetPoint))
+                    {
+                        var path = dijkstra.FindPath(targetPoint);
+                        var next = path.First();
+                        move = next - new Point(X, Y);
+                        wait = new WaitTime(1);
+                    }
+                }
+                
                 CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y)));
                 //wait = CurrentAction;
             }

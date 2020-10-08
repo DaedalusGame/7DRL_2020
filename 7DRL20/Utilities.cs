@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -230,6 +231,8 @@ namespace RoguelikeEngine
 
         public static IDijkstraMap Dijkstra(IEnumerable<Point> start, IEnumerable<Point> end, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
             HashSet<Point> ends = new HashSet<Point>(end);
             FibonacciHeap<DijkstraTile, double> heap = new FibonacciHeap<DijkstraTile, double>(0);
 
@@ -272,6 +275,8 @@ namespace RoguelikeEngine
                     }
                 }
             }
+
+            Console.WriteLine($"Dijkstra took: {stopwatch.ElapsedMilliseconds}");
 
             return dijkstraMap;
         }
@@ -327,7 +332,7 @@ namespace RoguelikeEngine
             return dijkstra[end.X, end.Y].Distance;
         }
 
-        public static bool Reachable(this IDijkstraMap dijkstra, Tile end)
+        public static bool Reachable(this IDijkstraMap dijkstra, Point end)
         {
             DijkstraTile dTile = dijkstra[end.X, end.Y];
             return dTile.Previous != null;

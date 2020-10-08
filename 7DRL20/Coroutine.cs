@@ -76,6 +76,8 @@ namespace RoguelikeEngine
 
         public override void Update()
         {
+            foreach (var wait in Waits)
+                wait.Update();
             Waits.RemoveAll(wait => wait.Done);
         }
     }

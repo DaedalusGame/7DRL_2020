@@ -75,11 +75,13 @@ namespace RoguelikeEngine.MapGeneration
 
         public static StairBonus Difficult = new StairBonus("difficult", "Difficult Level")
         {
-            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, +50); }
+            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, +50); },
+            LevelDuration = random => random.Next(3, 6),
         };
         public static StairBonus Easy = new StairBonus("easy", "Easy Level")
         {
-            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, -50); }
+            ModifyGenerator = generator => { generator.Feelings.Add(LevelFeeling.Difficulty, -50); },
+            LevelDuration = random => random.Next(3, 6),
         };
         public static StairBonus Extend = new StairBonus("extend", "Extend Feelings")
         {

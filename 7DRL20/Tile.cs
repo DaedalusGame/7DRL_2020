@@ -580,7 +580,7 @@ namespace RoguelikeEngine
                 //template.SetFeelings(Map.Feelings);
                 //bonus.Apply(template);
                 template.InheritBonuses(Map.Bonuses);
-                template.AddBonuses(new[] { bonus });
+                template.AddBonuses(new[] { bonus }, Random);
                 template.Build(World);
                 var stair = template.BuildStairRoom(Group.GetType());
                 BuildTarget(stair);
