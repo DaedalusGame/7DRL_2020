@@ -118,7 +118,7 @@ namespace RoguelikeEngine
             if (target == null || target.Tile == null)
                 return false;
             double pixelRadius = radius * 16 + 8;
-            var distance = (user.VisualTarget - target.VisualTarget).LengthSquared();
+            var distance = (user.ActualTarget - target.ActualTarget).LengthSquared();
             return distance <= pixelRadius * pixelRadius;
         }
 

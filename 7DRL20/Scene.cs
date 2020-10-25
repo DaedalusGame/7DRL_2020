@@ -235,10 +235,10 @@ namespace RoguelikeEngine
             //SetupNormal(WorldTransform, Projection);
             SetupColorMatrix(ColorMatrix.Identity, WorldTransform, Projection);
             PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection, effect: Shader);
-            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos1 + side * width * widthMod / 2, 0), Color.White, new Vector2(offset / sprite.Width, 1)));
-            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos1 - side * width * widthMod / 2, 0), Color.White, new Vector2(offset / sprite.Width, 0)));
-            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos2 + side * width * widthMod / 2, 0), Color.White, new Vector2((offset + dist * lengthMod) / sprite.Width, 1)));
-            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos2 - side * width * widthMod / 2, 0), Color.White, new Vector2((offset + dist * lengthMod) / sprite.Width, 0)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos1 + side * width * widthMod / 2, 0), Color.White, new Vector2(-offset / sprite.Width, 1)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos1 - side * width * widthMod / 2, 0), Color.White, new Vector2(-offset / sprite.Width, 0)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos2 + side * width * widthMod / 2, 0), Color.White, new Vector2((dist * lengthMod - offset) / sprite.Width, 1)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos2 - side * width * widthMod / 2, 0), Color.White, new Vector2((dist * lengthMod - offset) / sprite.Width, 0)));
             PrimitiveBatch.End();
         }
 
@@ -252,8 +252,8 @@ namespace RoguelikeEngine
             var mid1 = pos1 + delta * MathHelper.Clamp(start, 0, 1);
             var mid2 = pos1 + delta * MathHelper.Clamp(end, 0, 1);
 
-            var tex1 = (offset + dist * lengthMod * MathHelper.Clamp(start, 0, 1)) / sprite.Width;
-            var tex2 = (offset + dist * lengthMod * MathHelper.Clamp(end, 0, 1)) / sprite.Width;
+            var tex1 = (dist * lengthMod * MathHelper.Clamp(start, 0, 1) - offset) / sprite.Width;
+            var tex2 = (dist * lengthMod * MathHelper.Clamp(end, 0, 1) - offset) / sprite.Width;
 
             //SetupNormal(WorldTransform, Projection);
             SetupColorMatrix(ColorMatrix.Identity, WorldTransform, Projection);
@@ -294,7 +294,7 @@ namespace RoguelikeEngine
                 var side = pivots[i];
                 var len = lengths[i];
                 var slide = len / dist;
-                var tex = (offset + dist * lengthMod * slide) / sprite.Width;
+                var tex = (dist * lengthMod * slide - offset) / sprite.Width;
                 var widthMod = thickness(slide);
 
                 PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(point + side * width * widthMod / 2, 0), Color.White, new Vector2(tex, 1)));

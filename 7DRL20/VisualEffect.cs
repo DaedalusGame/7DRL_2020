@@ -1729,8 +1729,7 @@ namespace RoguelikeEngine
         public int TrailLength;
         public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MathHelper.Clamp((float)(Frame.Time) / (Frame.EndTime - TrailLength), 0, 1));
         public SpriteReference Sprite;
-        public Vector2 Velocity1;
-        public Vector2 Velocity2;
+        public float Speed;
 
         public Beam(SceneGame world, SpriteReference sprite, Vector2 positionStart, Vector2 positionEnd, int time, int trail) : base(world, positionStart, positionEnd, time + trail)
         {
@@ -1753,7 +1752,49 @@ namespace RoguelikeEngine
             float time1 = (Frame.Time - TrailLength) / (Frame.EndTime - TrailLength);
             float time2 = Frame.Time / (Frame.EndTime - TrailLength);
            
-            scene.DrawBeamLine(Sprite, PositionStart, PositionEnd, 1, 1, Frame.Time, time1, time2);
+            scene.DrawBeamLine(Sprite, PositionStart, PositionEnd, 1, 1, Frame.Time * Speed, time1, time2);
+        }
+    }
+
+    class Arc : Projectile
+    {
+        public override Vector2 Tween => CurveFunction(Frame.Slide);
+        public SpriteReference Sprite;
+        public Vector2 Velocity1;
+        public Vector2 Velocity2;
+        public Func<Vector2> AnchorStart;
+        public Func<Vector2> AnchorEnd;
+        public float Speed;
+        public Func<float, float> Thickness;
+
+        public Arc(SceneGame world, SpriteReference sprite, Func<Vector2> anchorStart, Func<Vector2> anchorEnd, Vector2 velocityStart, Vector2 velocityEnd, float speed, int time) : base(world, Vector2.Zero, Vector2.Zero, time)
+        {
+            Sprite = sprite;
+            AnchorStart = anchorStart;
+            AnchorEnd = anchorEnd;
+            Velocity1 = velocityStart;
+            Velocity2 = velocityEnd;
+            Speed = speed;
+            Thickness = (slide) => 1 - Frame.Slide;
+        }
+
+        private Vector2 CurveFunction(float slide)
+        {
+            var start = AnchorStart();
+            var end = AnchorEnd();
+            var vStart = Vector2.Lerp(start, start + Velocity1, slide);
+            var vEnd = Vector2.Lerp(end - Velocity2, end, slide);
+            return Vector2.Lerp(vStart, vEnd, slide);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawBeamCurve(Sprite, CurveFunction, 100, Thickness, 1, Frame.Time * Speed, 0, 1);
         }
     }
 
@@ -2157,6 +2198,49 @@ namespace RoguelikeEngine
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
             yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class DisintegrateEffect : VisualEffect
+    {
+        protected SpriteReference Sprite;
+        protected Creature Anchor;
+
+        public DisintegrateEffect(SceneGame world, SpriteReference sprite, Creature anchor, int time) : base(world)
+        {
+            Sprite = sprite;
+            Anchor = anchor;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            int n;
+            if (Frame.Time <= 1)
+                n = 10;
+            else
+                n = 3;
+
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 emitPos = new Vector2(Anchor.X * 16, Anchor.Y * 16) + Anchor.Mask.GetRandomPixel(Random);
+                Vector2 centerPos = Anchor.VisualTarget;
+                Vector2 velocity = Vector2.Normalize(emitPos - centerPos) * (Random.NextFloat() + 0.5f) * 0.2f;
+                new Cinder(World, Sprite, emitPos, velocity, Random.Next(30) + 30);
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
         }
     }
 

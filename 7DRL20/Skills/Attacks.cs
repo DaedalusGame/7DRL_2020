@@ -1133,6 +1133,142 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    abstract class SkillBeamBase : Skill
+    {
+        public int Bolts = 1;
+
+        public SkillBeamBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return GetPossibleTargets(user);
+        }
+
+        public IEnumerable<Creature> GetPossibleTargets(Enemy user)
+        {
+            List<Creature> enemies = new List<Creature>();
+            foreach (var tile in user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 5))
+            {
+                enemies.AddRange(tile.Creatures);
+            }
+            return enemies.Where(x => x != user).Distinct().Shuffle(Random);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            List<Creature> targetCreatures = new List<Creature>();
+            if (target is IEnumerable<Creature> creatures)
+                targetCreatures.AddRange(creatures.Take(Bolts));
+            if (target is Creature creature)
+                targetCreatures.Add(creature);
+
+            if (targetCreatures.Count > 0)
+            {
+                Consume();
+                ShowSkill(user);
+                yield return user.WaitSome(50);
+
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
+                List<Wait> waits = new List<Wait>();
+                foreach (var targetCreature in targetCreatures)
+                {
+                    waits.Add(Scheduler.Instance.RunAndWait(RoutineBeam(user, targetCreature)));
+                }
+                yield return new WaitAll(waits);
+            }
+        }
+
+        public abstract IEnumerable<Wait> RoutineBeam(Creature user, Creature target);
+    }
+    
+    class SkillBeamFire : SkillBeamBase
+    {
+        public SkillBeamFire() : base("Fire Beam", $"Ranged {Element.Fire.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        {
+            Bolts = 3;
+        }
+
+        public override IEnumerable<Wait> RoutineBeam(Creature user, Creature target)
+        {
+            var beam = SpriteLoader.Instance.AddSprite("content/beam_fire");
+            new Arc(user.World, beam, () => user.VisualTarget, () => target.VisualTarget, Vector2.Zero, Vector2.Zero, 1, 20);
+            yield return user.WaitSome(20);
+            var wait = user.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - user.VisualTarget), BeamAttack);
+            yield return wait;
+        }
+
+        private static Attack BeamAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.Fire, 1.0);
+            attack.StatusEffects.Add(new Aflame()
+            {
+                Duration = new Slider(20),
+                Buildup = 1.0,
+            });
+            return attack;
+        }
+    }
+
+    class SkillBeamIce : SkillBeamBase
+    {
+        public SkillBeamIce() : base("Ice Beam", $"Ranged {Element.Ice.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        {
+            Bolts = 3;
+        }
+
+        public override IEnumerable<Wait> RoutineBeam(Creature user, Creature target)
+        {
+            var beam = SpriteLoader.Instance.AddSprite("content/beam_ice");
+            new Arc(user.World, beam, () => user.VisualTarget, () => target.VisualTarget, Vector2.Zero, Vector2.Zero, 1, 20);
+            yield return user.WaitSome(20);
+            var wait = user.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - user.VisualTarget), BeamAttack);
+            yield return wait;
+        }
+
+        private static Attack BeamAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.Ice, 1.0);
+            attack.StatusEffects.Add(new Freeze()
+            {
+                Duration = new Slider(3),
+                Buildup = 1,
+            });
+            return attack;
+        }
+    }
+
+    class SkillBeamDisintegrate : SkillBeamBase
+    {
+        public SkillBeamDisintegrate() : base("Disintegration Beam", $"Ranged {Element.TheEnd} Attack", 2, 5, float.PositiveInfinity)
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineBeam(Creature user, Creature target)
+        {
+            var beam = SpriteLoader.Instance.AddSprite("content/beam_disintegrate");
+            new Arc(user.World, beam, () => user.VisualTarget, () => target.VisualTarget, Vector2.Zero, Vector2.Zero, 1, 20);
+            new DisintegrateEffect(user.World, SpriteLoader.Instance.AddSprite("content/cinder_ender"), target, 40);
+            yield return user.WaitSome(20);
+            var wait = user.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - user.VisualTarget), BeamAttack);
+            yield return wait;
+        }
+
+        private static Attack BeamAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.TheEnd, 1.0);
+            return attack;
+        }
+    }
 
     class SkillLightning : Skill
     {

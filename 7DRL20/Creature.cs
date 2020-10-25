@@ -706,8 +706,14 @@ namespace RoguelikeEngine
         
         public TurnTaker Control;
 
+        public virtual Vector2 CenterOffset => new Vector2(8, 8);
+
+        public Vector2 ActualPosition => new Vector2(X * 16, Y * 16);
+        public Vector2 ActualTarget => ActualPosition + CenterOffset;
+
         Vector2 IHasPosition.VisualPosition => VisualPosition();
-        public virtual Vector2 VisualTarget => VisualPosition() + new Vector2(8, 8);
+        public virtual Vector2 VisualTarget => VisualPosition() + CenterOffset;
+       
 
         public Creature(SceneGame world)
         {

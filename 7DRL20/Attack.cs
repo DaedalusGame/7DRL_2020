@@ -274,7 +274,7 @@ namespace RoguelikeEngine
             double attack = Attacker.GetStat(Stat.Attack) * AttackModifier + Force;
             double defense = Defender.GetStat(Stat.Defense) * DefenseModifier;
 
-            Damage = Math.Max(attack - defense, 0);
+            Damage = Math.Max(attack - defense, 0) * Defender.GetStat(Stat.DamageRate);
         }
 
         private double CalculateSplitElement(Element element, double damage)

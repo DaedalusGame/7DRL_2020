@@ -485,6 +485,43 @@ namespace RoguelikeEngine
         }
     }
 
+    class Freeze : StatusEffect
+    {
+        public override string Name => $"Freeze";
+        public override string Description => $"Reduces speed to 0. Frozen targets take double damage from non-{Element.Fire.FormatString} attacks.";
+
+        public override int MaxStacks => 1;
+
+        public Freeze() : base()
+        {
+        }
+
+        [Construct("freeze")]
+        public static Freeze Construct(Context context)
+        {
+            return new Freeze();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatMultiply(this, Stat.Speed, 0));
+            Effect.Apply(new EffectStatMultiply(this, Stat.DamageRate, 2));
+            Effect.Apply(new EffectStatMultiply(this, Element.Fire.DamageRate, 0.5));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Freeze;
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
     class Aflame : StatusEffect
     {
         public override string Name => $"Aflame";

@@ -58,6 +58,8 @@ namespace RoguelikeEngine.MapGeneration
         public static EnemySpawn WizardFire = new SingleSpawn("wizard_fire", (world) => new WizardFire(world));
 
         public static EnemySpawn AbyssalTendrilBush = new SingleSpawn("abyssal_tendril_bush", (world) => new AbyssalTendrilBush(world));
+
+        public static EnemySpawn DeathGolem = new SingleSpawn("death_golem", (world) => new DeathGolem(world));
     }
 
     class SingleSpawn : EnemySpawn

@@ -133,9 +133,9 @@ namespace RoguelikeEngine.Enemies
             Name = "Leo";
             Description = "Something smell in here?";
 
-            Render = new BigCreatureRender()
+            Render = new MardukeRender()
             {
-                Sprite = SpriteLoader.Instance.AddSprite("content/pugnbaba"),
+                Sprite = SpriteLoader.Instance.AddSprite("content/lion"),
             };
             Mask.Add(new Point(0, 0));
             Mask.Add(new Point(0, 1));
@@ -166,7 +166,7 @@ namespace RoguelikeEngine.Enemies
             Name = "Marduke";
             Description = "BAAAAH";
 
-            Render = new BigCreatureRender()
+            Render = new MardukeRender()
             {
                 Sprite = SpriteLoader.Instance.AddSprite("content/marduke"),
             };
@@ -187,6 +187,43 @@ namespace RoguelikeEngine.Enemies
         public static Marduke Construct(Context context)
         {
             return new Marduke(context.World);
+        }
+    }
+
+    class DeathGolem : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public DeathGolem(SceneGame world) : base(world)
+        {
+            Name = "Death Golem";
+            Description = "";
+
+            Render = new MardukeRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/death_golem"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3700));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillBeamFire());
+            Skills.Add(new SkillBeamIce());
+            Skills.Add(new SkillBeamDisintegrate());
+            //Skills.Add(new SkillSoulMissile());
+        }
+
+        [Construct("death_golem")]
+        public static DeathGolem Construct(Context context)
+        {
+            return new DeathGolem(context.World);
         }
     }
 

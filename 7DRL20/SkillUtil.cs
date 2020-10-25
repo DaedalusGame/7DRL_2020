@@ -237,7 +237,7 @@ namespace RoguelikeEngine
 
         public static IEnumerable<Tile> GetCircularArea(Creature origin, int radius)
         {
-            return GetCircularArea(origin.Tile, origin.Mask.GetRectangle(origin.X, origin.Y), origin.VisualTarget, radius);
+            return GetCircularArea(origin.Tile, origin.Mask.GetRectangle(origin.X, origin.Y), origin.ActualTarget, radius);
         }
 
         public static IEnumerable<Tile> GetCircularArea(Tile origin, int radius)
@@ -297,7 +297,7 @@ namespace RoguelikeEngine
 
         public static IEnumerable<Tile> GetShieldedExplosionTiles(Creature origin, int radius, int shieldRadius)
         {
-            return GetShieldedExplosionTiles(origin.Tile, origin.Mask.GetRectangle(origin.X, origin.Y), origin.VisualTarget, radius, shieldRadius);
+            return GetShieldedExplosionTiles(origin.Tile, origin.Mask.GetRectangle(origin.X, origin.Y), origin.ActualTarget, radius, shieldRadius);
         }
 
         public static IEnumerable<Tile> GetShieldedExplosionTiles(Tile origin, int radius, int shieldRadius)
