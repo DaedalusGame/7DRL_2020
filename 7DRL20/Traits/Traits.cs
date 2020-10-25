@@ -22,7 +22,7 @@ namespace RoguelikeEngine.Traits
         public int Index;
         public string ID;
         public string Name;
-        public string Description;
+        public CalculatedString Description;
         public Color Color;
 
         public Trait(string id, string name, string description, Color color)
@@ -73,8 +73,10 @@ namespace RoguelikeEngine.Traits
         public static Trait Undead = new TraitUndead();
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
         public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
+        public static Trait BloodThroesAcid = new TraitDeathThroesBlood(Element.Acid);
         public static Trait Broiling = new TraitBroil();
         public static Trait Overclock = new TraitOverclock();
+        public static Trait AcidBlood = new TraitAcidBlood();
 
         public static Trait Water = new TraitWater();
         public static Trait Lava = new TraitLava();

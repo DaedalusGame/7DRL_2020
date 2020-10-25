@@ -11,6 +11,72 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class PathCache
+    {
+        private struct PathRequest
+        {
+            public DijkstraLength Length;
+            public DijkstraNeighbors Neighbors;
+            public int Radius;
+            public int MaxDistance;
+
+            public PathRequest(DijkstraLength length, DijkstraNeighbors neighbors, int radius, int maxDistance)
+            {
+                Length = length;
+                Neighbors = neighbors;
+                Radius = radius;
+                MaxDistance = maxDistance;
+            }
+        }
+
+        Map Map;
+        Point Position;
+        IEnumerable<Point> Mask;
+
+        Dictionary<string, IDijkstraMap> Maps = new Dictionary<string, IDijkstraMap>();
+        Dictionary<string, PathRequest> Requests = new Dictionary<string, PathRequest>();
+
+        public void Request(string type, DijkstraLength length, DijkstraNeighbors neighbors, int radius, int maxDistance)
+        {
+            Requests[type] = new PathRequest(length, neighbors, radius, maxDistance);
+        }
+
+        public void Recalculate(Map map, Point pos, IEnumerable<Point> points)
+        {
+            Map = map;
+            Position = pos;
+            Mask = points;
+
+            Maps.Clear();
+        }
+
+        private IDijkstraMap Get(string type)
+        {
+            IDijkstraMap map;
+            if (!Maps.TryGetValue(type, out map))
+            {
+                var request = Requests[type];
+                var dijkstra = Util.Dijkstra(Mask, new Point[0], Map.Width, Map.Height, new Rectangle(Position.X - request.Radius, Position.Y - request.Radius, request.Radius * 2 + 1, request.Radius * 2 + 1), request.MaxDistance, request.Length, request.Neighbors);
+                Maps[type] = map = dijkstra;
+                Requests.Remove(type);
+            }
+            return map;
+        }
+
+        public Point? GetNext(string type, Point pos, DijkstraNeighbors neighbors, Random random)
+        {
+            var map = Get(type);
+            var nextMoves = map.FindNextMoves(pos, neighbors);
+            return map.FindNextUnblockedMove(nextMoves.Shuffle(random), IsBlocked);
+        }
+
+        private bool IsBlocked(Point p)
+        {
+            Tile tile = Map.GetTile(p.X, p.Y);
+            return tile.Solid || tile.Creatures.Any();
+        }
+    }
+
     class DijkstraTile
     {
         public Point Tile;
@@ -221,18 +287,23 @@ namespace RoguelikeEngine
         }
     }
 
+    delegate double DijkstraLength(Point begin, Point end);
+
+    delegate IEnumerable<Point> DijkstraNeighbors(Point pos);
+
     static class Util
     {
         #region Dijkstra
-        public static IDijkstraMap Dijkstra(Point start, Point end, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
+        public static IDijkstraMap Dijkstra(Point start, Point end, int width, int height, Rectangle activeArea, double maxDist, DijkstraLength length, DijkstraNeighbors neighbors)
         {
             return Dijkstra(new[] { start }, new[] { end }, width, height, activeArea, maxDist, length, neighbors);
         }
 
-        public static IDijkstraMap Dijkstra(IEnumerable<Point> start, IEnumerable<Point> end, int width, int height, Rectangle activeArea, double maxDist, Func<Point, Point, double> length, Func<Point, IEnumerable<Point>> neighbors)
+        public static IDijkstraMap Dijkstra(IEnumerable<Point> start, IEnumerable<Point> end, int width, int height, Rectangle activeArea, double maxDist, DijkstraLength length, DijkstraNeighbors neighbors)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
+            bool hasEnds = end.Any();
             HashSet<Point> ends = new HashSet<Point>(end);
             FibonacciHeap<DijkstraTile, double> heap = new FibonacciHeap<DijkstraTile, double>(0);
 
@@ -247,7 +318,7 @@ namespace RoguelikeEngine
 
             IDijkstraMap dijkstraMap = new DijkstraMap(width, height, heap, start);
 
-            while (!heap.IsEmpty() && end.Any() && ends.Count > 0)
+            while (!heap.IsEmpty() && (!hasEnds || ends.Count > 0))
             {
                 var node = heap.RemoveMin();
                 var dTile = node.Data;
@@ -322,12 +393,36 @@ namespace RoguelikeEngine
             return FindPathInternal(dijkstra, end).Reverse();
         }
 
-        public static double GetMove(this IDijkstraMap dijkstra, Tile end)
+        public static IEnumerable<Point> FindNextMoves(this IDijkstraMap dijkstra, Point start, DijkstraNeighbors neighbors)
+        {
+            double minDist = dijkstra.GetCost(start);
+            foreach(var neighbor in neighbors(start))
+            {
+                double dist = dijkstra.GetCost(neighbor);
+                if (dist < minDist)
+                {
+                    yield return neighbor;
+                }
+            }
+        }
+
+        public static Point? FindNextUnblockedMove(this IDijkstraMap dijkstra, IEnumerable<Point> nextPoints, Func<Point,bool> blocked)
+        {
+            nextPoints = nextPoints.OrderBy(p => dijkstra.GetCost(p));
+            foreach(var next in nextPoints)
+            {
+                if (!blocked(next))
+                    return next;
+            }
+            return null;
+        }
+
+        public static double GetMove(this IDijkstraMap dijkstra, Point end)
         {
             return dijkstra[end.X, end.Y].MoveDistance;
         }
 
-        public static double GetCost(this IDijkstraMap dijkstra, Tile end)
+        public static double GetCost(this IDijkstraMap dijkstra, Point end)
         {
             return dijkstra[end.X, end.Y].Distance;
         }
@@ -762,6 +857,16 @@ namespace RoguelikeEngine
         internal static Color AddColor(Color a, Color b)
         {
             return new Color(a.R + b.R, a.G + b.G, a.B + b.B, a.A + b.A);
+        }
+
+        public static Vector2 TurnRight(this Vector2 vec)
+        {
+            return new Vector2(vec.Y, -vec.X);
+        }
+
+        public static Vector2 TurnLeft(this Vector2 vec)
+        {
+            return new Vector2(-vec.Y, vec.X);
         }
 
         public static Facing TurnLeft(this Facing facing)

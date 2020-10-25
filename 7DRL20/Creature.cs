@@ -691,6 +691,11 @@ namespace RoguelikeEngine
         public Func<Vector2> VisualPosition = () => Vector2.Zero;
         public Func<Vector2> VisualCamera = () => Vector2.Zero;
         public Func<ColorMatrix> VisualColor = () => ColorMatrix.Identity;
+        public CreaturePose PoseLast;
+        public CreaturePose Pose;
+        public int PoseFrame;
+
+        public PathCache PathCache = new PathCache();
 
         public int Frame;
 
@@ -847,10 +852,25 @@ namespace RoguelikeEngine
             };
         }
 
+        Random Random = new Random();
+
         public virtual void Update()
         {
             Frame++;
+            UpdatePose();
             CurrentActions.Update();
+        }
+
+        private void UpdatePose()
+        {
+            PoseFrame++;
+            var pose = VisualPose();
+            if (pose != Pose)
+            {
+                PoseLast = Pose;
+                Pose = pose;
+                PoseFrame = 0;
+            }
         }
 
         public void CheckDead(Vector2 dir)
@@ -950,6 +970,7 @@ namespace RoguelikeEngine
             else
                 VisualPosition = Slide(VisualPosition(), new Vector2(tile.X, tile.Y) * 16, LerpHelper.Linear, time);
             VisualCamera = VisualPosition;
+            PathCache.Recalculate(Map, new Point(X, Y), Mask.Select(o => Tile.GetNeighbor(o.X,o.Y)).Select(t => new Point(t.X,t.Y)));
             EventBus.PushEvent(new EventMove.Finish(this, previousTile, tile));
         }
 
@@ -979,31 +1000,49 @@ namespace RoguelikeEngine
             yield return new WaitFrames(this, 10);
         }
 
+        private Vector2 Scuff(Vector2 vec, float subtract)
+        {
+            float scale = 1 - subtract / Math.Max(Math.Abs(vec.X), Math.Abs(vec.Y));
+            return vec * scale;
+        }
+
+        private Vector2 ScuffExact(Vector2 vec, float dist)
+        {
+            float scale = dist / Math.Max(Math.Abs(vec.X), Math.Abs(vec.Y));
+            return vec * scale;
+        }
+
         public IEnumerable<Wait> RoutineAttack(int dx, int dy, AttackDelegate attackGenerator)
         {
             yield return PopupHelper.Wait;
             var frontier = Mask.GetFrontier(dx, dy);
             List<Wait> waitForDamage = new List<Wait>();
-            foreach(var tile in frontier.Select(o => Tile.GetNeighbor(o.X,o.Y)))
+            foreach (var tile in frontier.Select(o => Tile.GetNeighbor(o.X, o.Y)))
             {
                 if (tile is IMineable mineable)
                 {
-                    waitForDamage.Add(mineable.Mine(new MineEvent(this,EquipMainhand,100)));
+                    waitForDamage.Add(mineable.Mine(new MineEvent(this, EquipMainhand, 100)));
                 }
                 else
                 {
-                    foreach (var creature in tile.Creatures) {
+                    foreach (var creature in tile.Creatures)
+                    {
                         var wait = Attack(creature, new Vector2(dx, dy), attackGenerator);
                         waitForDamage.Add(wait);
                     }
                 }
             }
-           
-            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-            VisualPosition = Slide(pos + new Vector2(dx * 8, dy * 8), pos, LerpHelper.Linear, 10);
-            VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
-            yield return new WaitFrames(this,10);
+
+            AttackAnimation(dx, dy);
+            yield return new WaitFrames(this, 10);
             yield return new WaitAll(waitForDamage);
+        }
+
+        public void AttackAnimation(int dx, int dy)
+        {
+            var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
+            VisualPosition = Slide(pos + Scuff(new Vector2(dx * 16, dy * 16), 8), pos, LerpHelper.Linear, 10);
+            VisualPose = FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
         }
 
         public IEnumerable<Wait> RoutineShootArrow(int dx, int dy)
@@ -1032,7 +1071,7 @@ namespace RoguelikeEngine
             if (dir.X != 0 || dir.Y != 0)
             {
                 var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
-                VisualPosition = Slide(pos + new Vector2(dir.X * 8, dir.Y * 8), pos, LerpHelper.Linear, 10);
+                VisualPosition = Slide(pos + ScuffExact(dir, 8), pos, LerpHelper.Linear, 10);
                 VisualPose = Static(CreaturePose.Stand);
                 yield return new WaitFrames(this, 10);
             }

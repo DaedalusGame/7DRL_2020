@@ -450,6 +450,41 @@ namespace RoguelikeEngine
         }
     }
 
+    class Stun : StatusEffect
+    {
+        public override string Name => $"Stun";
+        public override string Description => $"Reduces speed by 100%.";
+
+        public override int MaxStacks => 1;
+
+        public Stun() : base()
+        {
+        }
+
+        [Construct("stun")]
+        public static Stun Construct(Context context)
+        {
+            return new Stun();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatPercent(this, Stat.Speed, -1));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Stun;
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
     class Aflame : StatusEffect
     {
         public override string Name => $"Aflame";

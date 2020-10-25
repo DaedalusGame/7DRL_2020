@@ -47,7 +47,8 @@ namespace RoguelikeEngine.Effects
         {
             int totalLevel = equalityGroup.OfType<EffectTrait>().Sum(trait => trait.Level);
             statBlock += $"{Game.FORMAT_BOLD}{Game.FormatColor(Trait.Color)}{Trait.Name}{Game.FormatColor(Color.White)}{Game.FORMAT_BOLD} Lv{totalLevel}\n";
-            string description = string.Join(string.Empty, Trait.Description.Split('\n').Select(str => $"- {str}\n"));
+            string traitDesc = Trait.Description;
+            string description = string.Join(string.Empty, traitDesc.Split('\n').Select(str => $"- {str}\n"));
             statBlock += description;
         }
 

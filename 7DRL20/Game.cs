@@ -16,6 +16,7 @@ namespace RoguelikeEngine
     {
         GraphicsDeviceManager Graphics;
         public SpriteBatch SpriteBatch;
+        public PrimitiveBatch<VertexPositionColorTexture> PrimitiveBatch;
 
         public Texture2D Pixel;
         public Microsoft.Xna.Framework.Graphics.Effect Shader;
@@ -106,6 +107,7 @@ namespace RoguelikeEngine
         protected override void LoadContent()
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);
+            PrimitiveBatch = new PrimitiveBatch<VertexPositionColorTexture>(GraphicsDevice);
 
             Shader = Content.Load<Microsoft.Xna.Framework.Graphics.Effect>("effects");
 

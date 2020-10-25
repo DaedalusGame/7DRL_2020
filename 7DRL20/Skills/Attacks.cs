@@ -174,6 +174,36 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillTentacleSlash : SkillAttackBase
+    {
+        public SkillTentacleSlash() : base("Tentacle Slash", "Attack", 0, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Slash, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillTentacleBash : SkillAttackBase
+    {
+        public SkillTentacleBash() : base("Tentacle Bash", "Attack", 0, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
+
     class SkillAcidTouch : SkillAttackBase
     {
         public SkillAcidTouch() : base("Acid Touch", "Attack", 0, 1, float.PositiveInfinity)
@@ -997,6 +1027,113 @@ namespace RoguelikeEngine.Skills
         }
     }*/
 
+    class SkillSoulMissile : Skill
+    {
+        public int SalvoCount = 3;
+        public int Missiles = 9;
+
+        public SkillSoulMissile() : base("Soul Missile", $"Ranged {Element.Arcane.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 5);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return GetPossibleTargets(user);
+        }
+
+        public IEnumerable<Creature> GetPossibleTargets(Enemy user)
+        {
+            List<Creature> enemies = new List<Creature>();
+            foreach(var tile in user.Tile.GetNearby(user.Mask.GetRectangle(user.X,user.Y), 5))
+            {
+                enemies.AddRange(tile.Creatures);
+            }
+            return enemies.Where(x => x != user).Distinct().Shuffle(Random);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            int salvoCount;
+            int missiles;
+            double powerMod;
+
+            var trigger = Random.NextDouble();
+
+            if (trigger < 0.1)
+            {
+                salvoCount = Missiles * SalvoCount;
+                missiles = 1;
+                powerMod = 3;
+            }
+            else if(trigger < 0.3)
+            {
+                salvoCount = Missiles;
+                missiles = SalvoCount;
+                powerMod = 1.5;
+            }
+            else
+            {
+                salvoCount = SalvoCount;
+                missiles = Missiles;
+                powerMod = 1;
+            }
+
+            if (target is IEnumerable<Creature> targetCreatures)
+            {
+                Consume();
+                ShowSkill(user);
+                yield return user.WaitSome(50);
+
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
+                List<Wait> waits = new List<Wait>();
+                var targetSet = new List<Creature>();
+                for (int i = 0; i < salvoCount; i++)
+                {
+                    targetSet.AddRange(targetCreatures.Take(missiles));
+                }
+                int missile = 0;
+                foreach(var targetCreature in targetSet)
+                {
+                    float missileSlide = missiles > 1 ? (missile % missiles) / (float)(missiles - 1) : 0.5f;
+                    waits.Add(Scheduler.Instance.RunAndWait(RoutineMissile(user, targetCreature, missileSlide, powerMod)));
+                    missile++;
+                    if (missile % missiles == 0)
+                        yield return new WaitTime(20);
+                    else
+                        yield return new WaitTime(2);
+                }
+                yield return new WaitAll(waits);
+            }
+        }
+
+        private IEnumerable<Wait> RoutineMissile(Creature user, Creature target, float missileSlide, double powerMod)
+        {
+            var missile = SpriteLoader.Instance.AddSprite("content/beam_soul");
+            var emitVector = Util.AngleToVector(MathHelper.Lerp(-MathHelper.PiOver2 * 0.8f, MathHelper.PiOver2 * 0.8f, missileSlide)) * 100;
+            var impactVector = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * Random.Next(25, 75);
+            int duration = Random.Next(30, 50);
+            new Missile(user.World, missile, () => user.VisualTarget, () => target.VisualTarget, emitVector, impactVector, duration, 10);
+            yield return user.WaitSome(duration + 5);
+
+            var wait = user.Attack(target, SkillUtil.SafeNormalize(target.VisualTarget - user.VisualTarget), (a,b) => MissileAttack(a,b,powerMod));
+            yield return wait;
+        }
+
+        private static Attack MissileAttack(Creature user, IEffectHolder target, double powerMod)
+        {
+            Attack attack = new Attack(user, target);
+            attack.SetParameters(20, powerMod, 1.0);
+            attack.Elements.Add(Element.Arcane, 1.0);
+            return attack;
+        }
+    }
+
+
     class SkillLightning : Skill
     {
         public int Bolts = 1;
@@ -1348,6 +1485,216 @@ namespace RoguelikeEngine.Skills
             attack.SetParameters(40, 1, 1);
             attack.Elements.Add(Element.Fire, 1.0);
             return attack;
+        }
+    }
+
+    abstract class SkillCloseStrikeBase : Skill
+    {
+        public override bool Hidden(Creature user) => true;
+
+        public int Radius = 1;
+
+        public SkillCloseStrikeBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InCircle(user, user.AggroTarget, Radius);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            var attackOffset = new List<Point>();
+            var pA = new Point(user.X, user.Y);
+            var pB = new Point(user.AggroTarget.X, user.AggroTarget.Y);
+            foreach (var oA in user.Mask)
+            {
+                foreach(var oB in user.AggroTarget.Mask)
+                {
+                    attackOffset.Add(oB - oA + pB - pA);
+                }
+            }
+
+            return attackOffset.Pick(Random);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Point offset)
+            {
+                Consume();
+                return user.RoutineAttack(offset.X, offset.Y, Attack);
+            }
+            return Enumerable.Empty<Wait>();
+        }
+
+        protected abstract Attack Attack(Creature attacker, IEffectHolder defender);
+    }
+
+    class SkillVenomBite : SkillCloseStrikeBase
+    {
+        public SkillVenomBite() : base("Venom Bite", $"Attack", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Pierce, 0.5);
+            attack.Elements.Add(Element.Slash, 0.5);
+            attack.StatusEffects.Add(new Poison() { Duration = new Slider(20), Buildup = 1 });
+            return attack;
+        }
+    }
+
+    class SkillLick : SkillCloseStrikeBase
+    {
+        public SkillLick() : base("Lick", $"Attack", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.StatusEffects.Add(new Stun() { Duration = new Slider(1), Buildup = 1 });
+            return attack;
+        }
+    }
+
+    class SkillWallop : SkillCloseStrikeBase
+    {
+        struct WallopTarget
+        {
+            public Point offset;
+            public Creature target;
+
+            public WallopTarget(Point offset, Creature target)
+            {
+                this.offset = offset;
+                this.target = target;
+            }
+        }
+
+        public SkillWallop() : base("Wallop", $"Attack", 3, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && GetMasters(user).Any(x => x is Creature);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            Point offset = (Point)base.GetEnemyTarget(user); //Yes it is.
+            var master = GetMasters(user).First(x => x is Creature);
+            return new WallopTarget(offset, (Creature)master);
+        }
+
+        private IEnumerable<IEffectHolder> GetMasters(Creature creature) //TODO: Move to util
+        {
+            return creature.GetEffects<EffectSummon>().Where(summon => summon.Slave == creature).Select(summon => summon.Master);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is WallopTarget wallopTarget)
+            {
+                Consume();
+                var frontier = user.Mask.GetFrontier(wallopTarget.offset.X, wallopTarget.offset.Y);
+                List<Wait> waitForDamage = new List<Wait>();
+                var targetCreatures = new List<Creature>();
+                foreach (var tile in frontier.Select(o => user.Tile.GetNeighbor(o.X, o.Y)))
+                {
+                    targetCreatures.AddRange(tile.Creatures);
+                }
+                var targetTiles = GetWallopTargets(user, wallopTarget.target);
+                var waits = new List<Wait>();
+                int i = 0;
+                foreach (var targetTuple in targetCreatures.Zip(targetTiles, (c,t) => new Tuple<Creature,Tile>(c,t)))
+                {
+                    waits.Add(Scheduler.Instance.RunAndWait(Wallop(user, targetTuple.Item1, targetTuple.Item2)));
+                }
+                user.AttackAnimation(wallopTarget.offset.X, wallopTarget.offset.Y);
+                yield return new WaitTime(30);
+                yield return new WaitAll(waits);
+            }
+        }
+
+        private IEnumerable<Tile> GetWallopTargets(Creature user, Creature close)
+        {
+            var targets = new List<Tile>();
+            var frontier = user.Mask.GetFullFrontier();
+            var midDist = (user.VisualTarget - close.VisualTarget).LengthSquared();
+            foreach(var tile in frontier.Select(o => user.Tile.GetNeighbor(o.X, o.Y)))
+            {
+                var dist = (tile.VisualTarget - close.VisualTarget).LengthSquared();
+                if(dist < midDist && !tile.Solid && !tile.Creatures.Any())
+                {
+                    targets.Add(tile);
+                }
+            }
+            return targets.Shuffle(Random);
+        }
+
+        private IEnumerable<Wait> Wallop(Creature user, Creature targetCreature, Tile targetTile)
+        {
+            Vector2 startJump = targetCreature.VisualPosition();
+            targetCreature.MoveTo(targetTile, 15);
+            targetCreature.VisualPosition = targetCreature.SlideJump(startJump, new Vector2(targetCreature.X, targetCreature.Y) * 16, 16, LerpHelper.Linear, 15);
+            yield return new WaitTime(15);
+            var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), Attack);
+            yield return wait;
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillGrabbingTentacle : Skill
+    {
+        public SkillGrabbingTentacle() : base("Grabbing Tentacle", $"Draws target closer to brazil.", 5, 10, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 3) && !InRange(user, user.AggroTarget, 1) && GetValidDestinations(user).Any();
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.AggroTarget;
+        }
+
+        public IEnumerable<Tile> GetValidDestinations(Creature user)
+        {
+            return SkillUtil.GetCircularArea(user, 1).Where(tile => !tile.Solid && !tile.Creatures.Any()).Shuffle(Random);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
+            {
+                var tentacle = SpriteLoader.Instance.AddSprite("content/beam_tendril");
+                Consume();
+                ShowSkill(user);
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(50);
+                var destinationTile = GetValidDestinations(user).First();
+                new TentacleBeam(user.World, tentacle, () => user.VisualTarget, () => targetCreature.VisualTarget, 10, 50);
+                yield return user.WaitSome(10);
+                targetCreature.MoveTo(destinationTile, 30);
+                yield return user.WaitSome(20);
+            }
         }
     }
 

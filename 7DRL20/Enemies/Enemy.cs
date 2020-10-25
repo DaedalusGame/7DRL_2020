@@ -41,8 +41,34 @@ namespace RoguelikeEngine.Enemies
         public static Family Dragon = new Family("dragon", "Dragon");
         public static Family Slime = new Family("slime", "Slime");
         public static Family Construct = new Family("construct", "Construct");
+        public static Family Plant = new Family("plant", "Plant");
+        public static Family Abyssal = new Family("abyssal", "Abyssal");
 
         public static Family GreenSlime = new Family("slime_green", "Green Slime");
+    }
+
+    abstract class MovementType
+    {
+        public static List<MovementType> AllMovementTypes = new List<MovementType>();
+
+        int Index;
+        public string ID;
+
+        public MovementType(string id)
+        {
+            Index = AllMovementTypes.Count;
+            ID = id;
+            AllMovementTypes.Add(this);
+        }
+
+        public abstract bool CanEnter(Tile tile);
+
+        public abstract IEnumerable<Point> GetNeighbors(Point point);
+
+        public static MovementType GetMovementType(string id)
+        {
+            return AllMovementTypes.Find(x => x.ID == id);
+        }
     }
 
     abstract class Enemy : Creature
@@ -113,9 +139,14 @@ namespace RoguelikeEngine.Enemies
             return tiles.Select(GetTileWeight).Sum();
         }
 
+        private bool CanEnter(Tile tile)
+        {
+            return tile.Solid;
+        }
+
         private double GetTileWeight(Tile tile)
         {
-            if (tile.Solid)
+            if (CanEnter(tile))
                 return 100;
             else if(tile.Creatures.Any())
                 return 10;
@@ -155,17 +186,22 @@ namespace RoguelikeEngine.Enemies
                 {
                     var targetPoint = new Point(AggroTarget.X, AggroTarget.Y);
                     var stopwatch = Stopwatch.StartNew();
-                    var dijkstra = Util.Dijkstra(new Point(X, Y), targetPoint, Map.Width, Map.Height, new Rectangle(X - 20, Y - 20, 41, 41), 50, GetWeightStraight, GetNeighbors);
-                    if (dijkstra.Reachable(targetPoint))
+                    AggroTarget.PathCache.Request("std", GetWeightStraight, GetNeighbors, 15, 500);
+                    var next = AggroTarget.PathCache.GetNext("std", new Point(X, Y), GetNeighbors, Random);
+                    /*var dijkstra = Util.Dijkstra(new Point(X, Y), targetPoint, Map.Width, Map.Height, new Rectangle(X - 10, Y - 10, 21, 21), 40, GetWeightStraight, GetNeighbors);*/
+                    if (next.HasValue)
                     {
-                        var path = dijkstra.FindPath(targetPoint);
-                        var next = path.First();
-                        move = next - new Point(X, Y);
+                        move = next.Value - new Point(X, Y);
                         wait = new WaitTime(1);
+                    }
+                    else
+                    {
+                        move = new Point(0, 0);
                     }
                 }
                 
-                CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y)));
+                if(move != Point.Zero) //No move to self
+                    CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y)));
                 //wait = CurrentAction;
             }
             return wait;

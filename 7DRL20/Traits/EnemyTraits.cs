@@ -21,7 +21,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitDeathThroesCrimson : TraitDeathThroes
     {
-        public TraitDeathThroesCrimson() : base("death_throes_crimson", "Crimson Throes", $"Explodes on death if slashed, dealing {Element.Dark.FormatString} and {Element.Fire.FormatString} damage.", new Color(192,0,0))
+        public TraitDeathThroesCrimson() : base("death_throes_crimson", "Crimson Throes", $"Explodes on death if slashed, dealing {Element.Dark.FormatString} and {Element.Fire.FormatString} damage in a 2 tile radius.", new Color(192,0,0))
         {
         }
 
@@ -50,6 +50,36 @@ namespace RoguelikeEngine.Traits
             attack.SetParameters(attacker.GetStat(Stat.HP) * 0.5, 0, 1);
             attack.Elements.Add(Element.Fire, 0.5);
             attack.Elements.Add(Element.Dark, 0.5);
+            return attack;
+        }
+    }
+
+    class TraitDeathThroesBlood : TraitDeathThroes
+    {
+        Element Element;
+
+        public TraitDeathThroesBlood(Element element) : base("death_throes_blood", "Blood Throes", "", new Color(192, 0, 0))
+        {
+            Element = element;
+            Description = new DynamicString(() => $"Spills its blood on death, dealing {Element} damage in a 1 tile radius.");
+        }
+
+        public override IEnumerable<Wait> RoutineExplode(DeathEvent death)
+        {
+            Creature creature = death.Creature;
+
+            var explosion = new Skills.Explosion(creature, SkillUtil.GetCircularArea(creature, 1), creature.VisualTarget);
+            explosion.Attack = ExplosionAttack;
+            explosion.Fault = this;
+            yield return explosion.Run();
+        }
+
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Fault = this;
+            attack.SetParameters(attacker.GetStat(Stat.HP) * 0.5, 0, 1);
+            attack.Elements.Add(Element, 1.0);
             return attack;
         }
     }
@@ -161,6 +191,35 @@ namespace RoguelikeEngine.Traits
                 }
             }
             yield return Wait.NoWait;
+        }
+    }
+
+    class TraitAcidBlood : Trait
+    {
+        public TraitAcidBlood() : base("acid_blood", "Acid Blood", $"When damaged, splash acid on attacker, dealing {Element.Acid.FormatString} damage.", new Color(227, 255, 34))
+        {
+            Effect.Apply(new OnDefend(this, RoutineAcidSplash));
+        }
+
+        private IEnumerable<Wait> RoutineAcidSplash(Attack attack)
+        {
+            if (attack.Defender is Creature defender && attack.ExtraEffects.Any(effect => effect is AttackPhysical))
+            {
+                int traitLvl = attack.Defender.GetTrait(this);
+
+                defender.Attack(attack.Attacker, Vector2.Zero, (a,b) => AcidAttack(a, b, traitLvl * 20));
+            }
+
+            yield return Wait.NoWait;
+        }
+
+        private Attack AcidAttack(Creature attacker, IEffectHolder defender, double force)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(force, 0, 1);
+            attack.Elements.Add(Element.Acid, 1.0);
+            attack.ReactionLevel = 1;
+            return attack;
         }
     }
 }

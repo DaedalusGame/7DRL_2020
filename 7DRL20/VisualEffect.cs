@@ -1727,11 +1727,12 @@ namespace RoguelikeEngine
     class Beam : Projectile
     {
         public int TrailLength;
-        public Vector2 TweenTrail => Vector2.Lerp(PositionStart, PositionEnd, MathHelper.Clamp((float)(Frame.Time - TrailLength) / (Frame.EndTime - TrailLength * 2), 0, 1));
-        public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MathHelper.Clamp((float)(Frame.Time) / (Frame.EndTime - TrailLength * 2), 0, 1));
+        public override Vector2 Tween => Vector2.Lerp(PositionStart, PositionEnd, MathHelper.Clamp((float)(Frame.Time) / (Frame.EndTime - TrailLength), 0, 1));
         public SpriteReference Sprite;
+        public Vector2 Velocity1;
+        public Vector2 Velocity2;
 
-        public Beam(SceneGame world, SpriteReference sprite, Vector2 positionStart, Vector2 positionEnd, int time, int trail) : base(world, positionStart, positionEnd, time + trail * 2)
+        public Beam(SceneGame world, SpriteReference sprite, Vector2 positionStart, Vector2 positionEnd, int time, int trail) : base(world, positionStart, positionEnd, time + trail)
         {
             Sprite = sprite;
             TrailLength = trail;
@@ -1749,14 +1750,109 @@ namespace RoguelikeEngine
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            Vector2 point1 = TweenTrail;
-            Vector2 point2 = Tween;
+            float time1 = (Frame.Time - TrailLength) / (Frame.EndTime - TrailLength);
+            float time2 = Frame.Time / (Frame.EndTime - TrailLength);
+           
+            scene.DrawBeamLine(Sprite, PositionStart, PositionEnd, 1, 1, Frame.Time, time1, time2);
+        }
+    }
 
-            float angle = (float)Math.Atan2(point2.Y - point1.Y, point2.X - point1.X);
-            int length = (int)(point2 - point1).Length();
-            scene.PushSpriteBatch(samplerState: SamplerState.PointWrap);
-            scene.SpriteBatch.Draw(Sprite.Texture, point1, new Rectangle((int)Frame.Time * 2, 0, length, Sprite.Height), Color.White, angle, new Vector2(0, Sprite.Height / 2), 1.0f, SpriteEffects.None, 0);
-            scene.PopSpriteBatch();
+    class TentacleBeam : Projectile
+    {
+        public int TrailLength;
+        public override Vector2 Tween => CurveFunction(MathHelper.Clamp((float)(Frame.Time) / (Frame.EndTime - TrailLength), 0, 1));
+        public SpriteReference Sprite;
+        public Vector2 Velocity1;
+        public Vector2 Velocity2;
+        public Func<Vector2> AnchorStart;
+        public Func<Vector2> AnchorEnd;
+
+        public TentacleBeam(SceneGame world, SpriteReference sprite, Func<Vector2> anchorStart, Func<Vector2> anchorEnd, int time, int trail) : base(world, Vector2.Zero, Vector2.Zero, time + trail)
+        {
+            Sprite = sprite;
+            TrailLength = trail;
+            AnchorStart = anchorStart;
+            AnchorEnd = anchorEnd;
+            Velocity1 = new Vector2((Random.NextFloat() - 0.5f) * 2.0f * 100, (Random.NextFloat() - 0.5f) * 2.0f * 100);
+            Velocity2 = new Vector2((Random.NextFloat() - 0.5f) * 2.0f * 100, (Random.NextFloat() - 0.5f) * 2.0f * 100);
+        }
+
+        private Vector2 CurveFunction(float slide)
+        {
+            var start = AnchorStart();
+            var end = AnchorEnd();
+            var vStart = Vector2.Lerp(start, start + Velocity1, slide);
+            var vEnd = Vector2.Lerp(end - Velocity2, end, slide);
+            return Vector2.Lerp(vStart, vEnd, slide);
+        }
+
+        public override void Impact(Vector2 position)
+        {
+            Hit = true;
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            float time1 = (Frame.Time - TrailLength) / (Frame.EndTime - TrailLength);
+            float time2 = Frame.Time / (Frame.EndTime - TrailLength);
+
+            scene.DrawBeamCurve(Sprite, CurveFunction, 100, (slide) => 1, 1, Frame.Time, time1, time2);
+        }
+    }
+
+    class Missile : Projectile
+    {
+        public int TrailLength;
+        public override Vector2 Tween => CurveFunction(MathHelper.Clamp((float)(Frame.Time) / (Frame.EndTime - TrailLength), 0, 1));
+        public SpriteReference Sprite;
+        public Vector2 Velocity1;
+        public Vector2 Velocity2;
+        public Func<Vector2> AnchorStart;
+        public Func<Vector2> AnchorEnd;
+
+        public Missile(SceneGame world, SpriteReference sprite, Func<Vector2> anchorStart, Func<Vector2> anchorEnd, Vector2 velocityStart, Vector2 velocityEnd, int time, int trail) : base(world, Vector2.Zero, Vector2.Zero, time + trail)
+        {
+            Sprite = sprite;
+            TrailLength = trail;
+            AnchorStart = anchorStart;
+            AnchorEnd = anchorEnd;
+            Velocity1 = velocityStart;
+            Velocity2 = velocityEnd;
+        }
+
+        private Vector2 CurveFunction(float slide)
+        {
+            var start = AnchorStart();
+            var end = AnchorEnd();
+            float slideStart = (float)LerpHelper.QuinticOut(0, 1, slide);
+            float slideEnd = slide;
+            float slideMiddle = (float)LerpHelper.CubicIn(0, 1, slide);
+            var vStart = Vector2.Lerp(start, start + Velocity1, slideStart);
+            var vEnd = Vector2.Lerp(end - Velocity2, end, slideEnd);
+            return Vector2.Lerp(vStart, vEnd, slideMiddle);
+        }
+
+        public override void Impact(Vector2 position)
+        {
+            Hit = true;
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.Effect;
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            float time1 = (Frame.Time - TrailLength) / (Frame.EndTime - TrailLength);
+            float time2 = Frame.Time / (Frame.EndTime - TrailLength);
+
+            scene.DrawMissileCurve(Sprite, CurveFunction, 100, (slide) => 1, time1, time2);
         }
     }
 

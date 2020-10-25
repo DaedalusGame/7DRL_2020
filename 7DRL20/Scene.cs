@@ -42,6 +42,7 @@ namespace RoguelikeEngine
 
         public GraphicsDevice GraphicsDevice => Game.GraphicsDevice;
         public SpriteBatch SpriteBatch => Game.SpriteBatch;
+        public PrimitiveBatch<VertexPositionColorTexture> PrimitiveBatch => Game.PrimitiveBatch;
         public Texture2D Pixel => Game.Pixel;
         public int Frame => Game.Frame;
         public GameWindow Window => Game.Window;
@@ -223,6 +224,121 @@ namespace RoguelikeEngine
         public void DrawSpriteExt(SpriteReference sprite, int frame, Vector2 position, Vector2 origin, float angle, Vector2 scale, SpriteEffects mirror, Color color, float depth)
         {
             SpriteBatch.Draw(sprite.Texture, position + origin, sprite.GetFrameRect(frame), color, angle, origin, scale.Mirror(mirror), SpriteEffects.None, depth);
+        }
+
+        public void DrawLine(SpriteReference sprite, Vector2 pos1, Vector2 pos2, float widthMod, float lengthMod, float offset)
+        {
+            var delta = pos2 - pos1;
+            var dist = delta.Length();
+            var side = (delta / dist).TurnLeft();
+            var width = sprite.Height;
+            //SetupNormal(WorldTransform, Projection);
+            SetupColorMatrix(ColorMatrix.Identity, WorldTransform, Projection);
+            PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection, effect: Shader);
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos1 + side * width * widthMod / 2, 0), Color.White, new Vector2(offset / sprite.Width, 1)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos1 - side * width * widthMod / 2, 0), Color.White, new Vector2(offset / sprite.Width, 0)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos2 + side * width * widthMod / 2, 0), Color.White, new Vector2((offset + dist * lengthMod) / sprite.Width, 1)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(pos2 - side * width * widthMod / 2, 0), Color.White, new Vector2((offset + dist * lengthMod) / sprite.Width, 0)));
+            PrimitiveBatch.End();
+        }
+
+        public void DrawBeamLine(SpriteReference sprite, Vector2 pos1, Vector2 pos2, float widthMod, float lengthMod, float offset, float start, float end)
+        {
+            var delta = pos2 - pos1;
+            var dist = delta.Length();
+            var side = (delta / dist).TurnLeft();
+            var width = sprite.Height;
+
+            var mid1 = pos1 + delta * MathHelper.Clamp(start, 0, 1);
+            var mid2 = pos1 + delta * MathHelper.Clamp(end, 0, 1);
+
+            var tex1 = (offset + dist * lengthMod * MathHelper.Clamp(start, 0, 1)) / sprite.Width;
+            var tex2 = (offset + dist * lengthMod * MathHelper.Clamp(end, 0, 1)) / sprite.Width;
+
+            //SetupNormal(WorldTransform, Projection);
+            SetupColorMatrix(ColorMatrix.Identity, WorldTransform, Projection);
+            PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection, effect: Shader);
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(mid1 + side * width * widthMod / 2, 0), Color.White, new Vector2(tex1, 1)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(mid1 - side * width * widthMod / 2, 0), Color.White, new Vector2(tex1, 0)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(mid2 + side * width * widthMod / 2, 0), Color.White, new Vector2(tex2, 1)));
+            PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(mid2 - side * width * widthMod / 2, 0), Color.White, new Vector2(tex2, 0)));
+            PrimitiveBatch.End();
+        }
+
+        public void DrawBeamCurve(SpriteReference sprite, Func<float, Vector2> curve, int precision, Func<float, float> thickness, float lengthMod, float offset, float start, float end)
+        {
+            List<Vector2> points = new List<Vector2>();
+            List<float> lengths = new List<float>();
+            List<Vector2> pivots = new List<Vector2>();
+
+            LineSet line = new LineSet();
+
+            for(int i = 0; i <= precision; i++)
+            {
+                line.AddPoint(curve((float)i / precision));
+            }
+
+            line.GetBeam(start, end, points, pivots, lengths);
+
+            var dist = line.TotalDistance;
+            var width = sprite.Height;
+
+            
+
+            SetupColorMatrix(ColorMatrix.Identity, WorldTransform, Projection);
+            PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection, effect: Shader);
+
+            for(int i = 0; i < points.Count; i++)
+            {
+                var point = points[i];
+                var side = pivots[i];
+                var len = lengths[i];
+                var slide = len / dist;
+                var tex = (offset + dist * lengthMod * slide) / sprite.Width;
+                var widthMod = thickness(slide);
+
+                PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(point + side * width * widthMod / 2, 0), Color.White, new Vector2(tex, 1)));
+                PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(point - side * width * widthMod / 2, 0), Color.White, new Vector2(tex, 0)));
+            }
+
+            PrimitiveBatch.End();
+        }
+
+        public void DrawMissileCurve(SpriteReference sprite, Func<float, Vector2> curve, int precision, Func<float, float> thickness, float start, float end)
+        {
+            List<Vector2> points = new List<Vector2>();
+            List<float> lengths = new List<float>();
+            List<Vector2> pivots = new List<Vector2>();
+
+            LineSet line = new LineSet();
+
+            for (int i = 0; i <= precision; i++)
+            {
+                line.AddPoint(curve((float)i / precision));
+            }
+
+            line.GetBeam(start, end, points, pivots, lengths);
+
+            var dist = line.TotalDistance;
+            var width = sprite.Height;
+
+            SetupColorMatrix(ColorMatrix.Identity, WorldTransform, Projection);
+            PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection, effect: Shader);
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                var point = points[i];
+                var side = pivots[i];
+                var len = lengths[i];
+                var slide = len / dist;
+                var tex = (slide - start) / (end - start);
+                var widthMod = thickness(slide);
+
+                PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(point + side * width * widthMod / 2, 0), Color.White, new Vector2(tex, 1)));
+                PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(point - side * width * widthMod / 2, 0), Color.White, new Vector2(tex, 0)));
+            }
+
+            PrimitiveBatch.End();
         }
     }
 }

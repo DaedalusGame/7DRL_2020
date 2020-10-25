@@ -45,13 +45,16 @@
     <Compile Include="AdvancedColor.cs" />
     <Compile Include="Attack.cs" />
     <Compile Include="BiDictionary.cs" />
+    <Compile Include="CalculatedString.cs" />
     <Compile Include="Cloud.cs" />
     <Compile Include="ConnectivityHelper.cs" />
     <Compile Include="Effects\EffectFamily.cs" />
     <Compile Include="Effects\EffectLastHit.cs" />
+    <Compile Include="Effects\EffectMovementType.cs" />
     <Compile Include="Effects\EffectName.cs" />
     <Compile Include="Effects\EffectStatDamage.cs" />
     <Compile Include="Effects\EffectEnchantment.cs" />
+    <Compile Include="Effects\EffectSummon.cs" />
     <Compile Include="Effects\IEffectContainer.cs" />
     <Compile Include="Effects\OnShoot.cs" />
     <Compile Include="Effects\OnTurn.cs" />
@@ -62,6 +65,7 @@
     <Compile Include="Enemies\Slime.cs" />
     <Compile Include="Enemies\Skeleton.cs" />
     <Compile Include="Enemies\Fish.cs" />
+    <Compile Include="Enemies\Tendril.cs" />
     <Compile Include="Enemies\Wizard.cs" />
     <Compile Include="EventBus.cs" />
     <Compile Include="Events\CreatureEvents.cs" />
@@ -69,6 +73,7 @@
     <Compile Include="FontUtil.cs" />
     <Compile Include="IDrawable.cs" />
     <Compile Include="IEffectHolderPersistent.cs" />
+    <Compile Include="LineSet.cs" />
     <Compile Include="MapGeneration\GeneratorTemplate.cs" />
     <Compile Include="MapGeneration\GroupGenerator.cs" />
     <Compile Include="MapGeneration\Groups.cs" />
@@ -79,6 +84,7 @@
     <Compile Include="Menus\Game.cs" />
     <Compile Include="Menus\Title.cs" />
     <Compile Include="PopupHelper.cs" />
+    <Compile Include="PrimitiveBatch.cs" />
     <Compile Include="SaveFile.cs" />
     <Compile Include="SceneTitle.cs" />
     <Compile Include="Serializer.cs" />
@@ -177,6 +183,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\abyssal_hole_strip2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\abyssal_tendril_bud.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\abyssal_tendril_bush_strip7.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\abyssal_tendril_seed.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\abyssal_tendril_strip6.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\abyssal_tendril_tree_strip4.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Content\acid.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -235,6 +259,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\bar_fuel_strip2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\beam_soul.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\beam_tendril.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\bell_body.png">
@@ -949,6 +979,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\liquid_edge.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\missile_test.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\mud.png">

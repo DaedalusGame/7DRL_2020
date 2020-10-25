@@ -1,4 +1,5 @@
-﻿using RoguelikeEngine.Enemies;
+﻿using RoguelikeEngine.Effects;
+using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,4 +44,48 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillCreateTentacles : Skill
+    {
+        public SkillCreateTentacles() : base("Create Tentacles", "Creates tentacles in all surrounding tiles.", 0, 20, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            var targetTiles = SkillUtil.GetFrontierTiles(user).Shuffle(Random);
+            int maxCount = targetTiles.Count();
+            var currentCount = user.GetEffects<EffectSummon>().Count(x => x.Slave is AbyssalTendril);
+            if(currentCount < maxCount)
+            {
+                foreach(var targetTile in targetTiles)
+                {
+                    if (!targetTile.Solid && !targetTile.Creatures.Any() && currentCount < maxCount)
+                    {
+                        var tentacle = new AbyssalTendril(targetTile.World);
+                        tentacle.MoveTo(targetTile, 0);
+                        tentacle.AddControlTurn();
+                        tentacle.VisualPose = tentacle.FlickPose(CreaturePose.Walk, CreaturePose.Stand, 5);
+                        Effect.Apply(new EffectSummon(user, tentacle));
+                        currentCount++;
+                        yield return user.WaitSome(10);
+                    }
+                }
+            }
+            yield return user.WaitSome(20);
+        }
+    }
 }

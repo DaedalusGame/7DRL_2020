@@ -113,6 +113,15 @@ namespace RoguelikeEngine
             return false;
         }
 
+        protected bool InCircle(Creature user, Creature target, int radius)
+        {
+            if (target == null || target.Tile == null)
+                return false;
+            double pixelRadius = radius * 16 + 8;
+            var distance = (user.VisualTarget - target.VisualTarget).LengthSquared();
+            return distance <= pixelRadius * pixelRadius;
+        }
+
         protected bool InFrontier(Creature user, Func<Creature, bool> filter)
         {
             foreach (var frontier in user.Mask.GetFullFrontier().Select(p => user.Tile.GetNeighbor(p.X, p.Y)))
