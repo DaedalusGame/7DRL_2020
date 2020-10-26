@@ -1,4 +1,5 @@
-﻿using RoguelikeEngine.Effects;
+﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
@@ -113,20 +114,21 @@ namespace RoguelikeEngine.Skills
             ShowSkill(user);
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
             yield return user.WaitSome(50);
-            var userTiles = user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)).ToList();
+            //var userTiles = user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)).ToList();
             var targetTiles = SkillUtil.GetFrontierTiles(user).Shuffle(Random);
             int currentCount = 0;
             foreach (var targetTile in targetTiles)
             {
                 if (!targetTile.Solid && !targetTile.Creatures.Any() && currentCount < Count)
                 {
-                    var userTile = userTiles.Pick(Random);
-                    var bomb = new AutoBomb(userTile.World);
-                    bomb.MoveTo(userTile, 0);
-                    bomb.MoveTo(targetTile, 20);
+                    //var userTile = userTiles.Pick(Random);
+                    var bomb = new AutoBomb(targetTile.World);
+                    bomb.MoveTo(targetTile, 0);
+                    bomb.VisualPosition = bomb.SlideJump(user.VisualTarget - new Vector2(8, 8), new Vector2(bomb.X, bomb.Y) * 16, 10, LerpHelper.Quadratic, 10);
                     bomb.AddControlTurn();
                     Effect.Apply(new EffectSummon(user, bomb));
                     currentCount++;
+                    yield return user.WaitSome(3);
                 }
             }
             yield return user.WaitSome(20);

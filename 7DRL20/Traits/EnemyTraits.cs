@@ -36,6 +36,51 @@ namespace RoguelikeEngine.Traits
         }
     }
 
+    class TraitDeathThroesDeathGolem : TraitDeathThroes
+    {
+        Random Random = new Random();
+
+        public TraitDeathThroesDeathGolem() : base("death_throes_death_golem", "Separate on Death", $"Splits into a head and body on death.", new Color(192, 0, 0))
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineExplode(DeathEvent death)
+        {
+            Creature creature = death.Creature;
+
+            yield return creature.WaitSome(4);
+
+            new ScreenShakeRandom(creature.World, 5, 15, LerpHelper.Linear);
+            new RingExplosion(creature.World, creature.VisualTarget, (pos, vel, angle, time) => new FireExplosion(creature.World, pos, vel, angle, time), 6, 24, 10);
+
+            //Fire horns
+
+            var spawnedBody = new DeathGolemBody(creature.World);
+            spawnedBody.Facing = creature.Facing;
+            spawnedBody.MoveTo(creature.Tile, 0);
+            spawnedBody.VisualPosition = spawnedBody.Slide(creature.VisualPosition(), spawnedBody.VisualPosition(), LerpHelper.Quadratic, 30);
+            spawnedBody.AddControlTurn();
+
+            creature.VisualColor = creature.Static(Color.Transparent);
+
+            var targetTiles = SkillUtil.GetFrontierTiles(creature).Shuffle(Random);
+            foreach (var targetTile in targetTiles)
+            {
+                if (!targetTile.Solid && !targetTile.Creatures.Any())
+                {
+                    var spawnedHead = new DeathGolemHead(creature.World);
+                    spawnedHead.Facing = creature.Facing;
+                    spawnedHead.MoveTo(targetTile, 0);
+                    spawnedHead.VisualPosition = spawnedHead.Slide(creature.VisualTarget + new Vector2(0, -8) - new Vector2(8, 8), spawnedHead.VisualPosition(), LerpHelper.Quadratic, 30);
+                    spawnedHead.AddControlTurn();
+                    break;
+                }
+            }
+
+            yield return creature.WaitSome(30);
+        }
+    }
+
     class TraitDeathThroesFireBlast : TraitDeathThroes
     {
         public TraitDeathThroesFireBlast() : base("death_throes_fire_blast", "Fire Blast Throes", $"Explodes on death, dealing {Element.Bludgeon.FormatString} and {Element.Fire.FormatString} damage in a 2 tile radius.", new Color(255, 64, 16))

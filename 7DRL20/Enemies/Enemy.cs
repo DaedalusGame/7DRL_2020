@@ -329,19 +329,17 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
-    class CreatureFishRender : CreatureRender
+    class CreatureDirectionalRender : CreatureRender
     {
-        ColorMatrix Color;
+        public SpriteReference Sprite;
+        public ColorMatrix Color = ColorMatrix.Identity;
 
-        public CreatureFishRender(ColorMatrix color)
+        public CreatureDirectionalRender()
         {
-            Color = color;
         }
 
         public override void Draw(SceneGame scene, Creature creature)
         {
-            SpriteReference fish = SpriteLoader.Instance.AddSprite("content/fish");
-
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
             int facingOffset = 0;
             switch (creature.VisualFacing())
@@ -365,7 +363,7 @@ namespace RoguelikeEngine.Enemies
             {
                 scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
             });
-            scene.DrawSprite(fish, facingOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, facingOffset, creature.VisualPosition(), mirror, 0);
             scene.PopSpriteBatch();
         }
     }

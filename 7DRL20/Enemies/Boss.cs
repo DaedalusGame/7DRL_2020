@@ -208,7 +208,45 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3700));
+            //Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3700));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 1));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathMachine));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathThroesDeathGolem));
+
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillBeamFire());
+            Skills.Add(new SkillBeamIce());
+            Skills.Add(new SkillBeamDisintegrate());
+            Skills.Add(new SkillSoulMissile());
+            Skills.Add(new SkillWhirlwind());
+            //Skills.Add(new SkillDeployBomb());
+        }
+
+        [Construct("death_golem")]
+        public static DeathGolem Construct(Context context)
+        {
+            return new DeathGolem(context.World);
+        }
+    }
+
+    class DeathGolemHead : Enemy
+    {
+        public DeathGolemHead(SceneGame world) : base(world)
+        {
+            Name = "Death Golem Head";
+            Description = "";
+
+            Render = new CreatureDirectionalRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/death_golem_head"),
+            };
+            Mask.Add(new Point(0, 0));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1200));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 1));
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
@@ -219,15 +257,49 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillBeamFire());
             Skills.Add(new SkillBeamIce());
             Skills.Add(new SkillBeamDisintegrate());
-            Skills.Add(new SkillSoulMissile());
-            Skills.Add(new SkillWhirlwind());
-            Skills.Add(new SkillDeployBomb());
         }
 
-        [Construct("death_golem")]
-        public static DeathGolem Construct(Context context)
+        [Construct("death_golem_head")]
+        public static DeathGolemHead Construct(Context context)
         {
-            return new DeathGolem(context.World);
+            return new DeathGolemHead(context.World);
+        }
+    }
+
+    class DeathGolemBody : Enemy
+    {
+        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+
+        public DeathGolemBody(SceneGame world) : base(world)
+        {
+            Name = "Death Golem Body";
+            Description = "";
+
+            Render = new MardukeRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/death_golem_body"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 2400));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 1));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathMachine));
+
+            Skills.Add(new SkillAttack());
+            Skills.Add(new SkillWhirlwind());
+            //Skills.Add(new SkillDeployBomb());
+        }
+
+        [Construct("death_golem_body")]
+        public static DeathGolemBody Construct(Context context)
+        {
+            return new DeathGolemBody(context.World);
         }
     }
 

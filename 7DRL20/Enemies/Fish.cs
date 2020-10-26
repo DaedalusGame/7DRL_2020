@@ -16,7 +16,10 @@ namespace RoguelikeEngine.Enemies
             Name = "Gore Vala";
             Description = "Toothy salmon with anger issues";
 
-            Render = new CreatureFishRender(ColorMatrix.Identity);
+            Render = new CreatureDirectionalRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/fish")
+            };
             Mask.Add(Point.Zero);
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 80));
@@ -42,7 +45,11 @@ namespace RoguelikeEngine.Enemies
             Name = "Vorrax";
             Description = "Hungry hungry sea demon";
 
-            Render = new CreatureFishRender(ColorMatrix.TwoColorLight(Color.Black, new Color(255, 160, 64)));
+            Render = new CreatureDirectionalRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/fish"),
+                Color = ColorMatrix.TwoColorLight(Color.Black, new Color(255, 160, 64))
+            };
             Mask.Add(Point.Zero);
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 30));
@@ -68,7 +75,11 @@ namespace RoguelikeEngine.Enemies
             Name = "Cthuloid";
             Description = "Inhabitant of the dark underground caverns";
 
-            Render = new CreatureFishRender(ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen));
+            Render = new CreatureDirectionalRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/fish"),
+                Color = ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen)
+            };
             Mask.Add(Point.Zero);
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 100));
