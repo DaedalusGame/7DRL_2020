@@ -30,6 +30,7 @@ namespace RoguelikeEngine
         protected Slider Uses;
         protected Slider InstantUses;
         public bool IsReady => Warmup.Done && Cooldown.Done && !Uses.Done;
+        public bool IgnoreCanUse = false;
 
         public virtual bool Hidden(Creature user) => false;
         public virtual bool WaitUse => true;  
@@ -46,7 +47,7 @@ namespace RoguelikeEngine
 
         public virtual bool CanUse(Creature user)
         {
-            return Warmup.Done && Cooldown.Done && !Uses.Done;
+            return IgnoreCanUse || (Warmup.Done && Cooldown.Done && !Uses.Done);
         }
 
         public virtual bool CanEnemyUse(Enemy user)
@@ -63,6 +64,11 @@ namespace RoguelikeEngine
                 InstantUses.Time = 0;
                 Uses += 1;
             }
+        }
+
+        public void ResetCooldown()
+        {
+            Cooldown.Time = Cooldown.EndTime;
         }
 
         public string GetTooltip()
@@ -120,6 +126,22 @@ namespace RoguelikeEngine
             double pixelRadius = radius * 16 + 8;
             var distance = (user.ActualTarget - target.ActualTarget).LengthSquared();
             return distance <= pixelRadius * pixelRadius;
+        }
+
+        protected bool InArc(Creature user, Creature target, float angleStart, float angleEnd)
+        {
+            if (target == null || target.Tile == null)
+                return false;
+            return InArc(user.ActualTarget, target.ActualTarget, angleStart, angleEnd);
+        }
+
+        protected bool InArc(Vector2 start, Vector2 end, float angleStart, float angleEnd)
+        {
+            var angle = Util.VectorToAngle(end - start);
+            float angleDiff = Util.GetAngleDistance(angleStart, angleEnd) / 2;
+            float angleCenter = Util.AngleLerp(angleStart, angleEnd, 0.5f);
+            float delta = Math.Abs(Util.GetAngleDistance(angle, angleCenter));
+            return delta <= angleDiff;
         }
 
         protected bool InFrontier(Creature user, Func<Creature, bool> filter)

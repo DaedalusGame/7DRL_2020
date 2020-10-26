@@ -209,15 +209,19 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 1));
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3700));
-            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 1));
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Boss));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathMachine));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillBeamFire());
             Skills.Add(new SkillBeamIce());
             Skills.Add(new SkillBeamDisintegrate());
-            //Skills.Add(new SkillSoulMissile());
+            Skills.Add(new SkillSoulMissile());
+            Skills.Add(new SkillWhirlwind());
+            Skills.Add(new SkillDeployBomb());
         }
 
         [Construct("death_golem")]

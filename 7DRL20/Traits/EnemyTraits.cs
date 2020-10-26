@@ -19,6 +19,55 @@ namespace RoguelikeEngine.Traits
         public abstract IEnumerable<Wait> RoutineExplode(DeathEvent death);
     }
 
+    class TraitDeathThroesSkill : TraitDeathThroes
+    {
+        Skill Skill;
+
+        public TraitDeathThroesSkill(Skill skill) : base("death_throes_skill", "Skill on Death", $"Uses skill on death.", new Color(192, 0, 0))
+        {
+            Skill = skill;
+            Skill.IgnoreCanUse = true;
+        }
+
+        public override IEnumerable<Wait> RoutineExplode(DeathEvent death)
+        {
+            death.Creature.Control.AddImmediateSkill(Skill);
+            yield return Wait.NoWait;
+        }
+    }
+
+    class TraitDeathThroesFireBlast : TraitDeathThroes
+    {
+        public TraitDeathThroesFireBlast() : base("death_throes_fire_blast", "Fire Blast Throes", $"Explodes on death, dealing {Element.Bludgeon.FormatString} and {Element.Fire.FormatString} damage in a 2 tile radius.", new Color(255, 64, 16))
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineExplode(DeathEvent death)
+        {
+            Creature creature = death.Creature;
+
+            new ScreenShakeRandom(creature.World, 5, 15, LerpHelper.Linear);
+            new FireExplosion(creature.World, creature.VisualTarget, Vector2.Zero, 0, 30);
+            yield return creature.WaitSome(4);
+
+            new RingExplosion(creature.World, creature.VisualTarget, (pos, vel, angle, time) => new FireExplosion(creature.World, pos, vel, angle, time), 12, 24, 10);
+            var explosion = new Skills.Explosion(creature, SkillUtil.GetCircularArea(creature, 2), creature.VisualTarget);
+            explosion.Attack = ExplosionAttack;
+            explosion.Fault = this;
+            yield return explosion.Run();
+        }
+
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Fault = this;
+            attack.SetParameters(attacker.GetStat(Stat.HP), 0, 1);
+            attack.Elements.Add(Element.Bludgeon, 0.5);
+            attack.Elements.Add(Element.Fire, 0.5);
+            return attack;
+        }
+    }
+
     class TraitDeathThroesCrimson : TraitDeathThroes
     {
         public TraitDeathThroesCrimson() : base("death_throes_crimson", "Crimson Throes", $"Explodes on death if slashed, dealing {Element.Dark.FormatString} and {Element.Fire.FormatString} damage in a 2 tile radius.", new Color(192,0,0))
@@ -220,6 +269,27 @@ namespace RoguelikeEngine.Traits
             attack.Elements.Add(Element.Acid, 1.0);
             attack.ReactionLevel = 1;
             return attack;
+        }
+    }
+
+    class TraitDeathMachine : Trait
+    {
+        Random Random = new Random();
+
+        public TraitDeathMachine() : base("death_machine", "Death Machine", $"Every turn, one random skill resets its cooldown.", new Color(227, 255, 34))
+        {
+            Effect.Apply(new OnTurn(this, RoutineResetCooldown));
+        }
+
+        private IEnumerable<Wait> RoutineResetCooldown(TurnEvent turn)
+        {
+            if(turn.Creature is Enemy enemy && enemy.Skills.Any())
+            {
+                var skill = enemy.Skills.Pick(Random);
+                skill.ResetCooldown();
+            }
+
+            yield return Wait.NoWait;
         }
     }
 }

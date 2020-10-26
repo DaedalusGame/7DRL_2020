@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RoguelikeEngine.Enemies;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -51,6 +52,11 @@ namespace RoguelikeEngine
             Queue.AddImmediate(new Turn(Queue, this));
         }
 
+        public void AddImmediateSkill(Skill skill)
+        {
+            Queue.AddImmediate(new TurnForceSkill(Queue, this, skill));
+        }
+
         public void AddExtraTurns(int turns)
         {
             ExtraTurns += turns;
@@ -64,6 +70,11 @@ namespace RoguelikeEngine
         public void ResetTurn()
         {
             Buildup -= 1;
+        }
+
+        public bool HasImmediateTurns()
+        {
+            return Queue.ImmediateTurns.Any(x => x.TurnTaker == this) || Queue.CurrentTurn.TurnTaker == this;
         }
 
         public override string ToString()
@@ -123,6 +134,18 @@ namespace RoguelikeEngine
         public override Wait TakeTurn(Turn turn)
         {
             return Creature.TakeTurn(turn);
+        }
+
+        public Wait ForceSkill(Turn turn, Skill skill)
+        {
+            if (Creature is Enemy enemy && skill.CanEnemyUse(enemy)) //TODO: make this work for non-enemy creatures
+            {
+                var target = skill.GetEnemyTarget(enemy);
+                enemy.CurrentActions.Add(Scheduler.Instance.RunAndWait(enemy.RoutineUseSkill(skill, target)));
+                var wait = skill.WaitUse ? enemy.CurrentActions : Wait.NoWait;
+                return wait;
+            }
+            return Wait.NoWait;
         }
 
         public override Wait EndTurn(Turn turn)
@@ -217,14 +240,14 @@ namespace RoguelikeEngine
             Root = root;
         }
 
-        public Wait StartTurn()
+        public virtual Wait StartTurn()
         {
             Wait wait = TurnTaker.StartTurn(this);
             Phase = TurnPhase.Tick;
             return wait;
         }
 
-        public bool TakeTurn()
+        public virtual bool TakeTurn()
         {
             Wait = TurnTaker.TakeTurn(this);
             if (Wait != null)
@@ -235,7 +258,7 @@ namespace RoguelikeEngine
             return false;
         }
 
-        public Wait EndTurn()
+        public virtual Wait EndTurn()
         {
             Wait wait = TurnTaker.EndTurn(this);
             for (int i = 0; i < TurnTaker.ExtraTurns; i++)
@@ -250,6 +273,39 @@ namespace RoguelikeEngine
         public void End()
         {
             Phase = TurnPhase.End;
+        }
+    }
+
+    class TurnForceSkill : Turn
+    {
+        Skill Skill;
+
+        public TurnForceSkill(ActionQueue queue, TurnTaker turnTaker, Skill skill) : base(queue, turnTaker)
+        {
+            Skill = skill;
+        }
+
+        public TurnForceSkill(Turn root, TurnTaker turnTaker, Skill skill) : base(root, turnTaker)
+        {
+            Skill = skill;
+        }
+
+        public override bool TakeTurn()
+        {
+            if(TurnTaker is TurnTakerCreatureControl creatureControl)
+            {
+                Wait = creatureControl.ForceSkill(this, Skill);
+                if (Wait != null)
+                {
+                    Phase = TurnPhase.End;
+                    return true;
+                }
+                return false;
+            }
+            else
+            {
+                return base.TakeTurn();
+            }            
         }
     }
 

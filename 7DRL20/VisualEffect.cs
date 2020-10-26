@@ -749,10 +749,9 @@ namespace RoguelikeEngine
     class Cutter : Particle
     {
         Func<Vector2> Anchor;
-        float Scale;
+        Func<float, float> Scale;
         float Angle;
-        float SpeedStart, SpeedEnd;
-        LerpHelper.Delegate SpeedLerp;
+        Func<float, float> Speed;
         Color Color;
 
         public override Vector2 Position
@@ -767,14 +766,22 @@ namespace RoguelikeEngine
             }
         }
 
+        public Cutter(SceneGame world, Func<Vector2> anchor, Func<float, float> speed, Func<float, float> scale, float angle, Color color, int time) : base(world, Vector2.Zero)
+        {
+            Anchor = anchor;
+            Speed = speed;
+            Color = color;
+            Scale = scale;
+            Angle = angle;
+            Frame = new Slider(time);
+        }
+
         public Cutter(SceneGame world, Func<Vector2> anchor, float speedStart, float speedEnd, LerpHelper.Delegate speedLerp, float scale, float angle, Color color, int time) : base(world, Vector2.Zero)
         {
             Anchor = anchor;
-            SpeedStart = speedStart;
-            SpeedEnd = speedEnd;
-            SpeedLerp = speedLerp;
+            Speed = (slide) => (float)speedLerp(speedStart, speedEnd, slide);
             Color = color;
-            Scale = scale;
+            Scale = (slide) => scale;
             Angle = angle;
             Frame = new Slider(time);
         }
@@ -784,14 +791,14 @@ namespace RoguelikeEngine
             base.Update();
             if (Frame.Done)
                 this.Destroy();
-            Angle += (float)SpeedLerp(SpeedStart, SpeedEnd, Frame.Slide);
+            Angle += Speed(Frame.Slide);
         }
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             var cutter = SpriteLoader.Instance.AddSprite("content/cutter");
 
-            scene.DrawSpriteExt(cutter, scene.AnimationFrame(cutter, Frame.Time - (Frame.EndTime - 4), 4), Position - cutter.Middle, cutter.Middle, Angle, new Vector2(Scale), SpriteEffects.None, Color, 0);
+            scene.DrawSpriteExt(cutter, scene.AnimationFrame(cutter, Frame.Time - (Frame.EndTime - 4), 4), Position - cutter.Middle, cutter.Middle, Angle, new Vector2(Scale(Frame.Slide)), SpriteEffects.None, Color, 0);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
@@ -2198,6 +2205,46 @@ namespace RoguelikeEngine
         public override IEnumerable<DrawPass> GetDrawPasses()
         {
             yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class WhirlWindEffect : VisualEffect
+    {
+        protected Creature Anchor;
+
+        public WhirlWindEffect(SceneGame world, Creature anchor, int time) : base(world)
+        {
+            Anchor = anchor;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+            float size = 0.5f + 0.5f * Random.NextFloat();
+            size *= (float)LerpHelper.CircularOut(1, 0.5, Frame.GetSubSlide(10, Frame.EndTime));
+
+            if (Frame.Time % 2 == 0)
+            {
+                int totaltime = 5 + Random.Next(10);
+                float bigSize = 1.5f + Random.NextFloat();
+                Color color = Color.Lerp(Color.White, Color.Gray, Random.NextFloat());
+                Func<float, float> speedFunc = (slide) => (float)LerpHelper.Linear(-MathHelper.TwoPi / totaltime, -(MathHelper.TwoPi / totaltime) * 0.5f, slide);
+                Func<float, float> sizeFunc = (slide) => (float)LerpHelper.CircularOut(size, size * bigSize, slide);
+                new Cutter(World, () => Anchor.VisualTarget, speedFunc, sizeFunc, Random.NextFloat() * MathHelper.TwoPi, color, totaltime + Random.Next(4));
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
         }
     }
 

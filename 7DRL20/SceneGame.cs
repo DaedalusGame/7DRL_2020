@@ -625,7 +625,7 @@ namespace RoguelikeEngine
             bool cancel = false;
             while (!cancel && Wait.Done && !Player.Dead && CameraFocus.Done)
             {
-                var corpses = Entities.Where(x => x.Dead);
+                var corpses = Entities.Where(x => x.Dead && !x.Control.HasImmediateTurns());
                 List<Wait> waitForDestruction = new List<Wait>();
                 foreach (var corpse in corpses)
                 {
@@ -825,9 +825,10 @@ namespace RoguelikeEngine
             PopSpriteBatch();
             PopSpriteBatch();
 
-            GraphicsDevice.SetRenderTarget(null);
+            GraphicsDevice.SetRenderTarget(CameraTargetB);
+            SwapBuffers();
 
-            //Render to screen
+            //Draw screenflashes
             ColorMatrix color = ColorMatrix.Identity;
 
             IEnumerable<ScreenFlash> screenFlashes = visualEffects.OfType<ScreenFlash>();
@@ -836,10 +837,44 @@ namespace RoguelikeEngine
                 color *= screenFlash.Color;
             }
 
-            SetupColorMatrix(color, Matrix.Identity, Projection);
-            SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, effect: Shader);
-            SpriteBatch.Draw(CameraTargetA, CameraTargetA.Bounds, Color.White);
-            SpriteBatch.End();
+            //SetupColorMatrix(color, Matrix.Identity, Projection);
+            //SetupGlitch(Game.Noise, Matrix.Identity, Projection, Random);
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shader: Shader, shaderSetup: (transform, projection) =>
+            {
+                SetupColorMatrix(color, Matrix.Identity, Projection);
+            });
+            SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
+            PopSpriteBatch();
+
+            GraphicsDevice.SetRenderTarget(CameraTargetB);
+            SwapBuffers();
+
+            //Draw glitches
+            GlitchParams glitchParams = new GlitchParams()
+            {
+                Intensity = 0.5f,
+                Dispersion = 0.025f,
+            };
+
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shader: Shader, shaderSetup: (transform, projection) =>
+            {
+                SetupGlitch(Game.Noise, glitchParams, Random, Matrix.Identity, Projection);
+            });
+            SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
+            PopSpriteBatch();
+
+            GraphicsDevice.SetRenderTarget(CameraTargetB);
+            SwapBuffers();
+
+            //Draw to screen
+            GraphicsDevice.SetRenderTarget(null);
+
+            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shader: Shader, shaderSetup: (transform, projection) =>
+            {
+                SetupColorMatrix(ColorMatrix.Identity, Matrix.Identity, Projection);
+            });
+            SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
+            PopSpriteBatch();
 
             SpriteReference cursor_tile = SpriteLoader.Instance.AddSprite("content/cursor_tile");
 

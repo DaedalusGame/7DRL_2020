@@ -133,6 +133,52 @@ namespace RoguelikeEngine
             Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
         }
 
+        public struct GlitchParams
+        {
+            public float Intensity;
+            public float Seed;
+            public float LineSpeed;
+            public float LineDrift;
+            public float LineResolution;
+            public float LineVerticalShift;
+            public float LineShift;
+            public float Jumbleness;
+            public float JumbleResolution;
+            public float JumbleShift;
+            public float JumbleSpeed;
+            public float Dispersion;
+            public float ChannelShift;
+            public float NoiseLevel;
+            public float Shakiness;
+        }
+
+        public void SetupGlitch(Texture2D map, GlitchParams param, Random random, Matrix transform, Matrix projection)
+        {
+            Shader.CurrentTechnique = Shader.Techniques["Glitch"];
+            Shader.Parameters["glitch_intensity"].SetValue(param.Intensity);
+            Shader.Parameters["glitch_time"].SetValue((float)Frame);
+            Shader.Parameters["glitch_resolution"].SetValue(new Vector2(Viewport.Width, Viewport.Height));
+            Shader.Parameters["glitch_rng_seed"].SetValue(Math.Max(param.Seed, 0.000001f));
+            Shader.Parameters["glitch_random_values"].SetValue(new Vector3(random.NextFloat(), random.NextFloat(), random.NextFloat()));
+            Shader.Parameters["glitch_noise_texture"].SetValue(map);
+
+            Shader.Parameters["glitch_line_speed"].SetValue(param.LineSpeed);
+            Shader.Parameters["glitch_line_drift"].SetValue(param.LineDrift);
+            Shader.Parameters["glitch_line_resolution"].SetValue(Math.Max(param.LineResolution, 0.000001f));
+            Shader.Parameters["glitch_line_vert_shift"].SetValue(param.LineVerticalShift);
+            Shader.Parameters["glitch_line_shift"].SetValue(param.LineShift);
+            Shader.Parameters["glitch_jumbleness"].SetValue(param.Jumbleness);
+            Shader.Parameters["glitch_jumble_resolution"].SetValue(param.JumbleResolution);
+            Shader.Parameters["glitch_jumble_shift"].SetValue(param.JumbleShift);
+            Shader.Parameters["glitch_jumble_speed"].SetValue(param.JumbleSpeed);
+            Shader.Parameters["glitch_dispersion"].SetValue(param.Dispersion);
+            Shader.Parameters["glitch_channel_shift"].SetValue(param.ChannelShift);
+            Shader.Parameters["glitch_noise_level"].SetValue(param.NoiseLevel);
+            Shader.Parameters["glitch_shakiness"].SetValue(param.Shakiness);
+
+            Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
+        }
+
         public void PushSpriteBatch(SpriteSortMode? sortMode = null, BlendState blendState = null, SamplerState samplerState = null, Matrix? transform = null, Matrix? projection = null, Microsoft.Xna.Framework.Graphics.Effect shader = null, Action<Matrix, Matrix> shaderSetup = null)
         {
             var lastState = SpriteBatchStack.Any() ? SpriteBatchStack.Peek() : null;

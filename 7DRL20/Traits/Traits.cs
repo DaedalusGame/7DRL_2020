@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
+using RoguelikeEngine.Skills;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,10 +74,13 @@ namespace RoguelikeEngine.Traits
         public static Trait Undead = new TraitUndead();
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();
         public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
+        public static Trait DeathThroesFireBlast = new TraitDeathThroesFireBlast();
+        //public static Trait DeathThroesUseLightning = new TraitDeathThroesSkill(new SkillLightning());
         public static Trait BloodThroesAcid = new TraitDeathThroesBlood(Element.Acid);
         public static Trait Broiling = new TraitBroil();
         public static Trait Overclock = new TraitOverclock();
         public static Trait AcidBlood = new TraitAcidBlood();
+        public static Trait DeathMachine = new TraitDeathMachine();
 
         public static Trait Water = new TraitWater();
         public static Trait Lava = new TraitLava();

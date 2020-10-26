@@ -88,4 +88,48 @@ namespace RoguelikeEngine.Skills
             yield return user.WaitSome(20);
         }
     }
+
+    class SkillDeployBomb : Skill
+    {
+        int Count = 2;
+
+        public SkillDeployBomb() : base("Deploy Bomb", "Creates bombs in adjacent tiles.", 0, 20, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 8);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            var userTiles = user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)).ToList();
+            var targetTiles = SkillUtil.GetFrontierTiles(user).Shuffle(Random);
+            int currentCount = 0;
+            foreach (var targetTile in targetTiles)
+            {
+                if (!targetTile.Solid && !targetTile.Creatures.Any() && currentCount < Count)
+                {
+                    var userTile = userTiles.Pick(Random);
+                    var bomb = new AutoBomb(userTile.World);
+                    bomb.MoveTo(userTile, 0);
+                    bomb.MoveTo(targetTile, 20);
+                    bomb.AddControlTurn();
+                    Effect.Apply(new EffectSummon(user, bomb));
+                    currentCount++;
+                }
+            }
+            yield return user.WaitSome(20);
+        }
+    }
 }

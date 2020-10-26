@@ -148,7 +148,7 @@ namespace RoguelikeEngine
             if (Encounter.Done && Enemies.Count <= 50)
             {
                 var baseTile = World.Player.Tile;
-                int spawnAmount = 4;
+                int spawnAmount = 1;
 
                 foreach (var spawnTile in GetValidSpawnLocations(baseTile, tile => !tile.Solid && !tile.Creatures.Any(), 6).Take(spawnAmount))
                 {

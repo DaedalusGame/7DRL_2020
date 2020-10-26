@@ -19,6 +19,7 @@ namespace RoguelikeEngine
         public PrimitiveBatch<VertexPositionColorTexture> PrimitiveBatch;
 
         public Texture2D Pixel;
+        public Texture2D Noise;
         public Microsoft.Xna.Framework.Graphics.Effect Shader;
 
         public Scene Scene;
@@ -89,6 +90,8 @@ namespace RoguelikeEngine
             GraphicsDevice.Clear(Color.White);
             GraphicsDevice.SetRenderTarget(null);
             Pixel = pixel;
+
+            Noise = GenerateNoiseTexture(GraphicsDevice, 256, 256, new Random());
 
             LoadFont();
 
@@ -173,6 +176,21 @@ namespace RoguelikeEngine
 
             GFPS.Update(gameTime);
             base.Update(gameTime);
+        }
+
+        private Texture2D GenerateNoiseTexture(GraphicsDevice device, int width, int height, Random random)
+        {
+            Texture2D texture = new Texture2D(device, width, height);
+
+            Color[] data = new Color[width * height];
+            for (int pixel = 0; pixel < data.Count(); pixel++)
+            {
+                data[pixel] = new Color((uint)random.Next());
+            }
+
+            texture.SetData(data);
+
+            return texture;
         }
 
         /// <summary>

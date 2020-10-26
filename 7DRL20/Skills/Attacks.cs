@@ -1099,10 +1099,10 @@ namespace RoguelikeEngine.Skills
                 int missile = 0;
                 foreach(var targetCreature in targetSet)
                 {
-                    float missileSlide = missiles > 1 ? (missile % missiles) / (float)(missiles - 1) : 0.5f;
+                    float missileSlide = Missiles > 1 ? (missile % Missiles) / (float)(Missiles - 1) : 0.5f;
                     waits.Add(Scheduler.Instance.RunAndWait(RoutineMissile(user, targetCreature, missileSlide, powerMod)));
                     missile++;
-                    if (missile % missiles == 0)
+                    if (missile % Missiles == 0)
                         yield return new WaitTime(20);
                     else
                         yield return new WaitTime(2);
@@ -1153,8 +1153,9 @@ namespace RoguelikeEngine.Skills
 
         public IEnumerable<Creature> GetPossibleTargets(Enemy user)
         {
+            var angle = Util.VectorToAngle(user.Facing.ToOffset().ToVector2());
             List<Creature> enemies = new List<Creature>();
-            foreach (var tile in user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 5))
+            foreach (var tile in user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 5).Where(tile => InArc(user.ActualTarget, tile.VisualTarget, angle - MathHelper.PiOver4, angle + MathHelper.PiOver4)))
             {
                 enemies.AddRange(tile.Creatures);
             }
@@ -1190,7 +1191,7 @@ namespace RoguelikeEngine.Skills
     
     class SkillBeamFire : SkillBeamBase
     {
-        public SkillBeamFire() : base("Fire Beam", $"Ranged {Element.Fire.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        public SkillBeamFire() : base("Fire Beam", $"Ranged {Element.Fire.FormatString} Attack. Sets all targets Aflame for 20 turns.", 2, 5, float.PositiveInfinity)
         {
             Bolts = 3;
         }
@@ -1219,7 +1220,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillBeamIce : SkillBeamBase
     {
-        public SkillBeamIce() : base("Ice Beam", $"Ranged {Element.Ice.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        public SkillBeamIce() : base("Ice Beam", $"Ranged {Element.Ice.FormatString} Attack. Freezes all targets for 3 turns.", 2, 5, float.PositiveInfinity)
         {
             Bolts = 3;
         }
@@ -1266,6 +1267,87 @@ namespace RoguelikeEngine.Skills
         {
             Attack attack = new Attack(user, target);
             attack.Elements.Add(Element.TheEnd, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillKamikaze : Skill
+    {
+        public SkillKamikaze() : base("Kamikaze", $"Destroys self. Triggers Death Throes.", 5, 0, float.PositiveInfinity)
+        {
+
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 1);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            user.AttackSelf(DeathAttack);
+        }
+
+        private static Attack DeathAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.SetParameters(user.GetStat(Stat.HP), 0, 0);
+            attack.Elements.Add(Element.Healing, 1.0);
+            return attack;
+        }
+    }
+
+    class SkillWhirlwind : Skill
+    {
+        public SkillWhirlwind() : base("Whirlwind", $"Ranged {Element.Wind.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InCircle(user, user.AggroTarget, 3);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            Consume();
+            ShowSkill(user);
+            yield return user.WaitSome(50);
+
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
+            new WhirlWindEffect(user.World, user, 40);
+            yield return new WaitTime(10);
+            List<Wait> waits = new List<Wait>();
+            var tiles = SkillUtil.GetCircularArea(user, 3).Except(user.Mask.Select(o => user.Tile.GetNeighbor(o.X, o.Y)));
+            var targetCreatures = tiles.SelectMany(tile => tile.Creatures).Distinct();
+            
+            foreach(var targetCreature in targetCreatures)
+            {
+                var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), WindAttack);
+                waits.Add(wait);
+            }
+            yield return new WaitTime(30);
+            yield return new WaitAll(waits);
+        }
+
+        private static Attack WindAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.Wind, 1.0);
             return attack;
         }
     }

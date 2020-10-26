@@ -79,7 +79,7 @@ namespace RoguelikeEngine.Enemies
         public virtual string BossMessage => "WARNING\n\nMANIFESTATION OF EXTINCTION UNIT";
         public virtual string[] BossDescription => new string[] { BossMessage };
 
-        protected List<Skill> Skills = new List<Skill>();
+        public List<Skill> Skills = new List<Skill>();
 
         public Enemy(SceneGame world) : base(world)
         {
@@ -224,7 +224,7 @@ namespace RoguelikeEngine.Enemies
                 AggroTarget = possibleTargets.Pick(Random);
         }
 
-        private IEnumerable<Wait> RoutineUseSkill(Skill skill, object target)
+        public IEnumerable<Wait> RoutineUseSkill(Skill skill, object target)
         {
             foreach(Wait wait in skill.RoutineUse(this, target))
                 yield return wait;
@@ -672,6 +672,39 @@ namespace RoguelikeEngine.Enemies
         public static WalkingCauldron Construct(Context context)
         {
             return new WalkingCauldron(context.World);
+        }
+    }
+
+    class AutoBomb : Enemy
+    {
+        public AutoBomb(SceneGame world) : base(world)
+        {
+            Name = "Auto Bomb";
+            Description = "Does not enable wall clips.";
+
+            Render = new CreatureStaticRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/mine"),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Construct));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Bloodless));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 150));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
+
+            Effect.ApplyInnate(new EffectStatPercent(this, Element.Fire.DamageRate, -0.5));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathThroesFireBlast));
+
+            Skills.Add(new SkillKamikaze());
+        }
+
+        [Construct("auto_bomb")]
+        public static AutoBomb Construct(Context context)
+        {
+            return new AutoBomb(context.World);
         }
     }
 }

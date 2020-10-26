@@ -25,6 +25,23 @@ namespace RoguelikeEngine
         }
     }
 
+    class WaitAllTurns : Wait
+    {
+        TurnTaker TurnTaker;
+
+        public WaitAllTurns(TurnTaker turnTaker)
+        {
+            TurnTaker = turnTaker;
+        }
+
+        public override bool Done => !TurnTaker.HasImmediateTurns();
+
+        public override void Update()
+        {
+            //NOOP
+        }
+    }
+
     class WaitMenu : Wait
     {
         Menu Menu;

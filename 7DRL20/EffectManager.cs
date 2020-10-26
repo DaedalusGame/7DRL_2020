@@ -507,7 +507,8 @@ namespace RoguelikeEngine
 
         public static IEnumerable<Wait> PushEvent<T,V>(this IEffectHolder holder, T eventParam) where V : EffectEvent<T>
         {
-            foreach (var effect in holder.GetEffects<V>().Distinct())
+            IEnumerable<V> enumerable = holder.GetEffects<V>().Distinct();
+            foreach (var effect in enumerable)
             {
                 yield return effect.Trigger(eventParam);
             }
