@@ -818,6 +818,38 @@ namespace RoguelikeEngine
         }
     }
 
+    class Volt : Particle
+    {
+        float Angle;
+        SpriteReference Sprite;
+        int SubImage;
+
+        public Volt(SceneGame world, SpriteReference sprite, Vector2 position, int time) : base(world, position)
+        {
+            Sprite = sprite;
+            SubImage = Random.Next(sprite.SubImageCount);
+            Angle = Random.NextFloat() * MathHelper.TwoPi;
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+                this.Destroy();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, SubImage, Position - Sprite.Middle, Sprite.Middle, Angle, Vector2.One, SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
     class Cutter : Particle
     {
         Func<Vector2> Anchor;
@@ -1359,6 +1391,53 @@ namespace RoguelikeEngine
             Lerp = lerp;
         }
         
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(1), SpriteEffects.None, Color.White, 0);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return DrawPass.EffectAdditive;
+        }
+    }
+
+    class EnergyBall : Projectile
+    {
+        public SpriteReference Sprite;
+        public SpriteReference TrailSprite;
+        public LerpHelper.Delegate Lerp;
+        public override Vector2 Tween => GetTween();
+        public float AngleVelocity;
+        public float Distance;
+        public float Angle1, Angle2;
+
+        public EnergyBall(SceneGame world, SpriteReference sprite, SpriteReference trailSprite, Vector2 positionStart, Vector2 positionEnd, float angleVelocity, float distance, LerpHelper.Delegate lerp, int time) : base(world, positionStart, positionEnd, time)
+        {
+            Sprite = sprite;
+            TrailSprite = trailSprite;
+            Lerp = lerp;
+            Angle1 = Random.NextFloat() * MathHelper.TwoPi;
+            Angle2 = Random.NextFloat() * MathHelper.TwoPi;
+            Frame = new Slider(time);
+            AngleVelocity = angleVelocity;
+            Distance = distance;
+        }
+
+        private Vector2 GetTween()
+        {
+            var offsetStart = Util.AngleToVector(Angle1 + AngleVelocity * Frame.Slide) * (float)Lerp(0, Distance, Frame.Slide);
+            var offsetEnd = Util.AngleToVector(Angle2 + AngleVelocity * Frame.Slide) * (float)Lerp(Distance, 0, Frame.Slide);
+            return Vector2.Lerp(PositionStart + offsetStart, PositionEnd + offsetEnd, (float)Lerp(0, 1, Frame.Slide));
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            var offset = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * Sprite.Width / 2f;
+            new Volt(World, TrailSprite, Position + offset, Random.Next(5));
+        }
+
         public override void Draw(SceneGame scene, DrawPass pass)
         {
             scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(1), SpriteEffects.None, Color.White, 0);

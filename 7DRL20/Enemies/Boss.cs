@@ -257,6 +257,7 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillBeamFire());
             Skills.Add(new SkillBeamIce());
             Skills.Add(new SkillBeamDisintegrate());
+            Skills.Add(new SkillEnergyBall());
         }
 
         [Construct("death_golem_head")]

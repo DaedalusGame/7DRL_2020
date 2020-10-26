@@ -1505,6 +1505,48 @@ namespace RoguelikeEngine.Skills
         }
     }
 
+    class SkillEnergyBall : Skill
+    {
+        public SkillEnergyBall() : base("Energy Ball", $"Ranged {Element.Thunder} damage.", 4, 10, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 4);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return user.AggroTarget;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Creature targetCreature)
+            {
+                var ball = SpriteLoader.Instance.AddSprite("content/blob_fire");
+                var volt = SpriteLoader.Instance.AddSprite("content/lightning_spark_energy");
+
+                Consume();
+                ShowSkill(user);
+                user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+                yield return user.WaitSome(50);
+                var effect = new EnergyBall(user.World, ball, volt, user.VisualTarget, targetCreature.VisualTarget, 1.0f, 20, LerpHelper.Quadratic, 30);
+                yield return new WaitEffect(effect);
+                var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), Attack);
+                yield return wait;
+            }
+        }
+
+        protected Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Thunder, 1.0);
+            return attack;
+        }
+    }
+
     class SkillMudBath : Skill
     {
         int MaxDistance = 4;
