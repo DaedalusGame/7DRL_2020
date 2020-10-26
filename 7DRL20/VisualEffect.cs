@@ -208,6 +208,78 @@ namespace RoguelikeEngine
         }
     }
 
+    abstract class ScreenGlitch : VisualEffect
+    {
+        public abstract GlitchParams Glitch
+        {
+            get;
+        }
+
+        public ScreenGlitch(SceneGame world) : base(world)
+        {
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            //NOOP
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            return Enumerable.Empty<DrawPass>();
+        }
+    }
+
+    class ScreenGlitchFlash : ScreenGlitch
+    {
+        Func<float, GlitchParams> GlitchFunction;
+
+        public override GlitchParams Glitch => GlitchFunction(Frame.Slide);
+
+        public ScreenGlitchFlash(SceneGame world, Func<float, GlitchParams> glitch, int time) : base(world)
+        {
+            GlitchFunction = glitch;
+            Frame = new Slider(time);
+        }
+        
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+            {
+                this.Destroy();
+            }
+        }
+    }
+
+    class ScreenGlitchFade : ScreenGlitch
+    {
+        Func<float, GlitchParams> FadeInFunction;
+        Func<float, GlitchParams> FadeOutFunction;
+        int TimeIn;
+        int TimeOut;
+
+        public override GlitchParams Glitch => Frame.Time < TimeIn ? FadeInFunction(Frame.GetSubSlide(0, TimeIn)) : FadeOutFunction(Frame.GetSubSlide(TimeIn, TimeIn + TimeOut));
+
+        public ScreenGlitchFade(SceneGame world, Func<float, GlitchParams> fadeIn, Func<float, GlitchParams> fadeOut, int timeIn, int timeOut) : base(world)
+        {
+            FadeInFunction = fadeIn;
+            FadeOutFunction = fadeOut;
+            TimeIn = timeIn;
+            TimeOut = timeOut;
+            Frame = new Slider(timeIn + timeOut);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+            {
+                this.Destroy();
+            }
+        }
+    }
+
     abstract class ScreenShake : VisualEffect
     {
         public Vector2 Offset;

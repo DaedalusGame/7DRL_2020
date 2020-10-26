@@ -850,21 +850,22 @@ namespace RoguelikeEngine
             SwapBuffers();
 
             //Draw glitches
-            GlitchParams glitchParams = new GlitchParams()
-            {
-                Intensity = 0.5f,
-                Dispersion = 0.025f,
-            };
+            IEnumerable<ScreenGlitch> screenGlitches = visualEffects.OfType<ScreenGlitch>();
 
-            PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shader: Shader, shaderSetup: (transform, projection) =>
+            foreach (var glitch in screenGlitches)
             {
-                SetupGlitch(Game.Noise, glitchParams, Random, Matrix.Identity, Projection);
-            });
-            SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
-            PopSpriteBatch();
+                GlitchParams glitchParams = glitch.Glitch;
 
-            GraphicsDevice.SetRenderTarget(CameraTargetB);
-            SwapBuffers();
+                PushSpriteBatch(samplerState: SamplerState.PointWrap, blendState: NonPremultiplied, shader: Shader, shaderSetup: (transform, projection) =>
+                {
+                    SetupGlitch(Game.Noise, glitchParams, Random, Matrix.Identity, Projection);
+                });
+                SpriteBatch.Draw(CameraTargetB, CameraTargetB.Bounds, Color.White);
+                PopSpriteBatch();
+
+                GraphicsDevice.SetRenderTarget(CameraTargetB);
+                SwapBuffers();
+            }
 
             //Draw to screen
             GraphicsDevice.SetRenderTarget(null);

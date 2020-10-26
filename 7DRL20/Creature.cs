@@ -1079,6 +1079,29 @@ namespace RoguelikeEngine
                 var pos = new Vector2(Tile.X * 16, Tile.Y * 16);
                 VisualPosition = Slide(pos + ScuffExact(dir, 8), pos, LerpHelper.Linear, 10);
                 VisualPose = Static(CreaturePose.Stand);
+                /*new ScreenGlitchFlash(World, (slide) => new GlitchParams() {
+                    Intensity = 1 - slide,
+                    Dispersion = 0.02f,
+                }, 20);*/
+                /*new ScreenGlitchFade(World, (slide) => new GlitchParams()
+                {
+                    Intensity = slide,
+                    LineSpeed = 0.5f,
+                    LineShift = 0.018f,
+                    LineResolution = 3.0f,
+                    LineDrift = 1.0f,
+                    Shakiness = 1.0f,
+                    NoiseLevel = 0.5f,
+                }, (slide) => new GlitchParams()
+                {
+                    Intensity = 1 - slide,
+                    LineSpeed = 0.5f,
+                    LineShift = 0.018f,
+                    LineResolution = 3.0f,
+                    LineDrift = 1.0f,
+                    Shakiness = 1.0f,
+                    NoiseLevel = 0.5f,
+                }, 20, 40);*/
                 yield return new WaitFrames(this, 10);
             }
             if (!fast)

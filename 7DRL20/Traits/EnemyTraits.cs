@@ -276,7 +276,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitDeathMachine() : base("death_machine", "Death Machine", $"Every turn, one random skill resets its cooldown.", new Color(227, 255, 34))
+        public TraitDeathMachine() : base("death_machine", "Death Machine", $"Every turn, one random skill resets its cooldown.", new Color(130, 100, 100))
         {
             Effect.Apply(new OnTurn(this, RoutineResetCooldown));
         }

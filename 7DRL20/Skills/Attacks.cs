@@ -1294,7 +1294,9 @@ namespace RoguelikeEngine.Skills
             ShowSkill(user);
             user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
             yield return user.WaitSome(50);
-            user.AttackSelf(DeathAttack);
+            user.TakeDamage(user.GetStat(Stat.HP), Element.Healing, null);
+            user.CheckDead(Vector2.Zero);
+            //user.AttackSelf(DeathAttack);
         }
 
         private static Attack DeathAttack(Creature user, IEffectHolder target)

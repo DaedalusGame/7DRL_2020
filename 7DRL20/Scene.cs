@@ -8,6 +8,25 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    struct GlitchParams
+    {
+        public float Intensity;
+        public float Seed;
+        public float LineSpeed;
+        public float LineDrift;
+        public float LineResolution;
+        public float LineVerticalShift;
+        public float LineShift;
+        public float Jumbleness;
+        public float JumbleResolution;
+        public float JumbleShift;
+        public float JumbleSpeed;
+        public float Dispersion;
+        public float ChannelShift;
+        public float NoiseLevel;
+        public float Shakiness;
+    }
+
     class DrawStackFrame
     {
         public SpriteSortMode SortMode;
@@ -131,25 +150,6 @@ namespace RoguelikeEngine
             Shader.Parameters["texture_map"].SetValue(map);
             Shader.Parameters["map_transform"].SetValue(mapTransform);
             Shader.Parameters["WorldViewProjection"].SetValue(transform * projection);
-        }
-
-        public struct GlitchParams
-        {
-            public float Intensity;
-            public float Seed;
-            public float LineSpeed;
-            public float LineDrift;
-            public float LineResolution;
-            public float LineVerticalShift;
-            public float LineShift;
-            public float Jumbleness;
-            public float JumbleResolution;
-            public float JumbleShift;
-            public float JumbleSpeed;
-            public float Dispersion;
-            public float ChannelShift;
-            public float NoiseLevel;
-            public float Shakiness;
         }
 
         public void SetupGlitch(Texture2D map, GlitchParams param, Random random, Matrix transform, Matrix projection)
