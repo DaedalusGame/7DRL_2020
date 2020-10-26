@@ -13,7 +13,7 @@ namespace RoguelikeEngine.Enemies
 {
     class Gashwal : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public Gashwal(SceneGame world) : base(world)
         {
@@ -51,7 +51,7 @@ namespace RoguelikeEngine.Enemies
 
     class GashwalHairy : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public GashwalHairy(SceneGame world) : base(world)
         {
@@ -93,7 +93,7 @@ namespace RoguelikeEngine.Enemies
 
     class Pugnbaba : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public Pugnbaba(SceneGame world) : base(world)
         {
@@ -126,7 +126,7 @@ namespace RoguelikeEngine.Enemies
 
     class Leo : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public Leo(SceneGame world) : base(world)
         {
@@ -159,7 +159,7 @@ namespace RoguelikeEngine.Enemies
 
     class Marduke : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public Marduke(SceneGame world) : base(world)
         {
@@ -192,7 +192,7 @@ namespace RoguelikeEngine.Enemies
 
     class DeathGolem : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public DeathGolem(SceneGame world) : base(world)
         {
@@ -268,7 +268,7 @@ namespace RoguelikeEngine.Enemies
 
     class DeathGolemBody : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public DeathGolemBody(SceneGame world) : base(world)
         {
@@ -486,7 +486,7 @@ namespace RoguelikeEngine.Enemies
 
     class Erebizo : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public Erebizo(SceneGame world) : base(world)
         {
@@ -523,7 +523,7 @@ namespace RoguelikeEngine.Enemies
 
     class EnderErebizo : Enemy
     {
-        public override Vector2 VisualTarget => VisualPosition() + new Vector2(16, 16);
+        public override Vector2 CenterOffset => new Vector2(16, 16);
 
         public EnderErebizo(SceneGame world) : base(world)
         {

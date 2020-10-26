@@ -58,7 +58,7 @@ namespace RoguelikeEngine.Traits
             var spawnedBody = new DeathGolemBody(creature.World);
             spawnedBody.Facing = creature.Facing;
             spawnedBody.MoveTo(creature.Tile, 0);
-            spawnedBody.VisualPosition = spawnedBody.Slide(creature.VisualPosition(), spawnedBody.VisualPosition(), LerpHelper.Quadratic, 30);
+            spawnedBody.VisualPosition = spawnedBody.Slide(creature.VisualPosition(), spawnedBody.ActualPosition, LerpHelper.Quadratic, 30);
             spawnedBody.AddControlTurn();
 
             creature.VisualColor = creature.Static(Color.Transparent);
@@ -71,7 +71,7 @@ namespace RoguelikeEngine.Traits
                     var spawnedHead = new DeathGolemHead(creature.World);
                     spawnedHead.Facing = creature.Facing;
                     spawnedHead.MoveTo(targetTile, 0);
-                    spawnedHead.VisualPosition = spawnedHead.Slide(creature.VisualTarget + new Vector2(0, -8) - new Vector2(8, 8), spawnedHead.VisualPosition(), LerpHelper.Quadratic, 30);
+                    spawnedHead.VisualPosition = spawnedHead.Slide(creature.VisualTarget + new Vector2(0, -8) - spawnedHead.CenterOffset, spawnedHead.ActualPosition, LerpHelper.Quadratic, 30);
                     spawnedHead.AddControlTurn();
                     break;
                 }

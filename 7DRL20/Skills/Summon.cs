@@ -124,7 +124,7 @@ namespace RoguelikeEngine.Skills
                     //var userTile = userTiles.Pick(Random);
                     var bomb = new AutoBomb(targetTile.World);
                     bomb.MoveTo(targetTile, 0);
-                    bomb.VisualPosition = bomb.SlideJump(user.VisualTarget - new Vector2(8, 8), new Vector2(bomb.X, bomb.Y) * 16, 10, LerpHelper.Quadratic, 10);
+                    bomb.VisualPosition = bomb.SlideJump(user.VisualTarget - bomb.CenterOffset, bomb.ActualPosition, 10, LerpHelper.Quadratic, 10);
                     bomb.AddControlTurn();
                     Effect.Apply(new EffectSummon(user, bomb));
                     currentCount++;
