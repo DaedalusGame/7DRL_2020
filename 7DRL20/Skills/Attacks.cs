@@ -1532,7 +1532,7 @@ namespace RoguelikeEngine.Skills
                 ShowSkill(user);
                 user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
                 yield return user.WaitSome(50);
-                var effect = new EnergyBall(user.World, ball, volt, user.VisualTarget, targetCreature.VisualTarget, 1.0f, 20, LerpHelper.Quadratic, 30);
+                var effect = new EnergyBall(user.World, ball, volt, user.VisualTarget, targetCreature.VisualTarget, 1.0f, 0, 20, LerpHelper.Quadratic, 30);
                 yield return new WaitEffect(effect);
                 var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), Attack);
                 yield return wait;

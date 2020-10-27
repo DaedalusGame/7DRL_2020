@@ -1411,8 +1411,9 @@ namespace RoguelikeEngine
         public float AngleVelocity;
         public float Distance;
         public float Angle1, Angle2;
+        public float Rotation;
 
-        public EnergyBall(SceneGame world, SpriteReference sprite, SpriteReference trailSprite, Vector2 positionStart, Vector2 positionEnd, float angleVelocity, float distance, LerpHelper.Delegate lerp, int time) : base(world, positionStart, positionEnd, time)
+        public EnergyBall(SceneGame world, SpriteReference sprite, SpriteReference trailSprite, Vector2 positionStart, Vector2 positionEnd, float angleVelocity, float rotation, float distance, LerpHelper.Delegate lerp, int time) : base(world, positionStart, positionEnd, time)
         {
             Sprite = sprite;
             TrailSprite = trailSprite;
@@ -1422,6 +1423,7 @@ namespace RoguelikeEngine
             Frame = new Slider(time);
             AngleVelocity = angleVelocity;
             Distance = distance;
+            Rotation = rotation;
         }
 
         private Vector2 GetTween()
@@ -1434,13 +1436,16 @@ namespace RoguelikeEngine
         public override void Update()
         {
             base.Update();
-            var offset = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * Sprite.Width / 2f;
-            new Volt(World, TrailSprite, Position + offset, Random.Next(5));
+            if (TrailSprite != null)
+            {
+                var offset = Util.AngleToVector(Random.NextFloat() * MathHelper.TwoPi) * Sprite.Width / 2f;
+                new Volt(World, TrailSprite, Position + offset, Random.Next(5));
+            }
         }
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, 0, new Vector2(1), SpriteEffects.None, Color.White, 0);
+            scene.DrawSpriteExt(Sprite, 0, Position - Sprite.Middle, Sprite.Middle, Rotation * Frame.Time, new Vector2(1), SpriteEffects.None, Color.White, 0);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()

@@ -688,6 +688,20 @@ namespace RoguelikeEngine
             return shuffled;
         }
 
+        public static IEnumerable<T> TakeLoop<T>(this IEnumerable<T> enumerable, int n)
+        {
+            while(n > 0)
+            {
+                foreach(var t in enumerable)
+                {
+                    if (n <= 0)
+                        break;
+                    yield return t;
+                    n--;
+                }
+            }
+        }
+
         public static TypeLookup<TSource> ToTypeLookup<TSource>(this IEnumerable<TSource> enumerable)
         {
             return TypeLookup<TSource>.Create(enumerable);

@@ -54,6 +54,11 @@ namespace RoguelikeEngine.Traits
             new RingExplosion(creature.World, creature.VisualTarget, (pos, vel, angle, time) => new FireExplosion(creature.World, pos, vel, angle, time), 6, 24, 10);
 
             //Fire horns
+            var waits = new List<Wait>();
+            foreach (var targetCreature in GetPossibleTargets(creature).TakeLoop(2))
+            {
+                waits.Add(Scheduler.Instance.RunAndWait(RoutineHorn(creature, targetCreature)));
+            }
 
             var spawnedBody = new DeathGolemBody(creature.World);
             spawnedBody.Facing = creature.Facing;
@@ -78,6 +83,33 @@ namespace RoguelikeEngine.Traits
             }
 
             yield return creature.WaitSome(30);
+        }
+
+        public IEnumerable<Creature> GetPossibleTargets(Creature user)
+        {
+            List<Creature> enemies = new List<Creature>();
+            foreach (var tile in user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), 5))
+            {
+                enemies.AddRange(tile.Creatures);
+            }
+            return enemies.Where(x => x != user).Distinct().Shuffle(Random);
+        }
+
+        private IEnumerable<Wait> RoutineHorn(Creature creature, Creature targetCreature)
+        {
+            var horn = SpriteLoader.Instance.AddSprite("content/death_golem_sickle");
+
+            var cutter = new EnergyBall(creature.World, horn, null, creature.VisualTarget + new Vector2(0, -8), targetCreature.VisualTarget, 1.0f, MathHelper.Pi * 0.1f, 60, LerpHelper.Quadratic, 50);
+            yield return new WaitTime(50);
+            var wait = creature.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - creature.VisualTarget), HornAttack);
+            yield return wait;
+        }
+
+        protected Attack HornAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Emperor, 1.0);
+            return attack;
         }
     }
 
