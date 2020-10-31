@@ -356,11 +356,15 @@ namespace RoguelikeEngine.Skills
         }
     }
 
-    class SkillVenomSpit : SkillProjectileBase
+    abstract class SkillSpitBase : SkillProjectileBase
     {
-        int MaxDistance = 2;
+        protected int MaxDistance = 2;
 
-        public SkillVenomSpit() : base("Venom Spit", "Paralyzes target.", 1, 3, float.PositiveInfinity)
+        protected SpriteReference BulletSprite;
+        protected ColorMatrix BulletColor;
+        protected Color TrailColor;
+
+        public SkillSpitBase(string name, string description, int warmup, int cooldown, float uses) : base(name, description, warmup, cooldown, uses)
         {
         }
 
@@ -384,16 +388,49 @@ namespace RoguelikeEngine.Skills
             }
         }
 
-        private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        protected IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
         {
-            Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_paralyze"), Vector2.Zero, ColorMatrix.Identity, Color.DarkCyan, 0);
+            Bullet bullet = new BulletTrail(user.World, BulletSprite, Vector2.Zero, BulletColor, TrailColor, 0);
             Projectile projectile = new Projectile(bullet);
             projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
             projectile.ExtraEffects.Add(new ProjectileCollideSolid());
             return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
         }
 
-        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+
+        protected abstract Attack BulletAttack(Creature attacker, IEffectHolder defender);
+    }
+
+    class SkillWaterSpit : SkillSpitBase
+    {
+        public SkillWaterSpit() : base("Water Spit", $"Ranged {Element.Water.FormatString} damage. Wets target.", 1, 3, float.PositiveInfinity)
+        {
+            BulletSprite = SpriteLoader.Instance.AddSprite("content/bullet_water");
+            TrailColor = Color.DarkBlue;
+        }
+
+        protected override Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Elements.Add(Element.Water, 1.0);
+            attack.StatusEffects.Add(new Wet()
+            {
+                Buildup = 1,
+                Duration = new Slider(20),
+            });
+            return attack;
+        }
+    }
+
+    class SkillVenomSpit : SkillSpitBase
+    {
+        public SkillVenomSpit() : base("Venom Spit", "Paralyzes target.", 1, 3, float.PositiveInfinity)
+        {
+            BulletSprite = SpriteLoader.Instance.AddSprite("content/bullet_paralyze");
+            TrailColor = Color.DarkCyan;
+        }
+
+        protected override Attack BulletAttack(Creature attacker, IEffectHolder defender)
         {
             Attack attack = new Attack(attacker, defender);
             attack.StatusEffects.Add(new Paralyze()
@@ -404,7 +441,6 @@ namespace RoguelikeEngine.Skills
             return attack;
         }
     }
-
 
     abstract class SkillVolleyBase : SkillProjectileBase
     {

@@ -28,6 +28,7 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
 
             Skills.Add(new SkillAttack());
+            Skills.Add(new SkillWaterSpit());
             Skills.Add(new SkillDive());
         }
 
