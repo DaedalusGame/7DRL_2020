@@ -13,6 +13,7 @@ using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.MapGeneration;
 using RoguelikeEngine.Menus;
+using RoguelikeEngine.VisualEffects;
 
 namespace RoguelikeEngine
 {

@@ -254,38 +254,38 @@ namespace RoguelikeEngine.Enemies
         public ColorMatrix Color = ColorMatrix.Identity;
         public ColorMatrix GlowColor = ColorMatrix.Identity;
 
-        public Func<Creature, float> GlowAmount; 
+        public Func<float> GlowAmount;
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
-            var mirror = GetMirror(creature);
-            int facingOffset = GetFacingOffset(creature);
-            int frameOffset = GetFrameOffset(creature);
+            var mirror = GetMirror(facing);
+            int facingOffset = GetFacingOffset(facing);
+            int frameOffset = GetFrameOffset(poseData);
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Sprite, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, facingOffset + frameOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(GlowColor, matrix, projection);
+                scene.SetupColorMatrix(GlowColor, transform * matrix, projection);
             });
-            if(Glow != null)
-                scene.DrawSprite(Glow, facingOffset + frameOffset, creature.VisualPosition(), mirror, Microsoft.Xna.Framework.Color.White * GlowAmount(creature), 0);
+            if (Glow != null && GlowAmount != null)
+                scene.DrawSprite(Glow, facingOffset + frameOffset, pos, mirror, Microsoft.Xna.Framework.Color.White * GlowAmount(), 0);
             scene.PopSpriteBatch();
         }
 
-        protected static Microsoft.Xna.Framework.Graphics.SpriteEffects GetMirror(Creature creature)
+        protected static Microsoft.Xna.Framework.Graphics.SpriteEffects GetMirror(Facing facing)
         {
-            return creature.VisualFacing() == Facing.East ? Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally : Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
+            return facing == Facing.East ? Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally : Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
         }
 
-        protected static int GetFacingOffset(Creature creature)
+        protected static int GetFacingOffset(Facing facing)
         {
             int facingOffset = 0;
-            switch (creature.VisualFacing())
+            switch (facing)
             {
                 case (Facing.North):
                     facingOffset = 8;
@@ -304,17 +304,17 @@ namespace RoguelikeEngine.Enemies
             return facingOffset;
         }
 
-        protected static int GetFrameOffset(Creature creature)
+        protected static int GetFrameOffset(PoseData poseData)
         {
             int frameOffset = 0;
 
-            switch (creature.VisualPose())
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Stand):
                     frameOffset = 1;
                     break;
                 case (CreaturePose.Walk):
-                    double lerp = LerpHelper.ForwardReverse(0, 2, (creature.Frame / 50.0) % 1);
+                    double lerp = LerpHelper.ForwardReverse(0, 2, (poseData.Frame / 50.0) % 1);
                     frameOffset = (int)Math.Round(lerp);
                     break;
                 case (CreaturePose.Attack):
@@ -338,11 +338,11 @@ namespace RoguelikeEngine.Enemies
         {
         }
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
             int facingOffset = 0;
-            switch (creature.VisualFacing())
+            switch (facing)
             {
                 case (Facing.North):
                     facingOffset = 2;
@@ -361,50 +361,9 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Sprite, facingOffset, creature.VisualPosition(), mirror, 0);
-            scene.PopSpriteBatch();
-        }
-    }
-
-    class CreatureCannonRender : CreatureRender
-    {
-        ColorMatrix Color;
-
-        public CreatureCannonRender(ColorMatrix color)
-        {
-            Color = color;
-        }
-
-        public override void Draw(SceneGame scene, Creature creature)
-        {
-            SpriteReference fish = SpriteLoader.Instance.AddSprite("content/cannon");
-
-            var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
-            int facingOffset = 0;
-            switch (creature.VisualFacing())
-            {
-                case (Facing.North):
-                    facingOffset = 2;
-                    break;
-                case (Facing.East):
-                    facingOffset = 1;
-                    mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally;
-                    break;
-                case (Facing.South):
-                    facingOffset = 0;
-                    break;
-                case (Facing.West):
-                    facingOffset = 1;
-                    break;
-            }
-
-            scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
-            {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
-            });
-            scene.DrawSprite(fish, facingOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, facingOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
         }
     }
@@ -414,31 +373,31 @@ namespace RoguelikeEngine.Enemies
         public SpriteReference Sprite;
         public ColorMatrix Color = ColorMatrix.Identity;
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
             int frameOffset = 0;
-            switch (creature.VisualPose())
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Stand):
-                    frameOffset = (int)Math.Round(creature.Frame / 40.0);
+                    frameOffset = (int)Math.Round(poseData.Frame / 40.0);
                     break;
                 case (CreaturePose.Walk):
-                    frameOffset = (int)Math.Round(creature.Frame / 10.0);
+                    frameOffset = (int)Math.Round(poseData.Frame / 10.0);
                     break;
                 case (CreaturePose.Attack):
-                    frameOffset = (int)Math.Round(creature.Frame / 5.0);
+                    frameOffset = (int)Math.Round(poseData.Frame / 5.0);
                     break;
                 case (CreaturePose.Cast):
-                    frameOffset = (int)Math.Round(creature.Frame / 3.0);
+                    frameOffset = (int)Math.Round(poseData.Frame / 3.0);
                     break;
             }
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Sprite, frameOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, frameOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
         }
     }
@@ -448,11 +407,11 @@ namespace RoguelikeEngine.Enemies
         public SpriteReference Sprite;
         public ColorMatrix Color = ColorMatrix.Identity;
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
             int facingOffset = 0;
-            switch (creature.VisualFacing())
+            switch (facing)
             {
                 case (Facing.North):
                     facingOffset = 2;
@@ -471,9 +430,9 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Sprite, facingOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, facingOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
         }
     }
@@ -483,29 +442,29 @@ namespace RoguelikeEngine.Enemies
         public SpriteReference Sprite;
         public ColorMatrix Color = ColorMatrix.Identity;
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
-            var mirror = GetMirror(creature);
-            int facingOffset = GetFacingOffset(creature);
-            int frameOffset = GetFrameOffset(creature);
+            var mirror = GetMirror(facing);
+            int facingOffset = GetFacingOffset(facing);
+            int frameOffset = GetFrameOffset(poseData);
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Sprite, facingOffset + frameOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, facingOffset + frameOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
         }
 
-        protected static Microsoft.Xna.Framework.Graphics.SpriteEffects GetMirror(Creature creature)
+        protected static Microsoft.Xna.Framework.Graphics.SpriteEffects GetMirror(Facing facing)
         {
-            return creature.VisualFacing() == Facing.East ? Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally : Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
+            return facing == Facing.East ? Microsoft.Xna.Framework.Graphics.SpriteEffects.FlipHorizontally : Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
         }
 
-        protected static int GetFacingOffset(Creature creature)
+        protected static int GetFacingOffset(Facing facing)
         {
             int facingOffset = 0;
-            switch (creature.VisualFacing())
+            switch (facing)
             {
                 case (Facing.North):
                     facingOffset = 0;
@@ -524,17 +483,17 @@ namespace RoguelikeEngine.Enemies
             return facingOffset;
         }
 
-        protected static int GetFrameOffset(Creature creature)
+        protected static int GetFrameOffset(PoseData poseData)
         {
             int frameOffset = 0;
 
-            switch (creature.VisualPose())
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Stand):
                     frameOffset = 1;
                     break;
                 case (CreaturePose.Walk):
-                    double lerp = LerpHelper.ForwardReverse(0, 2, (creature.Frame / 50.0) % 1);
+                    double lerp = LerpHelper.ForwardReverse(0, 2, (poseData.Frame / 50.0) % 1);
                     frameOffset = (int)Math.Round(lerp);
                     break;
                 case (CreaturePose.Attack):
@@ -554,32 +513,37 @@ namespace RoguelikeEngine.Enemies
         public SpriteReference Sprite;
         public ColorMatrix Color = ColorMatrix.Identity;
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public float AnimationSpeedStand = 1 / 6f;
+        public float AnimationSpeedWalk = 1 / 4f;
+        public float AnimationSpeedAttack = 0;
+        public float AnimationSpeedCast = 0;
+
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
 
             int frameOffset = 0;
-            switch (creature.VisualPose())
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Stand):
-                    frameOffset = creature.Frame / 6;
+                    frameOffset = (int)Math.Round(poseData.Frame * AnimationSpeedStand);
                     break;
                 case (CreaturePose.Walk):
-                    frameOffset = creature.Frame / 4;
+                    frameOffset = (int)Math.Round(poseData.Frame * AnimationSpeedWalk);
                     break;
                 case (CreaturePose.Attack):
-                    frameOffset = 0;
+                    frameOffset = (int)Math.Round(poseData.Frame * AnimationSpeedAttack);
                     break;
                 case (CreaturePose.Cast):
-                    frameOffset = 0;
+                    frameOffset = (int)Math.Round(poseData.Frame * AnimationSpeedCast);
                     break;
             }
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Sprite, frameOffset, creature.VisualPosition(), mirror, 0);
+            scene.DrawSprite(Sprite, frameOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
         }
     }
@@ -591,7 +555,11 @@ namespace RoguelikeEngine.Enemies
             Name = "Blast Cannon";
             Description = "High Sentry";
 
-            Render = new CreatureCannonRender(ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen));
+            Render = new CreatureDirectionalRender()
+            {
+                Sprite = SpriteLoader.Instance.AddSprite("content/cannon"),
+                Color = ColorMatrix.TwoColor(Color.Black, Color.LightSeaGreen)
+            };
             Mask.Add(Point.Zero);
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Construct));

@@ -9,6 +9,7 @@ using RoguelikeEngine.Effects;
 using RoguelikeEngine.MapGeneration;
 using RoguelikeEngine.Menus;
 using RoguelikeEngine.Traits;
+using RoguelikeEngine.VisualEffects;
 
 namespace RoguelikeEngine
 {

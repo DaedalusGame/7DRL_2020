@@ -19,34 +19,34 @@ namespace RoguelikeEngine.Enemies
             Color = color;
         }
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             SpriteReference abyssalTendril = SpriteLoader.Instance.AddSprite("content/abyssal_tendril");
 
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
-            Random rand = new Random(creature.GetHashCode());
-            int frame = creature.PoseFrame + rand.Next(100);
+            Random rand = new Random(this.GetHashCode());
+            int wiggleFrame = poseData.PoseFrame + rand.Next(100);
 
-            bool tendrilDown = IsTendrilDown(creature.Pose);
-            bool tendrilDownLast = IsTendrilDown(creature.PoseLast);
+            bool tendrilDown = IsTendrilDown(poseData.Pose);
+            bool tendrilDownLast = IsTendrilDown(poseData.PoseLast);
             int frameOffset = 0;
-            bool invisible = creature.Pose == CreaturePose.Walk;
-            switch (creature.VisualPose())
+            bool invisible = poseData.Pose == CreaturePose.Walk;
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Stand):
-                    frameOffset = 2 + (frame / 10) % 4;
+                    frameOffset = 2 + (wiggleFrame / 10) % 4;
                     break;
                 case (CreaturePose.Attack):
-                    frameOffset = 2 + (frame / 2) % 4;
+                    frameOffset = 2 + (wiggleFrame / 2) % 4;
                     break;
                 default:
-                    frameOffset = 2 + (frame / 4) % 4;
+                    frameOffset = 2 + (wiggleFrame / 4) % 4;
                     break;
             }
 
-            if (tendrilDown != tendrilDownLast && creature.PoseFrame < 5 + rand.Next(20))
+            if (tendrilDown != tendrilDownLast && poseData.PoseFrame < 5 + rand.Next(20))
             {
-                frameOffset = 0 + (frame / 10) % 2;
+                frameOffset = 0 + (wiggleFrame / 10) % 2;
                 invisible = false;
             }
 
@@ -55,9 +55,9 @@ namespace RoguelikeEngine.Enemies
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(abyssalTendril, frameOffset, creature.VisualPosition() - new Vector2(0, 8), mirror, 0);
+            scene.DrawSprite(abyssalTendril, frameOffset, pos - new Vector2(0, 8), mirror, color, 0);
             scene.PopSpriteBatch();
         }
 
@@ -76,35 +76,35 @@ namespace RoguelikeEngine.Enemies
             Color = color;
         }
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             SpriteReference abyssalTendril = SpriteLoader.Instance.AddSprite("content/abyssal_tendril_bush");
 
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
 
-            bool tendrilDown = IsTendrilDown(creature.Pose);
-            bool tendrilDownLast = IsTendrilDown(creature.PoseLast);
+            bool tendrilDown = IsTendrilDown(poseData.Pose);
+            bool tendrilDownLast = IsTendrilDown(poseData.PoseLast);
             int frameOffset = 0;
-            switch (creature.VisualPose())
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Attack):
-                    frameOffset = 3 + (creature.PoseFrame / 2) % 4;
+                    frameOffset = 3 + (poseData.PoseFrame / 2) % 4;
                     break;
                 case (CreaturePose.Cast):
-                    frameOffset = 3 + (creature.PoseFrame / 4) % 4;
+                    frameOffset = 3 + (poseData.PoseFrame / 4) % 4;
                     break;
             }
 
-            if (tendrilDown != tendrilDownLast && creature.PoseFrame < 15)
+            if (tendrilDown != tendrilDownLast && poseData.PoseFrame < 15)
             {
-                frameOffset = 1 + (creature.PoseFrame / 10) % 2;
+                frameOffset = 1 + (poseData.PoseFrame / 10) % 2;
             }
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(Color * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(Color * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(abyssalTendril, frameOffset, creature.VisualPosition() - new Vector2(0, 16), mirror, 0);
+            scene.DrawSprite(abyssalTendril, frameOffset, pos - new Vector2(0, 16), mirror, color, 0);
             scene.PopSpriteBatch();
         }
 

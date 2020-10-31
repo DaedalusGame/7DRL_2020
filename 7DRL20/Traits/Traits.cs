@@ -2,6 +2,7 @@
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Skills;
+using RoguelikeEngine.VisualEffects;
 using System;
 using System.Collections.Generic;
 using System.Linq;

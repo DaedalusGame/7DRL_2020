@@ -9,6 +9,7 @@ using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Events;
 using RoguelikeEngine.Traits;
+using RoguelikeEngine.VisualEffects;
 
 namespace RoguelikeEngine
 {
@@ -316,14 +317,30 @@ namespace RoguelikeEngine
 
         public DefenseDown() : base()
         {
-            Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, -0.1));
-            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3) { Base = false });
         }
 
         [Construct("defense_down")]
         public static DefenseDown Construct(Context context)
         {
             return new DefenseDown();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatPercent.Stackable(this, Stat.Defense, -0.1));
+            Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, -3) { Base = false });
+        }
+
+        public override void OnStackChange(int delta)
+        {
+            base.OnStackChange(delta);
+            if(delta > 0 && Creature is Creature creature)
+            {
+                var cloak = new Cloak(creature, 30);
+                cloak.OnUpdate += c => Cloak.PowerDown(c, 5, ColorMatrix.Greyscale() * ColorMatrix.Tint(Color.SteelBlue), LerpHelper.QuadraticOut, LerpHelper.QuadraticOut, 20);
+            }
         }
 
         public override string ToString()
@@ -357,9 +374,14 @@ namespace RoguelikeEngine
             Effect.Apply(new EffectStat.Stackable(this, Stat.Defense, 3) { Base = false });
         }
 
-        public override bool CanCombine(StatusEffect other)
+        public override void OnStackChange(int delta)
         {
-            return other is DefenseUp;
+            base.OnStackChange(delta);
+            if (delta > 0 && Creature is Creature creature)
+            {
+                var cloak = new Cloak(creature, 30);
+                cloak.OnUpdate += c => Cloak.PowerUp(c, 5, ColorMatrix.Greyscale() * ColorMatrix.Tint(Color.SteelBlue), LerpHelper.QuadraticOut, LerpHelper.QuadraticOut, 20);
+            }
         }
 
         public override string ToString()
@@ -477,6 +499,41 @@ namespace RoguelikeEngine
         public override bool CanCombine(StatusEffect other)
         {
             return other is Stun;
+        }
+
+        public override string ToString()
+        {
+            return $"{base.ToString()} x{Stacks}";
+        }
+    }
+
+    class Paralyze : StatusEffect
+    {
+        public override string Name => $"Paralyze";
+        public override string Description => $"Reduces speed by 95%.";
+
+        public override int MaxStacks => 1;
+
+        public Paralyze() : base()
+        {
+        }
+
+        [Construct("paralyze")]
+        public static Paralyze Construct(Context context)
+        {
+            return new Paralyze();
+        }
+
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new EffectStatPercent(this, Stat.Speed, -0.95));
+        }
+
+        public override bool CanCombine(StatusEffect other)
+        {
+            return other is Paralyze;
         }
 
         public override string ToString()
@@ -1122,6 +1179,26 @@ namespace RoguelikeEngine
         public static HagsFlesh Construct(Context context)
         {
             return new HagsFlesh();
+        }
+    }
+
+    class Satiated : StatusEffect
+    {
+        public override string Name => $"Satiated";
+        public override string Description => $"Increases HP regeneration.";
+
+        public override int MaxStacks => 1;
+
+        public Satiated()
+        {
+        }
+
+        //TODO: Increase HP regeneration
+
+        [Construct("satiated")]
+        public static Satiated Construct(Context context)
+        {
+            return new Satiated();
         }
     }
 

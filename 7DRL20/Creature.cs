@@ -4,6 +4,7 @@ using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
 using RoguelikeEngine.Events;
 using RoguelikeEngine.Traits;
+using RoguelikeEngine.VisualEffects;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -529,9 +530,35 @@ namespace RoguelikeEngine
         Cast,
     }
 
+    struct PoseData
+    {
+        public CreaturePose Pose;
+        public CreaturePose PoseLast;
+        public int Frame;
+        public int PoseFrame;
+
+        public PoseData(CreaturePose pose, CreaturePose poseLast, int frame, int poseFrame)
+        {
+            Pose = pose;
+            PoseLast = poseLast;
+            Frame = frame;
+            PoseFrame = poseFrame;
+        }
+    }
+
     abstract class CreatureRender
     {
-        public abstract void Draw(SceneGame scene, Creature creature);
+        public PoseData GetPoseData(Creature creature)
+        {
+            return new PoseData(creature.VisualPose(), creature.PoseLast, creature.Frame, creature.PoseFrame);
+        }
+
+        public virtual void Draw(SceneGame scene, Creature creature)
+        {
+            DrawFrame(scene, creature.VisualPosition(), GetPoseData(creature), creature.VisualFacing(), Matrix.Identity, Color.White, creature.VisualColor());
+        }
+
+        public abstract void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix);
     }
 
     class CreaturePaperdollRender : CreatureRender
@@ -541,11 +568,11 @@ namespace RoguelikeEngine
         public ColorMatrix BodyColor = ColorMatrix.Identity;
         public ColorMatrix HeadColor = ColorMatrix.Identity;
 
-        public override void Draw(SceneGame scene, Creature creature)
+        public override void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix)
         {
             var mirror = Microsoft.Xna.Framework.Graphics.SpriteEffects.None;
             int facingOffset = 0;
-            switch (creature.VisualFacing())
+            switch (facing)
             {
                 case (Facing.North):
                     facingOffset = 0;
@@ -563,13 +590,13 @@ namespace RoguelikeEngine
             }
 
             int frameOffset = 0;
-            switch (creature.VisualPose())
+            switch (poseData.Pose)
             {
                 case (CreaturePose.Stand):
                     frameOffset = 1;
                     break;
                 case (CreaturePose.Walk):
-                    double lerp = LerpHelper.ForwardReverse(0, 2, (creature.Frame / 50.0) % 1);
+                    double lerp = LerpHelper.ForwardReverse(0, 2, (poseData.Frame / 50.0) % 1);
                     frameOffset = (int)Math.Round(lerp);
                     break;
                 case (CreaturePose.Attack):
@@ -582,15 +609,15 @@ namespace RoguelikeEngine
 
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(BodyColor * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(BodyColor * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Body, facingOffset + frameOffset, creature.VisualPosition(), mirror, Color.White, 0);
+            scene.DrawSprite(Body, facingOffset + frameOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
             scene.PushSpriteBatch(shader: scene.Shader, shaderSetup: (matrix, projection) =>
             {
-                scene.SetupColorMatrix(HeadColor * creature.VisualColor(), matrix, projection);
+                scene.SetupColorMatrix(HeadColor * colorMatrix, transform * matrix, projection);
             });
-            scene.DrawSprite(Head, facingOffset + frameOffset, creature.VisualPosition(), mirror, Color.White, 0);
+            scene.DrawSprite(Head, facingOffset + frameOffset, pos, mirror, color, 0);
             scene.PopSpriteBatch();
         }
     }
@@ -706,7 +733,11 @@ namespace RoguelikeEngine
         
         public TurnTaker Control;
 
-        public virtual Vector2 CenterOffset => new Vector2(8, 8);
+        public virtual Vector2 TopLeft => new Vector2(0, 0);
+        public virtual Vector2 BottomRight => new Vector2(16, 16);
+        public Vector2 TopOffset => new Vector2((BottomRight.X - TopLeft.X) / 2, TopLeft.Y);
+        public Vector2 CenterOffset => new Vector2((BottomRight.X - TopLeft.X) / 2, (BottomRight.Y - TopLeft.Y) / 2);
+        public Vector2 BottomOffset => new Vector2((BottomRight.X - TopLeft.X) / 2, BottomRight.Y);
 
         public Vector2 ActualPosition => new Vector2(X * 16, Y * 16);
         public Vector2 ActualTarget => ActualPosition + CenterOffset;
@@ -714,6 +745,7 @@ namespace RoguelikeEngine
         Vector2 IHasPosition.VisualPosition => VisualPosition();
         public virtual Vector2 VisualTarget => VisualPosition() + CenterOffset;
        
+        public Func<Vector2> MaskTarget => () => VisualPosition() + Mask.GetRandomPixel(Random);
 
         public Creature(SceneGame world)
         {
@@ -865,6 +897,20 @@ namespace RoguelikeEngine
             Frame++;
             UpdatePose();
             CurrentActions.Update();
+
+            /*if (Frame % 5 == 0)
+            {
+                var afterimage = new ParticleAfterImageLocked(this, LerpHelper.QuadraticOut, LerpHelper.QuadraticOut, 20)
+                {
+                    Position = VisualPosition(),
+                    ColorMatrix = ColorMatrix.Greyscale() * ColorMatrix.Tint(new Color(255, 64, 16)),
+                    Scale = 1f,
+                    ScaleEnd = 2f,
+                    Pass = DrawPass.Effect,
+                    Origin = TopOffset,
+                };
+                //afterimage.SetPose(this, TopOffset);
+            }*/
         }
 
         private void UpdatePose()

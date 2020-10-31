@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Enemies;
+using RoguelikeEngine.VisualEffects;
 using System;
 using System.Collections.Generic;
 using System.Linq;

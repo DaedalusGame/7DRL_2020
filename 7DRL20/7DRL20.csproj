@@ -168,6 +168,10 @@
     <Compile Include="Traits\Traits.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="VisualEffect.cs" />
+    <Compile Include="VisualEffects\Anchored.cs" />
+    <Compile Include="VisualEffects\Particle.cs" />
+    <Compile Include="VisualEffects\Screen.cs" />
+    <Compile Include="VisualEffects\Preset.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LibNoise, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -394,6 +398,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\bullet_oil.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\bullet_paralyze.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\bullet_poison.png">

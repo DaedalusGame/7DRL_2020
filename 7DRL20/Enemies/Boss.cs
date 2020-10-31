@@ -3,6 +3,7 @@ using RoguelikeEngine.Attacks;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Skills;
 using RoguelikeEngine.Traits;
+using RoguelikeEngine.VisualEffects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace RoguelikeEngine.Enemies
 {
     class Gashwal : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public Gashwal(SceneGame world) : base(world)
         {
@@ -51,7 +52,7 @@ namespace RoguelikeEngine.Enemies
 
     class GashwalHairy : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public GashwalHairy(SceneGame world) : base(world)
         {
@@ -93,7 +94,7 @@ namespace RoguelikeEngine.Enemies
 
     class Pugnbaba : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public Pugnbaba(SceneGame world) : base(world)
         {
@@ -126,7 +127,7 @@ namespace RoguelikeEngine.Enemies
 
     class Leo : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public Leo(SceneGame world) : base(world)
         {
@@ -159,7 +160,7 @@ namespace RoguelikeEngine.Enemies
 
     class Marduke : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public Marduke(SceneGame world) : base(world)
         {
@@ -192,7 +193,7 @@ namespace RoguelikeEngine.Enemies
 
     class DeathGolem : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public DeathGolem(SceneGame world) : base(world)
         {
@@ -223,7 +224,7 @@ namespace RoguelikeEngine.Enemies
             Skills.Add(new SkillBeamDisintegrate());
             Skills.Add(new SkillSoulMissile());
             Skills.Add(new SkillWhirlwind());
-            //Skills.Add(new SkillDeployBomb());
+            Skills.Add(new SkillDeployBomb());
         }
 
         [Construct("death_golem")]
@@ -269,7 +270,7 @@ namespace RoguelikeEngine.Enemies
 
     class DeathGolemBody : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public DeathGolemBody(SceneGame world) : base(world)
         {
@@ -294,7 +295,7 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillWhirlwind());
-            //Skills.Add(new SkillDeployBomb());
+            Skills.Add(new SkillDeployBomb());
         }
 
         [Construct("death_golem_body")]
@@ -487,7 +488,7 @@ namespace RoguelikeEngine.Enemies
 
     class Erebizo : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public Erebizo(SceneGame world) : base(world)
         {
@@ -524,7 +525,7 @@ namespace RoguelikeEngine.Enemies
 
     class EnderErebizo : Enemy
     {
-        public override Vector2 CenterOffset => new Vector2(16, 16);
+        public override Vector2 BottomRight => new Vector2(32, 32);
 
         public EnderErebizo(SceneGame world) : base(world)
         {

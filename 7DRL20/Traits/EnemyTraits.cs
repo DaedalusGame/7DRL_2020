@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
+using RoguelikeEngine.VisualEffects;
 
 namespace RoguelikeEngine.Traits
 {

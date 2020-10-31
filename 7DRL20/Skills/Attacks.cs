@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
 using RoguelikeEngine.Enemies;
+using RoguelikeEngine.VisualEffects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -106,6 +107,37 @@ namespace RoguelikeEngine.Skills
             attack.Elements.Add(Element.Slash, 0.5);
             attack.Elements.Add(Element.Thunder, 0.5);
             return attack;
+        }
+    }
+
+    class SkillDevour : SkillAttackBase
+    {
+        public SkillDevour() : base("Devour", "Attack", 0, 0, float.PositiveInfinity)
+        {
+        }
+
+        protected override Attack Attack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.ExtraEffects.Add(new AttackPhysical());
+            attack.ExtraEffects.Add(new AttackEndFunction(RoutineDevour));
+            attack.SetParameters(40, 2, 1);
+            attack.Elements.Add(Element.Slash, 0.5);
+            attack.Elements.Add(Element.Pierce, 0.5);
+            return attack;
+        }
+
+        private IEnumerable<Wait> RoutineDevour(Attack attack)
+        {
+            if (attack.FinalDamage.Sum(x => x.Value) > 0)
+            {
+                attack.Attacker.AddStatusEffect(new Satiated()
+                {
+                    Duration = new Slider(50),
+                    Buildup = 1,
+                });
+            }
+            yield return Wait.NoWait;
         }
     }
 
@@ -323,6 +355,56 @@ namespace RoguelikeEngine.Skills
             return attack;
         }
     }
+
+    class SkillVenomSpit : SkillProjectileBase
+    {
+        int MaxDistance = 2;
+
+        public SkillVenomSpit() : base("Venom Spit", "Paralyzes target.", 1, 3, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InLineOfSight(user, user.AggroTarget, MaxDistance, 0);
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            if (target is Facing facing)
+            {
+                Point velocity = facing.ToOffset();
+                Consume();
+                ShowSkill(user);
+                yield return user.WaitSome(20);
+                var pos = new Vector2(user.X * 16, user.Y * 16);
+                user.VisualPosition = user.Slide(pos + new Vector2(velocity.X * 8, velocity.Y * 8), pos, LerpHelper.Linear, 10);
+                user.VisualPose = user.FlickPose(CreaturePose.Attack, CreaturePose.Stand, 5);
+                yield return Scheduler.Instance.RunAndWait(Shoot(user, user.Tile, velocity));
+            }
+        }
+
+        private IEnumerable<Wait> Shoot(Creature user, Tile tile, Point velocity)
+        {
+            Bullet bullet = new BulletTrail(user.World, SpriteLoader.Instance.AddSprite("content/bullet_paralyze"), Vector2.Zero, ColorMatrix.Identity, Color.DarkCyan, 0);
+            Projectile projectile = new Projectile(bullet);
+            projectile.ExtraEffects.Add(new ProjectileImpactAttack(BulletAttack));
+            projectile.ExtraEffects.Add(new ProjectileCollideSolid());
+            return projectile.ShootStraight(user, tile, velocity, 3, MaxDistance);
+        }
+
+        private Attack BulletAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.StatusEffects.Add(new Paralyze()
+            {
+                Buildup = 1,
+                Duration = new Slider(5),
+            });
+            return attack;
+        }
+    }
+
 
     abstract class SkillVolleyBase : SkillProjectileBase
     {
@@ -1026,6 +1108,28 @@ namespace RoguelikeEngine.Skills
             return attack;
         }
     }*/
+
+    class SkillRegurgitate : Skill
+    {
+        public SkillRegurgitate() : base("Regurgitate", $"Ranged {Element.Bludgeon.FormatString} Attack", 2, 5, float.PositiveInfinity)
+        {
+        }
+
+        public override bool CanEnemyUse(Enemy user)
+        {
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 5);
+        }
+
+        public override object GetEnemyTarget(Enemy user)
+        {
+            return null;
+        }
+
+        public override IEnumerable<Wait> RoutineUse(Creature user, object target)
+        {
+            yield return Wait.NoWait;
+        }
+    }
 
     class SkillSoulMissile : Skill
     {
