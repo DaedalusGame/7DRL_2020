@@ -764,6 +764,11 @@ namespace RoguelikeEngine
             return (float)random.NextDouble();
         }
 
+        public static float NextAngle(this Random random)
+        {
+            return random.NextFloat() * MathHelper.TwoPi;
+        }
+
         public static Vector2 Mirror(this Vector2 vector, SpriteEffects mirror)
         {
             if (mirror.HasFlag(SpriteEffects.FlipHorizontally))

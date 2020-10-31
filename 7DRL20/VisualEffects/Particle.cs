@@ -55,6 +55,7 @@ namespace RoguelikeEngine.VisualEffects
         public DrawPass Pass = DrawPass.Effect;
 
         public Action<ParticleDynamic> OnUpdate;
+        public Action<ParticleDynamic> OnDestroy;
 
         public ParticleDynamic(SceneGame world, int time) : base(world)
         {
@@ -136,7 +137,10 @@ namespace RoguelikeEngine.VisualEffects
         {
             base.Update();
             if (Frame.Done)
+            {
+                OnDestroy?.Invoke(this);
                 this.Destroy();
+            }
             OnUpdate?.Invoke(this);
         }
 
@@ -272,7 +276,7 @@ namespace RoguelikeEngine.VisualEffects
         float FadeSlide;
 
         public override Vector2 Position => base.Position + AnimateJump(Target - base.Position, Height, VelocityLerp);
-        public override float Scale => (float)ScaleLerp(base.Scale, 0, (Slide - 0.9) / 0.1);
+        public override float Scale => Slide > FadeSlide ? (float)ScaleLerp(base.Scale, 0, (Slide - FadeSlide) / (1 - FadeSlide)) : base.Scale;
 
         public ParticleThrow(SceneGame world, SpriteReference sprite, Vector2 start, Vector2 end, float height, LerpHelper.Delegate velocityLerp, LerpHelper.Delegate scaleLerp, int time, float fadeSlide) : base(world, time)
         {
@@ -342,6 +346,109 @@ namespace RoguelikeEngine.VisualEffects
         {
             Target = target;
             VelocityLerp = velocityLerp;
+        }
+    }
+
+    class ParticleCircle : VisualEffect
+    {
+        public SpriteReference Sprite;
+
+        public virtual Vector2 Position
+        {
+            get;
+            set;
+        }
+        public virtual float AngleStart
+        {
+            get;
+            set;
+        }
+        public virtual float AngleEnd
+        {
+            get;
+            set;
+        } = MathHelper.TwoPi;
+        public virtual float Radius
+        {
+            get;
+            set;
+        }
+        public virtual float TexOffset
+        {
+            get;
+            set;
+        }
+        public virtual float Start
+        {
+            get;
+            set;
+        }
+        public virtual float End
+        {
+            get;
+            set;
+        } = 1;
+        public virtual Color Color
+        {
+            get;
+            set;
+        } = Color.White;
+        public virtual ColorMatrix? ColorMatrix
+        {
+            get;
+            set;
+        }
+
+        public int Precision = 100;
+        public int TexPrecision;
+
+        public DrawPass Pass = DrawPass.Effect;
+
+        public ParticleCircle(SceneGame world, int time) : base(world)
+        {
+            Frame = new Slider(time);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            if (Frame.Done)
+            {
+                this.Destroy();
+            }
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            if (ColorMatrix.HasValue)
+            {
+                scene.SetupColorMatrix(ColorMatrix.Value, scene.WorldTransform, scene.Projection);
+            }
+            scene.DrawCircle(Sprite, Position, Precision, AngleStart, AngleEnd, Radius, TexOffset, TexPrecision, Start, End);
+        }
+
+        public override IEnumerable<DrawPass> GetDrawPasses()
+        {
+            yield return Pass;
+        }
+    }
+
+    class ParticleRing : ParticleCircle
+    {
+        public float Thickness;
+        public float StartRadius;
+        public LerpHelper.Delegate InnerLerp;
+        public LerpHelper.Delegate OuterLerp;
+
+        public override float Start => (float)InnerLerp(StartRadius - Thickness, 1, Frame.Slide);
+        public override float End => (float)OuterLerp(StartRadius, 1, Frame.Slide);
+
+        public ParticleRing(SceneGame world, float startRadius, float thickness, LerpHelper.Delegate innerLerp, LerpHelper.Delegate outerLerp, int time) : base(world, time)
+        {
+            Thickness = thickness;
+            StartRadius = startRadius;
+            InnerLerp = innerLerp;
+            OuterLerp = outerLerp;
         }
     }
 }

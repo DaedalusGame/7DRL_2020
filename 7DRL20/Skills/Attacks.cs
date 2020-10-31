@@ -1062,62 +1062,24 @@ namespace RoguelikeEngine.Skills
         }
     }
 
-    /*class SkillCannon : Skill
+    class SkillRegurgitate : Skill
     {
-        public SkillCannon() : base("Cannon", "Ranged Fire Attack", 2, 3, float.PositiveInfinity)
+        float Arc = MathHelper.TwoPi / 8;
+        int Distance = 4;
+        int SplashDistance = 2;
+
+        public SkillRegurgitate() : base("Regurgitate", $"Ranged {Element.Bludgeon.FormatString} Attack", 2, 0, float.PositiveInfinity)
         {
         }
 
         public override bool CanUse(Creature user)
         {
-            if (user is Enemy enemy && !InLineOfSight(user, enemy.AggroTarget, 8))
-                return false;
-            return base.CanUse(user);
-        }
-
-        public override IEnumerable<Wait> RoutineUse(Creature user)
-        {
-            Consume();
-            var offset = user.Facing.ToOffset();
-            bool hit = false;
-            Vector2 pos = new Vector2(user.X*16, user.Y*16);
-            ShowSkill(user);
-            yield return user.WaitSome(50);
-            user.VisualPosition = user.Slide(pos + new Vector2(offset.X * -8, offset.Y * -8), pos, LerpHelper.Linear, 10);
-            yield return user.WaitSome(20);
-            for(int i = 1; i <= 8; i++)
-            {
-                var shootTile = user.Tile.GetNeighbor(i * offset.X, i * offset.Y);
-                foreach(var target in shootTile.Creatures)
-                {
-                    
-                    yield return user.Attack(target, offset.X, offset.Y, ExplosionAttack);
-                    hit = true;
-                    break;
-                }
-                if (hit)
-                    break;
-            }
-        }
-
-        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
-        {
-            Attack attack = new Attack(attacker, defender);
-            attack.Elements.Add(Element.Fire, 1.0);
-            attack.Elements.Add(Element.Bludgeon, 1.0);
-            return attack;
-        }
-    }*/
-
-    class SkillRegurgitate : Skill
-    {
-        public SkillRegurgitate() : base("Regurgitate", $"Ranged {Element.Bludgeon.FormatString} Attack", 2, 5, float.PositiveInfinity)
-        {
+            return base.CanUse(user) && user.GetStatusStacks<Satiated>() >= 1;
         }
 
         public override bool CanEnemyUse(Enemy user)
         {
-            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, 5);
+            return base.CanEnemyUse(user) && InRange(user, user.AggroTarget, Distance);
         }
 
         public override object GetEnemyTarget(Enemy user)
@@ -1125,9 +1087,80 @@ namespace RoguelikeEngine.Skills
             return null;
         }
 
+        public IEnumerable<Tile> GetPossibleTargets(Creature user)
+        {
+            var angle = Util.VectorToAngle(user.Facing.ToOffset().ToVector2());
+            List<Tile> tiles = new List<Tile>();
+            foreach (var tile in user.Tile.GetNearby(user.Mask.GetRectangle(user.X, user.Y), Distance).Where(tile => InArc(user.ActualTarget, tile.VisualTarget, angle - Arc / 2, angle + Arc / 2)))
+            {
+                tiles.Add(tile);
+            }
+            return tiles.Shuffle(Random);
+        }
+
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            yield return Wait.NoWait;
+            Consume();
+            ShowSkill(user);
+            var satiated = user.GetStatusEffect<Satiated>();
+            satiated?.AddBuildup(-1);
+            yield return user.WaitSome(50);
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 20);
+            List<Wait> waits = new List<Wait>();
+            foreach (var targetTile in GetPossibleTargets(user).Take(5))
+            {
+                waits.Add(Scheduler.Instance.RunAndWait(RoutineChunk(user, targetTile)));
+                yield return new WaitTime(3);
+            }
+            yield return new WaitAll(waits);
+        }
+
+        public IEnumerable<Wait> RoutineChunk(Creature user, Tile targetTile)
+        {
+            var fleshLump = SpriteLoader.Instance.AddSprite("content/flesh_lump");
+            var fleshChunk = SpriteLoader.Instance.AddSprite("content/flesh_chunk");
+            var ring = SpriteLoader.Instance.AddSprite("content/ring_spark_thin");
+
+            var ball = new ParticleThrow(user.World, fleshLump, user.VisualTarget, targetTile.VisualTarget, 40, LerpHelper.Linear, LerpHelper.QuadraticOut, 20, 1.0f);
+            ball.Angle = Random.NextAngle();
+            ball.OnDestroy += p =>
+            {
+                int count = Random.Next(4, 8);
+                for (int i = 0; i < count; i++)
+                {
+                    var dist = Random.NextFloat() * 32 + 16;
+                    var offset = Util.AngleToVector(Random.NextAngle()) * dist;
+                    var height = Random.NextFloat() * 10 + 10;
+                    var chunk = new ParticleThrow(user.World, fleshChunk, p.Position, p.Position + offset, height, LerpHelper.Linear, LerpHelper.QuadraticOut, Random.Next(10, 20), 0.9f)
+                    {
+                        SubImage = Random.Next(fleshChunk.SubImageCount),
+                    };
+                }
+                new ParticleRing(user.World, 0.5f, 0.5f, LerpHelper.QuadraticOut, LerpHelper.QuadraticOut, 20)
+                {
+                    Sprite = ring,
+                    TexPrecision = 20,
+                    Position = p.Position,
+                    Radius = 20,
+                    ColorMatrix = ColorMatrix.Tint(new Color(199, 65, 65)),
+                    Pass = DrawPass.EffectLowAdditive,
+                };
+            };
+            yield return new WaitTime(20);
+            List<Wait> waits = new List<Wait>();
+            foreach(var targetCreature in SkillUtil.GetCircularArea(targetTile, SplashDistance).SelectMany(splashTile => splashTile.Creatures).Where(creature => creature != user).Distinct())
+            {
+                var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), SplashAttack);
+                waits.Add(wait);
+            }
+            yield return new WaitAll(waits);
+        }
+
+        private static Attack SplashAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.Bludgeon, 1.0);
+            return attack;
         }
     }
 

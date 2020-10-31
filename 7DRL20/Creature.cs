@@ -898,6 +898,40 @@ namespace RoguelikeEngine
             UpdatePose();
             CurrentActions.Update();
 
+            /*if (Frame % 3 == 0 && Frame % 200 < 50)
+            {
+                var fleshLump = SpriteLoader.Instance.AddSprite("content/flesh_lump");
+                var fleshChunk = SpriteLoader.Instance.AddSprite("content/flesh_chunk");
+                var ring = SpriteLoader.Instance.AddSprite("content/ring_spark_thin");
+
+                Tile targetTile = SkillUtil.GetCircularArea(this, 3).Shuffle(Random).First();
+
+                var ball = new ParticleThrow(World, fleshLump, VisualTarget, targetTile.VisualTarget, 40, LerpHelper.Linear, LerpHelper.QuadraticOut, 20, 1.0f);
+                ball.Angle = Random.NextAngle();
+                ball.OnDestroy += p =>
+                {
+                    int count = Random.Next(4, 8);
+                    for (int i = 0; i < count; i++) {
+                        var dist = Random.NextFloat() * 32 + 16;
+                        var offset = Util.AngleToVector(Random.NextAngle()) * dist;
+                        var height = Random.NextFloat() * 10 + 10;
+                        var chunk = new ParticleThrow(World, fleshChunk, p.Position, p.Position + offset, height, LerpHelper.Linear, LerpHelper.QuadraticOut, Random.Next(10,20), 0.9f)
+                        {
+                            SubImage = Random.Next(fleshChunk.SubImageCount),
+                        };
+                    }
+                    new ParticleRing(World, 0.5f, 0.5f, LerpHelper.QuadraticOut, LerpHelper.QuadraticOut, 20)
+                    {
+                        Sprite = ring,
+                        TexPrecision = 20,
+                        Position = p.Position,
+                        Radius = 20,
+                        ColorMatrix = ColorMatrix.Identity,
+                        Pass = DrawPass.EffectLowAdditive,
+                    };
+                };
+            }*/
+
             /*if (Frame % 5 == 0)
             {
                 var afterimage = new ParticleAfterImageLocked(this, LerpHelper.QuadraticOut, LerpHelper.QuadraticOut, 20)
