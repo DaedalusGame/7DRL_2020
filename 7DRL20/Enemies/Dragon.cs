@@ -92,6 +92,7 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectStatMultiply(this, Element.Thunder.DamageRate, -1));
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Dragon));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.LightningField));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillLightning());

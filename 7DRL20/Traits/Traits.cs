@@ -71,6 +71,7 @@ namespace RoguelikeEngine.Traits
         public static Trait Slaughtering = new TraitSlaughtering();
         public static Trait LifeSteal = new TraitLifeSteal();
         public static Trait Sparking = new TraitSparking();
+        public static Trait LightningField = new TraitLightningField();
 
         public static Trait Undead = new TraitUndead();
         public static Trait SplitGreenSlime = new TraitSplitGreenSlime();

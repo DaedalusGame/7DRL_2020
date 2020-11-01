@@ -301,6 +301,145 @@ namespace RoguelikeEngine.Traits
         }
     }
 
+    class TraitLightningField : Trait
+    {
+        struct Ray {
+            public Point Position;
+            public Point Direction;
+            public Point Origin => Position + Direction;
+
+            public Ray(Point position, Point direction)
+            {
+                Position = position;
+                Direction = direction;
+            }
+
+            public override int GetHashCode()
+            {
+                return Origin.GetHashCode() + Direction.GetHashCode() * 37;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if(obj is Ray other)
+                {
+                    return Origin.Equals(other.Origin) && Direction.Equals(other.Direction);
+                }
+                return base.Equals(obj);
+            }
+
+            public override string ToString()
+            {
+                return Position + " " + Direction;
+            }
+        }
+
+        public TraitLightningField() : base("lightning_field", "Lightning Field", $"Every turn, arc to nearby creatures of the same type, dealing {Element.Thunder.FormatString} damage to all targets in the arc.", new Color(128, 112, 128))
+        {
+            Effect.Apply(new OnTurn(this, RoutineField));
+        }
+
+        private IEnumerable<Wait> RoutineField(TurnEvent turn)
+        {
+            Creature user = turn.Creature;
+            var rays = GetRays(user);
+
+            var tileRays = rays.Select(r => GetBranch(user, r, 8)).Where(r => r != null);
+            var waits = new List<Wait>();
+
+            int traitLvl = user.GetTrait(this);
+
+            foreach (var tileRay in tileRays.Take(traitLvl))
+            {
+                waits.Add(RoutineBranch(user, tileRay));
+                yield return new WaitTime(3);
+            }
+
+            yield return new WaitAll(waits);
+        }
+
+        private Wait RoutineBranch(Creature user, IList<Tile> tileRay)
+        {
+            var lightning = SpriteLoader.Instance.AddSprite("content/lightning");
+            var startTile = tileRay.First();
+            var endTile = tileRay.Last();
+            new LightningSpark(user.World, lightning, startTile.VisualTarget, endTile.VisualTarget, 5);
+            //new Arc(user.World, lightning, () => startTile.VisualTarget, () => endTile.VisualTarget, Vector2.Zero, Vector2.Zero, 1, 20);
+
+            var creatures = tileRay.SelectMany(t => t.Creatures).Distinct();
+            var waits = new List<Wait>();
+            foreach (var targetCreature in creatures.Where(c => !SameCreatureType(user, c)))
+            {
+                var wait = user.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - user.VisualTarget), BeamAttack);
+                waits.Add(wait);
+            }
+            return new WaitAll(waits);
+        }
+
+        private static Attack BeamAttack(Creature user, IEffectHolder target)
+        {
+            Attack attack = new Attack(user, target);
+            attack.Elements.Add(Element.Thunder, 1.0);
+            return attack;
+        }
+
+        private IEnumerable<Ray> GetRays(Creature user)
+        {
+            List<Ray> rays = new List<Ray>();
+
+            foreach(var point in user.Mask)
+            {
+                rays.Add(new Ray(point, new Point(+1, 0)));
+                rays.Add(new Ray(point, new Point(-1, 0)));
+                rays.Add(new Ray(point, new Point(0, +1)));
+                rays.Add(new Ray(point, new Point(0, -1)));
+                rays.Add(new Ray(point, new Point(+1, +1)));
+                rays.Add(new Ray(point, new Point(-1, -1)));
+                rays.Add(new Ray(point, new Point(-1, +1)));
+                rays.Add(new Ray(point, new Point(+1, -1)));
+            }
+
+            rays.RemoveAll(p => user.Mask.PointLookup.Contains(p.Position + p.Direction));
+
+            return rays.GroupBy(p => p.Origin).Select(FilterRay).Where(x => x.HasValue).Select(x => x.Value).ToList();
+        }
+
+        private Ray? FilterRay(IEnumerable<Ray> rays)
+        {
+            var straightRays = rays.Where(r => r.Direction.X == 0 || r.Direction.Y == 0);
+            var diagonalRays = rays.Where(r => r.Direction.X != 0 && r.Direction.Y != 0);
+
+            if (straightRays.Count() == 1)
+                return straightRays.First();
+            else if (diagonalRays.Count() == 1)
+                return diagonalRays.First();
+            else
+                return null;
+        }
+
+        private IList<Tile> GetBranch(Creature user, Ray ray, int distance)
+        {
+            List<Tile> tiles = new List<Tile>();
+            Tile origin = user.Tile.GetNeighbor(ray.Position.X, ray.Position.Y);
+            tiles.Add(origin);
+            for (int i = 1; i < distance; i++)
+            {
+                Tile currentTile = origin.GetNeighbor(ray.Direction.X * i, ray.Direction.Y * i);
+                tiles.Add(currentTile);
+                if (i > 1 && currentTile.Creatures.Any(c => SameCreatureType(user, c)))
+                    return tiles;
+                if (currentTile.Solid || currentTile.Creatures.Contains(user))
+                    break;
+            }
+            return null;
+        }
+
+        private static bool SameCreatureType(Creature a, Creature b)
+        {
+            return a.GetType() == b.GetType(); //TODO: Change this, this is horrid.
+        }
+    }
+
     class TraitBroil : Trait
     {
         public TraitBroil() : base("broil", "Broil", $"When targetted by an attack that would deal {Element.Fire.FormatString} damage, activate each Boiling status effect once.", new Color(255, 64, 16))

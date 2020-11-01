@@ -86,8 +86,8 @@ namespace RoguelikeEngine.Enemies
             };
             Mask.Add(Point.Zero);
 
-            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 100));
-            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 240));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 30));
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
 

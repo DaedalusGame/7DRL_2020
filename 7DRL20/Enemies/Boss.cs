@@ -209,8 +209,7 @@ namespace RoguelikeEngine.Enemies
             Mask.Add(new Point(1, 0));
             Mask.Add(new Point(1, 1));
 
-            //Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3700));
-            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 1));
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 3700));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 1));
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Boss));

@@ -33,7 +33,7 @@ namespace RoguelikeEngine.Skills
             var waitForDamage = new List<Wait>();
             foreach (var explosionTile in Tiles)
             {
-                foreach (var targetCreature in explosionTile.Creatures)
+                foreach (var targetCreature in explosionTile.Creatures.Where(x => !x.Dead))
                 {
                     waitForDamage.Add(Attacker.Attack(targetCreature, SkillUtil.SafeNormalize(targetCreature.VisualTarget - Origin), Attack));
                 }

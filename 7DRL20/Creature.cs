@@ -402,7 +402,7 @@ namespace RoguelikeEngine
 
     class Mask : IEnumerable<Point>
     {
-        HashSet<Point> PointLookup = new HashSet<Point>();
+        public HashSet<Point> PointLookup = new HashSet<Point>();
         List<Point> PointList = new List<Point>();
 
         public void Add(Point point)
