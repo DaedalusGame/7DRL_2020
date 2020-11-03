@@ -213,7 +213,7 @@ namespace RoguelikeEngine
             return attack.Elements.Any(e => IsElement(e.Key, element));
         }
 
-        private static bool IsElement(Element a, Element b)
+        public static bool IsElement(Element a, Element b)
         {
             if (a == b)
                 return true;

@@ -907,7 +907,8 @@ namespace RoguelikeEngine.MapGeneration
 
         public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
         {
-            var dijkstraMap = Util.Dijkstra(a, b, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, generator.GetWeightStraight, generator.GetNeighbors);
+            var costMap = new CostMapFunction(generator.GetWeightStraight);
+            var dijkstraMap = Util.Dijkstra(a, b, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, costMap, generator.GetNeighbors(Point.Zero));
             return dijkstraMap.FindPath(b);
         }
 
@@ -960,7 +961,8 @@ namespace RoguelikeEngine.MapGeneration
 
         public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
         {
-            var dijkstraMap = Util.Dijkstra(a, b, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, generator.GetWeightStraight, generator.GetAllNeighbors);
+            var costMap = new CostMapFunction(generator.GetWeightStraight);
+            var dijkstraMap = Util.Dijkstra(a, b, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, costMap, generator.GetAllNeighbors(Point.Zero));
             return dijkstraMap.FindPath(b);
         }
 
@@ -1004,7 +1006,8 @@ namespace RoguelikeEngine.MapGeneration
 
         public override IEnumerable<Point> GetPath(MapGenerator generator, Point a, Point b)
         {
-            var dijkstraMap = Util.Dijkstra(a, b, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, generator.GetWeightWavy, generator.GetNeighbors);
+            var costMap = new CostMapFunction(generator.GetWeightWavy);
+            var dijkstraMap = Util.Dijkstra(a, b, generator.Width, generator.Height, new Rectangle(0, 0, generator.Width, generator.Height), 50, costMap, generator.GetNeighbors(Point.Zero));
             return dijkstraMap.FindPath(b);
 
             //return Util.DrunkardWalk(a, b, generator.GetNeighbors, generator.Random);

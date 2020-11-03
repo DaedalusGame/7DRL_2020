@@ -1234,4 +1234,58 @@ namespace RoguelikeEngine
             Buildup += 1;
         }
     }
+
+    class Forcefield : StatusEffect
+    {
+        public override string Name => $"Forcefield";
+        public override string Description => GetDescription();
+
+        public override int MaxStacks => 1;
+
+        public Element WeakElement;
+
+        public Forcefield()
+        {
+        }
+
+        public Forcefield SetElement(Element element)
+        {
+            WeakElement = element;
+            this.ClearEffects();
+            Effect.Apply(new EffectStatPercent(this, WeakElement.DamageRate, 1.0));
+            foreach (var otherElement in Element.MagicalElements.Where(e => SkillUtil.IsElement(WeakElement, element)))
+            {
+                Effect.Apply(new EffectStatPercent(this, otherElement.DamageRate, -1.0));
+            }
+            return this;
+        }
+
+        [Construct("forcefield")]
+        public static Forcefield Construct(Context context)
+        {
+            return new Forcefield();
+        }
+
+        private string GetDescription()
+        {
+            string statBlock = String.Empty;
+            statBlock += $"Weak to {WeakElement.FormatString}\n";
+            statBlock += $"Resistant to all other elements\n";
+
+            return statBlock.Trim('\n');
+        }
+
+        public override JToken WriteJson()
+        {
+            JToken json = base.WriteJson();
+            json["weakElement"] = WeakElement.ID;
+            return json;
+        }
+
+        public override void ReadJson(JToken json, Context context)
+        {
+            base.ReadJson(json, context);
+            SetElement(Element.GetElement(json["weakElement"].Value<string>()));
+        }
+    }
 }

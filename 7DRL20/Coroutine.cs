@@ -6,6 +6,18 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine
 {
+    class Result<T>
+    {
+        public bool HasResult;
+        public T Value;
+
+        public void Write(T value)
+        {
+            Value = value;
+            HasResult = true;
+        }
+    }
+
     public abstract class Wait
     {
         public abstract bool Done { get; }

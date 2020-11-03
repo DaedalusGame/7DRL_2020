@@ -63,8 +63,6 @@ namespace RoguelikeEngine.Enemies
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillIceBreath());
-
-            //Effect.Apply(new EffectTrait(this, Trait.DeathThroesCrimson));
         }
 
         [Construct("dragon_white")]

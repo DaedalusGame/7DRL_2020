@@ -17,12 +17,20 @@ namespace RoguelikeEngine.Skills
 
         public override object GetEnemyTarget(Enemy user)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)
         {
-            throw new NotImplementedException();
+            Consume();
+            user.VisualPose = user.FlickPose(CreaturePose.Cast, CreaturePose.Stand, 70);
+            yield return user.WaitSome(50);
+            var weakElement = Element.MagicalElements.Pick(Random);
+            user.AddStatusEffect(new Forcefield()
+            {
+                Buildup = 1,
+            }.SetElement(weakElement));
+            yield return user.WaitSome(20);
         }
     }
 
@@ -35,7 +43,7 @@ namespace RoguelikeEngine.Skills
 
         public override object GetEnemyTarget(Enemy user)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public override IEnumerable<Wait> RoutineUse(Creature user, object target)

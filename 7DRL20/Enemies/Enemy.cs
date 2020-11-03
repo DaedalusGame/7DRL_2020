@@ -141,12 +141,12 @@ namespace RoguelikeEngine.Enemies
 
         private bool CanEnter(Tile tile)
         {
-            return tile.Solid;
+            return !tile.Solid;
         }
 
         private double GetTileWeight(Tile tile)
         {
-            if (CanEnter(tile))
+            if (!CanEnter(tile))
                 return 100;
             else if(tile.Creatures.Any())
                 return 10;
@@ -164,20 +164,27 @@ namespace RoguelikeEngine.Enemies
 
         public override Wait TakeTurn(Turn turn)
         {
-            Wait wait = Wait.NoWait;
             if (Dead)
-                return wait;
+                return Wait.NoWait;
+            
+            return Scheduler.Instance.RunAndWait(RoutineTakeTurn(turn));
+        }
+
+        private IEnumerable<Wait> RoutineTakeTurn(Turn turn)
+        {
             FindAggroTarget();
-            if(AggroTarget != null)
+            if (AggroTarget != null)
                 FaceTowards(AggroTarget);
             Skill usableSkill = GetUsableSkill();
             foreach (Skill skill in Skills)
                 skill.Update(this);
+
             if (usableSkill != null)
             {
                 var target = usableSkill.GetEnemyTarget(this);
                 CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineUseSkill(usableSkill, target)));
-                wait = usableSkill.WaitUse ? CurrentActions : Wait.NoWait;
+                if (usableSkill.WaitUse)
+                    yield return CurrentActions;
             }
             else
             {
@@ -185,26 +192,26 @@ namespace RoguelikeEngine.Enemies
                 if (AggroTarget != null)
                 {
                     var targetPoint = new Point(AggroTarget.X, AggroTarget.Y);
-                    var stopwatch = Stopwatch.StartNew();
-                    AggroTarget.PathCache.Request("std", GetWeightStraight, GetNeighbors, 15, 500);
-                    var next = AggroTarget.PathCache.GetNext("std", new Point(X, Y), GetNeighbors, Random);
-                    /*var dijkstra = Util.Dijkstra(new Point(X, Y), targetPoint, Map.Width, Map.Height, new Rectangle(X - 10, Y - 10, 21, 21), 40, GetWeightStraight, GetNeighbors);*/
-                    if (next.HasValue)
+                    var costMap = new CostMap(Map, this);
+                    costMap.SetMask(Mask);
+                    costMap.Recalculate();
+                    var targetPoints = Mask.Select(o => targetPoint - o).ToList();
+                    var dijkstra = Util.Dijkstra(new Point[] { new Point(X, Y) }, targetPoints, Map.Width, Map.Height, new Rectangle(X - 20, Y - 20, 41, 41), double.MaxValue, costMap, GetNeighbors(Point.Zero));
+                    var path = dijkstra.FindPath(targetPoints.Pick(Random));
+                    if (path.Any())
                     {
-                        move = next.Value - new Point(X, Y);
-                        wait = new WaitTime(1);
+                        move = path.First() - new Point(X, Y);
+                        //yield return new WaitTime(1);
                     }
                     else
                     {
                         move = new Point(0, 0);
                     }
                 }
-                
-                if(move != Point.Zero) //No move to self
+
+                if (move != Point.Zero) //No move to self
                     CurrentActions.Add(Scheduler.Instance.RunAndWait(RoutineMove(move.X, move.Y)));
-                //wait = CurrentAction;
             }
-            return wait;
         }
 
         private void FindAggroTarget()

@@ -16,11 +16,11 @@ namespace RoguelikeEngine
         private struct PathRequest
         {
             public DijkstraLength Length;
-            public DijkstraNeighbors Neighbors;
+            public IEnumerable<Point> Neighbors;
             public int Radius;
             public int MaxDistance;
 
-            public PathRequest(DijkstraLength length, DijkstraNeighbors neighbors, int radius, int maxDistance)
+            public PathRequest(DijkstraLength length, IEnumerable<Point> neighbors, int radius, int maxDistance)
             {
                 Length = length;
                 Neighbors = neighbors;
@@ -36,7 +36,7 @@ namespace RoguelikeEngine
         Dictionary<string, IDijkstraMap> Maps = new Dictionary<string, IDijkstraMap>();
         Dictionary<string, PathRequest> Requests = new Dictionary<string, PathRequest>();
 
-        public void Request(string type, DijkstraLength length, DijkstraNeighbors neighbors, int radius, int maxDistance)
+        public void Request(string type, DijkstraLength length, IEnumerable<Point> neighbors, int radius, int maxDistance)
         {
             Requests[type] = new PathRequest(length, neighbors, radius, maxDistance);
         }
@@ -56,7 +56,7 @@ namespace RoguelikeEngine
             if (!Maps.TryGetValue(type, out map))
             {
                 var request = Requests[type];
-                var dijkstra = Util.Dijkstra(Mask, new Point[0], Map.Width, Map.Height, new Rectangle(Position.X - request.Radius, Position.Y - request.Radius, request.Radius * 2 + 1, request.Radius * 2 + 1), request.MaxDistance, request.Length, request.Neighbors);
+                var dijkstra = Util.Dijkstra(Mask, new Point[0], Map.Width, Map.Height, new Rectangle(Position.X - request.Radius, Position.Y - request.Radius, request.Radius * 2 + 1, request.Radius * 2 + 1), request.MaxDistance, new CostMap(Map, null), request.Neighbors);
                 Maps[type] = map = dijkstra;
                 Requests.Remove(type);
             }
@@ -230,6 +230,109 @@ namespace RoguelikeEngine
         }
     }
 
+    interface ICostMap
+    {
+        double GetCost(Point pos);
+    }
+
+    class CostMapFunction : ICostMap
+    {
+        Func<Point, double> CostFunction;
+
+        public CostMapFunction(Func<Point, double> costFunction)
+        {
+            CostFunction = costFunction;
+        }
+
+        public double GetCost(Point pos)
+        {
+            return CostFunction(pos);
+        }
+    }
+
+    class CostMap : ICostMap
+    {
+        Map Map;
+        Creature Origin;
+        IEnumerable<Point> Mask = new List<Point>() { Point.Zero };
+        double[,] TileCost;
+        double[,] ObjectCost;
+        double[,] ResultCost;
+
+        public CostMap(Map map, Creature origin)
+        {
+            Map = map;
+            Origin = origin;
+        }
+
+        public void SetMask(Mask mask)
+        {
+            Mask = mask;
+            ResetResult();
+        }
+
+        private void ResetResult()
+        {
+            ResultCost = new double[Map.Width, Map.Height];
+        }
+
+        public double GetCost(Point pos)
+        {
+            double totalCost = ResultCost[pos.X, pos.Y];
+
+            if (totalCost > 0)
+                return totalCost;
+
+            foreach (var p in Mask.Select(o => pos + o))
+            {
+                totalCost += TileCost[p.X, p.Y] + ObjectCost[p.X, p.Y];
+            }
+
+            ResultCost[pos.X, pos.Y] = totalCost;
+
+            return totalCost;
+        }
+
+        public void Recalculate()
+        {
+            CalculateTileCost();
+            CalculateObjectCost();
+
+            ResetResult();
+        }
+
+        private void CalculateTileCost()
+        {
+            TileCost = new double[Map.Width, Map.Height];
+            for (int x = 0; x < Map.Width; x++)
+            {
+                for (int y = 0; y < Map.Height; y++)
+                {
+                    Tile tile = Map.GetTile(x, y);
+                    if (tile.Solid)
+                        TileCost[x, y] = 1000;
+                    else
+                        TileCost[x, y] = 1;
+                }
+            }
+        }
+
+        private void CalculateObjectCost()
+        {
+            ObjectCost = new double[Map.Width, Map.Height];
+            foreach (var obj in Map.Creatures)
+            {
+                if (obj == Origin)
+                    continue;
+                Point objPos = new Point(obj.X, obj.Y);
+                foreach (var pos in obj.Mask.Select(o => objPos + o))
+                {
+                    ObjectCost[pos.X, pos.Y] = 100;
+                }
+            }
+        }
+    }
+
     class TypeLookup<T>
     {
         Dictionary<Type, IEnumerable<T>> Content = new Dictionary<Type, IEnumerable<T>>();
@@ -294,12 +397,12 @@ namespace RoguelikeEngine
     static class Util
     {
         #region Dijkstra
-        public static IDijkstraMap Dijkstra(Point start, Point end, int width, int height, Rectangle activeArea, double maxDist, DijkstraLength length, DijkstraNeighbors neighbors)
+        public static IDijkstraMap Dijkstra(Point start, Point end, int width, int height, Rectangle activeArea, double maxDist, ICostMap costMap, IEnumerable<Point> neighbors)
         {
-            return Dijkstra(new[] { start }, new[] { end }, width, height, activeArea, maxDist, length, neighbors);
+            return Dijkstra(new[] { start }, new[] { end }, width, height, activeArea, maxDist, costMap, neighbors);
         }
 
-        public static IDijkstraMap Dijkstra(IEnumerable<Point> start, IEnumerable<Point> end, int width, int height, Rectangle activeArea, double maxDist, DijkstraLength length, DijkstraNeighbors neighbors)
+        public static IDijkstraMap Dijkstra(IEnumerable<Point> start, IEnumerable<Point> end, int width, int height, Rectangle activeArea, double maxDist, ICostMap costMap, IEnumerable<Point> neighbors)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -318,6 +421,8 @@ namespace RoguelikeEngine
 
             IDijkstraMap dijkstraMap = new DijkstraMap(width, height, heap, start);
 
+            int i = 0;
+
             while (!heap.IsEmpty() && (!hasEnds || ends.Count > 0))
             {
                 var node = heap.RemoveMin();
@@ -329,13 +434,15 @@ namespace RoguelikeEngine
                 if (ends.Contains(dTile.Tile))
                     ends.Remove(dTile.Tile);
 
-                foreach (var neighbor in neighbors(dTile.Tile))
+                i++;
+
+                foreach (var neighbor in neighbors.Select(o => dTile.Tile + o))
                 {
                     if (!activeArea.Contains(neighbor.X,neighbor.Y)/*neighbor.X < 0 || neighbor.Y < 0 || neighbor.X >= width || neighbor.Y >= height*/)
                         continue;
                     var nodeNeighbor = dijkstraMap.GetNode(neighbor.X, neighbor.Y);
                     var dNeighbor = nodeNeighbor.Data;
-                    double newDist = dTile.Distance + length(dTile.Tile, dNeighbor.Tile);
+                    double newDist = dTile.Distance + costMap.GetCost(dNeighbor.Tile);
 
                     if (newDist < dNeighbor.Distance)
                     {
@@ -347,7 +454,7 @@ namespace RoguelikeEngine
                 }
             }
 
-            Console.WriteLine($"Dijkstra took: {stopwatch.ElapsedMilliseconds}");
+            Console.WriteLine($"Dijkstra ({i} iterations) took: {stopwatch.ElapsedTicks} ({(float)stopwatch.ElapsedTicks / i})");
 
             return dijkstraMap;
         }

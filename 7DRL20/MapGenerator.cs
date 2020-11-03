@@ -852,14 +852,14 @@ namespace RoguelikeEngine
             return point.X >= 0 && point.Y >= 0 && point.X <= Width - 1 && point.Y <= Height - 1;
         }
 
-        public double GetWeightStraight(Point start, Point end)
+        public double GetWeightStraight(Point pos)
         {
             return 1;
         }
 
-        public double GetWeightWavy(Point start, Point end)
+        public double GetWeightWavy(Point pos)
         {
-            return Cells[end.X, end.Y].Weight;
+            return Cells[pos.X, pos.Y].Weight;
         }
 
         public IEnumerable<Point> GetNeighbors(Point point)
