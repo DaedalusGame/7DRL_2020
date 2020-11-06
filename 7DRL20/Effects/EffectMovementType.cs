@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json.Linq;
 using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,13 @@ using System.Threading.Tasks;
 
 namespace RoguelikeEngine.Effects
 {
+    struct MovementTypeResult
+    {
+        public Func<IEnumerable<Point>> GetNeighbors;
+        public Func<Tile, double> GetTileCost;
+        public Func<Tile, bool> CanTraverse;
+    }
+
     class EffectMovementType : Effect
     {
         public IEffectHolder Holder;

@@ -31,6 +31,16 @@ namespace RoguelikeEngine
         {
             return v.ID;
         }
+
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 
     class EffectHolderRegistry
@@ -628,6 +638,22 @@ namespace RoguelikeEngine
             if (effects.Any())
                 return effects.WithMax(effect => effect.Priority).Value;
             return false;
+        }
+
+        public static MovementTypeResult GetMovementType(this IEffectHolder holder)
+        {
+            MovementTypeResult result = new MovementTypeResult();
+            var effects = holder.GetEffects<EffectMovementType>();
+            foreach(var movementType in effects.OrderBy(e => e.Priority).Select(e => e.MovementType))
+            {
+                if (movementType.GetNeighbors != null)
+                    result.GetNeighbors = movementType.GetNeighbors;
+                if (movementType.GetTileCost != null)
+                    result.GetTileCost = movementType.GetTileCost;
+                if (movementType.CanTraverse != null)
+                    result.CanTraverse = movementType.CanTraverse;
+            }
+            return result;
         }
 
         public static IEnumerable<Family> GetFamilies(this IEffectHolder holder)

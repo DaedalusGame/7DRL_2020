@@ -756,12 +756,18 @@ namespace RoguelikeEngine
             VisualFacing = () => Facing;
             CurrentActions = new WaitGameObject(this);
             CurrentHits = new WaitGameObject(this);
+            SetupMovement();
         }
 
         public void OnDestroy()
         {
             this.ClearEffects();
             EffectManager.DeleteHolder(this);
+        }
+
+        public virtual void SetupMovement()
+        {
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.Standard, 0));
         }
 
         public void DropExperience()
@@ -1066,7 +1072,8 @@ namespace RoguelikeEngine
             if (tile == null)
                 return;
             var frontier = Mask.GetFrontier(dx, dy);
-            if (frontier.Select(p => Tile.GetNeighbor(p.X, p.Y)).Any(front => front.Solid || front.Creatures.Any()))
+            var movementType = this.GetMovementType();
+            if (frontier.Select(p => Tile.GetNeighbor(p.X, p.Y)).Any(front => !movementType.CanTraverse(front) || front.Creatures.Any()))
                 return;
             MoveTo(tile, time);
         }

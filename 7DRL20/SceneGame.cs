@@ -386,7 +386,7 @@ namespace RoguelikeEngine
             CameraMap = Player.Map;
             CameraFocus = new CameraFocus(Player);
 
-            Spawner = new EnemySpawner(this, 60);
+            Spawner = new EnemySpawner(this, 5);
         }
 
         public SceneGame(Game game) : base(game)
@@ -445,7 +445,7 @@ namespace RoguelikeEngine
             Quests.Add(smeltOre);
             Quests.Add(buildAdze);
 
-            Spawner = new EnemySpawner(this, 60);
+            Spawner = new EnemySpawner(this, 5);
         }
 
         public void Save()

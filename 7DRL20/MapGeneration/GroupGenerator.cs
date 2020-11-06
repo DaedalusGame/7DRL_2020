@@ -64,19 +64,19 @@ namespace RoguelikeEngine.MapGeneration
         };
         public static GroupGenerator DirtCave = new GroupGenerator(MakeDirtCave)
         {
-            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 50, 20) },
         };
         public static GroupGenerator Bog = new GroupGenerator(MakeBog)
         {
-            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 60) },
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 50, 60) },
         };
         public static GroupGenerator FireCave = new GroupGenerator(MakeFireCave)
         {
-            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 50, 20) },
         };
         public static GroupGenerator AdamantCave = new GroupGenerator(MakeAdamantCave)
         {
-            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, double.NegativeInfinity, 20) },
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 50, 20) },
         };
         public static GroupGenerator AcidCave = new GroupGenerator(MakeAcidCave)
         {
@@ -84,7 +84,7 @@ namespace RoguelikeEngine.MapGeneration
         };
         public static GroupGenerator SeaOfDirac = new GroupGenerator(MakeSeaOfDirac)
         {
-            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, 5, 15) },
+            Requirements = { new FeelingRequirement(LevelFeeling.Difficulty, -5, 15) },
         };
         public static GroupGenerator MagmaMine = new GroupGenerator(MakeMagmaMine)
         {
@@ -114,7 +114,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 BrickColor = new TileColor(new Color(129, 64, 41), new Color(224, 175, 158)),
                 WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
-                Spawns = { EnemySpawn.DeathGolem },
+                Spawns = {  },
             };
         }
         public static GeneratorGroup MakeDirtCave(MapGenerator generator)

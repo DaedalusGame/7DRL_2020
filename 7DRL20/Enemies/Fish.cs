@@ -27,6 +27,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
 
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.WaterOnly, 10));
+
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillWaterSpit());
             Skills.Add(new SkillDive());
@@ -57,6 +59,8 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 80));
 
             Effect.ApplyInnate(new EffectFamily(this, Family.Fish));
+
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.WaterOnly, 10));
 
             Skills.Add(new SkillAttack());
             Skills.Add(new SkillVenomSpit());

@@ -47,12 +47,16 @@ namespace RoguelikeEngine.Enemies
         public static Family GreenSlime = new Family("slime_green", "Green Slime");
     }
 
-    abstract class MovementType
+    class MovementType
     {
         public static List<MovementType> AllMovementTypes = new List<MovementType>();
 
         int Index;
         public string ID;
+
+        public Func<IEnumerable<Point>> GetNeighbors;
+        public Func<Tile, double> GetTileCost;
+        public Func<Tile, bool> CanTraverse;
 
         public MovementType(string id)
         {
@@ -61,14 +65,75 @@ namespace RoguelikeEngine.Enemies
             AllMovementTypes.Add(this);
         }
 
-        public abstract bool CanEnter(Tile tile);
+        private static IEnumerable<Point> GetCardinalNeighbors()
+        {
+            yield return new Point(0, -1);
+            yield return new Point(0, +1);
+            yield return new Point(-1, 0);
+            yield return new Point(+1, 0);
+        }
 
-        public abstract IEnumerable<Point> GetNeighbors(Point point);
+        private static IEnumerable<Point> GetDiagonalNeighbors()
+        {
+            yield return new Point(-1, -1);
+            yield return new Point(-1, +1);
+            yield return new Point(+1, -1);
+            yield return new Point(+1, +1);
+        }
+
+        private static IEnumerable<Point> GetAllNeighbors()
+        {
+            return GetCardinalNeighbors().Concat(GetDiagonalNeighbors());
+        }
 
         public static MovementType GetMovementType(string id)
         {
             return AllMovementTypes.Find(x => x.ID == id);
         }
+
+        public static double StandardCost(Tile tile)
+        {
+            if (tile.Solid)
+                return 1000;
+            return 1;
+        }
+
+        public static double WaterOnlyCost(Tile tile)
+        {
+            if (tile is Water)
+                return 1;
+            return 1000;
+        }
+
+        public static bool StandardTraverse(Tile tile)
+        {
+            return !tile.Solid;
+        }
+
+        public static bool WaterOnlyTraverse(Tile tile)
+        {
+            return tile is Water;
+        }
+
+        public static MovementType Standard = new MovementType("standard")
+        {
+            GetNeighbors = GetCardinalNeighbors,
+            GetTileCost = StandardCost,
+            CanTraverse = StandardTraverse,
+        };
+        public static MovementType Diagonal = new MovementType("diagonal")
+        {
+            GetNeighbors = GetDiagonalNeighbors,
+        };
+        public static MovementType AllDirections = new MovementType("all_directions")
+        {
+            GetNeighbors = GetAllNeighbors,
+        };
+        public static MovementType WaterOnly = new MovementType("water_only")
+        {
+            GetTileCost = WaterOnlyCost,
+            CanTraverse = WaterOnlyTraverse,
+        };
     }
 
     abstract class Enemy : Creature
@@ -191,17 +256,16 @@ namespace RoguelikeEngine.Enemies
                 var move = new[] { Facing.North, Facing.East, Facing.South, Facing.West }.Pick(Random).ToOffset();
                 if (AggroTarget != null)
                 {
-                    var targetPoint = new Point(AggroTarget.X, AggroTarget.Y);
-                    var costMap = new CostMap(Map, this);
+                    var movementType = this.GetMovementType();
+                    var costMap = new CostMap(Map, this, movementType.GetTileCost);
                     costMap.SetMask(Mask);
                     costMap.Recalculate();
-                    var targetPoints = Mask.Select(o => targetPoint - o).ToList();
-                    var dijkstra = Util.Dijkstra(new Point[] { new Point(X, Y) }, targetPoints, Map.Width, Map.Height, new Rectangle(X - 20, Y - 20, 41, 41), double.MaxValue, costMap, GetNeighbors(Point.Zero));
+                    var targetPoints = Mask.Select(o => new Point(AggroTarget.X, AggroTarget.Y) - o).ToList();
+                    var dijkstra = Util.Dijkstra(new Point[] { new Point(X, Y) }, targetPoints, Map.Width, Map.Height, new Rectangle(X - 20, Y - 20, 41, 41), double.MaxValue, costMap, movementType.GetNeighbors());
                     var path = dijkstra.FindPath(targetPoints.Pick(Random));
                     if (path.Any())
                     {
                         move = path.First() - new Point(X, Y);
-                        //yield return new WaitTime(1);
                     }
                     else
                     {

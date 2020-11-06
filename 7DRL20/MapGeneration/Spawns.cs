@@ -1,4 +1,5 @@
-﻿using RoguelikeEngine.Enemies;
+﻿using Microsoft.Xna.Framework;
+using RoguelikeEngine.Enemies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,9 @@ namespace RoguelikeEngine.MapGeneration
 
         static List<EnemySpawn> AllSpawns = new List<EnemySpawn>();
 
+        public static IEnumerable<Point> MaskSingle = new Point[] { Point.Zero };
+        public static IEnumerable<Point> MaskBig = new Point[] { new Point(0, 0), new Point(1, 0), new Point(0, 1), new Point(1, 1) };
+
         public string ID;
 
         public EnemySpawn(string id)
@@ -21,9 +25,26 @@ namespace RoguelikeEngine.MapGeneration
             AllSpawns.Add(this);
         }
 
+        public abstract bool CanSpawn(Tile spawnTile);
+
         public static EnemySpawn GetSpawn(string id)
         {
             return AllSpawns.Find(spawn => spawn.ID == id);
+        }
+
+        public static IEnumerable<Tile> GetMaskTiles(Tile tile, IEnumerable<Point> mask)
+        {
+            return mask.Select(o => tile.GetNeighbor(o.X, o.Y));
+        }
+
+        public static bool CheckTiles(IEnumerable<Tile> tiles, Func<Tile, bool> predicate)
+        {
+            return tiles.All(predicate);
+        }
+
+        public static bool TileNotSolid(Tile tile)
+        {
+            return !tile.Solid && !tile.Creatures.Any();
         }
 
         public static EnemySpawn Skeleton = new SingleSpawn("skeleton", (world) => new Skeleton(world));
@@ -32,8 +53,14 @@ namespace RoguelikeEngine.MapGeneration
 
         public static EnemySpawn BlastCannon = new SingleSpawn("blast_cannon", (world) => new BlastCannon(world));
 
-        public static EnemySpawn GoreVala = new SingleSpawn("gore_vala", (world) => new GoreVala(world));
-        public static EnemySpawn Vorrax = new SingleSpawn("vorrax", (world) => new Vorrax(world));
+        public static EnemySpawn GoreVala = new SingleSpawn("gore_vala", (world) => new GoreVala(world))
+        {
+            TilePredicate = (tile) => tile is Water && !tile.Creatures.Any(),
+        };
+        public static EnemySpawn Vorrax = new SingleSpawn("vorrax", (world) => new Vorrax(world))
+        {
+            TilePredicate = (tile) => tile is Water && !tile.Creatures.Any(),
+        };
         public static EnemySpawn Ctholoid = new SingleSpawn("cthuloid", (world) => new Ctholoid(world));
 
         public static EnemySpawn RedDragon = new SingleSpawn("red_dragon", (world) => new RedDragon(world));
@@ -59,16 +86,26 @@ namespace RoguelikeEngine.MapGeneration
 
         public static EnemySpawn AbyssalTendrilBush = new SingleSpawn("abyssal_tendril_bush", (world) => new AbyssalTendrilBush(world));
 
-        public static EnemySpawn DeathGolem = new SingleSpawn("death_golem", (world) => new DeathGolem(world));
+        public static EnemySpawn DeathGolem = new SingleSpawn("death_golem", (world) => new DeathGolem(world))
+        {
+            Mask = MaskBig,
+        };
     }
 
     class SingleSpawn : EnemySpawn
     {
         Func<SceneGame, Enemy> EnemyFunction;
+        public IEnumerable<Point> Mask = MaskSingle;
+        public Func<Tile, bool> TilePredicate = TileNotSolid;
 
         public SingleSpawn(string id, Func<SceneGame, Enemy> enemyFunction) : base(id)
         {
             EnemyFunction = enemyFunction;
+        }
+
+        public override bool CanSpawn(Tile spawnTile)
+        {
+            return CheckTiles(GetMaskTiles(spawnTile, Mask), TilePredicate);
         }
 
         public override IEnumerable<Enemy> Spawn(SceneGame world, Tile tile)
@@ -89,6 +126,11 @@ namespace RoguelikeEngine.MapGeneration
         {
             SpawnHag = spawnHag;
             SpawnCauldron = spawnCauldron;
+        }
+
+        public override bool CanSpawn(Tile spawnTile)
+        {
+            return TileNotSolid(spawnTile) && spawnTile.GetNearby(1).Any(tile => TileNotSolid(tile));
         }
 
         public override IEnumerable<Enemy> Spawn(SceneGame world, Tile tile)

@@ -149,19 +149,22 @@ namespace RoguelikeEngine
             {
                 var baseTile = World.Player.Tile;
                 int spawnAmount = 1;
+                List<EnemySpawn> possibleSpawns = new List<EnemySpawn>();
 
-                foreach (var spawnTile in GetValidSpawnLocations(baseTile, tile => !tile.Solid && !tile.Creatures.Any(), 6).Take(spawnAmount))
+                foreach (var spawnTile in GetValidSpawnLocations(baseTile, tile => !tile.Creatures.Any(), 6).TakeWhile(x => spawnAmount > 0))
                 {
-                    if (spawnTile.Group.Spawns.Empty())
+                    possibleSpawns.AddRange(spawnTile.Group.Spawns.Where(x => x.CanSpawn(spawnTile)));
+                    if (possibleSpawns.Empty())
                         continue;
-                    EnemySpawn spawn = spawnTile.Group.Spawns.Pick(Random);
+                    EnemySpawn spawn = possibleSpawns.Pick(Random);
                     foreach (var enemy in spawn.Spawn(World,spawnTile))
                     {
                         Enemies.Add(enemy);
-                        //enemy.MakeAggressive(World.Player);
                         enemy.AddControlTurn();
                         new Smoke(World, enemy.VisualTarget, Vector2.Zero, 0, 15);
                     }
+                    spawnAmount--;
+                    possibleSpawns.Clear();
                 }
 
                 Encounter.Time = 0;

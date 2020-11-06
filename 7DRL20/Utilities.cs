@@ -56,7 +56,7 @@ namespace RoguelikeEngine
             if (!Maps.TryGetValue(type, out map))
             {
                 var request = Requests[type];
-                var dijkstra = Util.Dijkstra(Mask, new Point[0], Map.Width, Map.Height, new Rectangle(Position.X - request.Radius, Position.Y - request.Radius, request.Radius * 2 + 1, request.Radius * 2 + 1), request.MaxDistance, new CostMap(Map, null), request.Neighbors);
+                var dijkstra = Util.Dijkstra(Mask, new Point[0], Map.Width, Map.Height, new Rectangle(Position.X - request.Radius, Position.Y - request.Radius, request.Radius * 2 + 1, request.Radius * 2 + 1), request.MaxDistance, new CostMap(Map, null, null), request.Neighbors);
                 Maps[type] = map = dijkstra;
                 Requests.Remove(type);
             }
@@ -258,11 +258,13 @@ namespace RoguelikeEngine
         double[,] TileCost;
         double[,] ObjectCost;
         double[,] ResultCost;
+        Func<Tile, double> GetTileCost;
 
-        public CostMap(Map map, Creature origin)
+        public CostMap(Map map, Creature origin, Func<Tile, double> getTileCost)
         {
             Map = map;
             Origin = origin;
+            GetTileCost = getTileCost;
         }
 
         public void SetMask(Mask mask)
@@ -309,10 +311,7 @@ namespace RoguelikeEngine
                 for (int y = 0; y < Map.Height; y++)
                 {
                     Tile tile = Map.GetTile(x, y);
-                    if (tile.Solid)
-                        TileCost[x, y] = 1000;
-                    else
-                        TileCost[x, y] = 1;
+                    TileCost[x, y] = GetTileCost(tile);
                 }
             }
         }

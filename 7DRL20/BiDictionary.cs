@@ -22,6 +22,10 @@ namespace RoguelikeEngine
 
         public void Add(TKey key, TValue value)
         {
+            if(_forward.ContainsKey(key))
+            {
+                var test = _forward[key];
+            }
             _forward.Add(key, value);
             _backward.Add(value, key);
         }
