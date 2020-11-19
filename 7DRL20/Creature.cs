@@ -23,7 +23,7 @@ namespace RoguelikeEngine
         {
             var sorted = AllElements.OrderBy(element => element.Priority);
             int index = 0;
-            foreach(Element element in sorted)
+            foreach (Element element in sorted)
             {
                 element.Priority = index++;
             }
@@ -212,7 +212,7 @@ namespace RoguelikeEngine
             Wind,
             Dark,
             Holy
-        },1);
+        }, 1);
         public static Element TheEnd = new ElementCombined("the_end", "The End", SpriteLoader.Instance.AddSprite("content/element_the_end"), new Dictionary<Element, double>()
         {
             { Dark, 2.0 },
@@ -362,7 +362,7 @@ namespace RoguelikeEngine
 
         public static Stat SlimeHP = new Stat("slime_hp", "Slime HP", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_hp"));
         public static Stat SlimeAttack = new Stat("slime_attack", "Slime Attack", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_slime_attack"));
-        
+
         public static Flag SwapItem = new Flag("swap_item", "Swap Item", true, SpriteLoader.Instance.AddSprite("content/stat_swap_enabled"));
         public static Flag EquipItem = new Flag("equip_item", "Equip Item", true, SpriteLoader.Instance.AddSprite("content/stat_equip_enabled"));
         public static Flag UnequipItem = new Flag("unequip_item", "Unequip Item", true, SpriteLoader.Instance.AddSprite("content/stat_unequip_enabled"));
@@ -393,7 +393,7 @@ namespace RoguelikeEngine
     class Flag : Stat
     {
         public bool DefaultValue;
-        
+
         public Flag(string id, string name, bool defaultValue, SpriteReference sprite) : base(id, name, 0, -1, sprite)
         {
             DefaultValue = defaultValue;
@@ -433,7 +433,7 @@ namespace RoguelikeEngine
             int xMax = 0;
             int yMin = 0;
             int yMax = 0;
-            foreach(Point point in PointList)
+            foreach (Point point in PointList)
             {
                 if (point.X < xMin)
                     xMin = point.X;
@@ -451,7 +451,7 @@ namespace RoguelikeEngine
         {
             HashSet<Point> frontier = new HashSet<Point>();
 
-            foreach(Point point in PointList)
+            foreach (Point point in PointList)
             {
                 frontier.Add(new Point(point.X + 1, point.Y));
                 frontier.Add(new Point(point.X - 1, point.Y));
@@ -503,7 +503,7 @@ namespace RoguelikeEngine
             Point point = PointList.Pick(random);
             float x = (point.X + random.NextFloat()) * 16;
             float y = (point.Y + random.NextFloat()) * 16;
-            return new Vector2(x,y);
+            return new Vector2(x, y);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -511,7 +511,7 @@ namespace RoguelikeEngine
             return GetEnumerator();
         }
 
-        
+
     }
 
     enum Facing
@@ -555,7 +555,7 @@ namespace RoguelikeEngine
 
         public virtual void Draw(SceneGame scene, Creature creature)
         {
-            DrawFrame(scene, creature.VisualPosition(), GetPoseData(creature), creature.VisualFacing(), Matrix.Identity, Color.White, creature.VisualColor());
+            DrawFrame(scene, creature.VisualPosition(), GetPoseData(creature), creature.VisualFacing(), Matrix.Identity, Color.White, creature.VisualColor() * creature.FlashHelper.ColorMatrix);
         }
 
         public abstract void DrawFrame(SceneGame scene, Vector2 pos, PoseData poseData, Facing facing, Matrix transform, Color color, ColorMatrix colorMatrix);
@@ -623,6 +623,59 @@ namespace RoguelikeEngine
     }
 
     delegate Attack AttackDelegate(Creature attacker, IEffectHolder defender);
+
+    class FlashHelper
+    {
+        class FlashEffect
+        {
+            public Slider Frame;
+            public Func<float, ColorMatrix> FlashFunction;
+
+            public FlashEffect(Func<float, ColorMatrix> flashFunction, int time)
+            {
+                FlashFunction = flashFunction;
+                Frame = new Slider(time);
+            }
+        }
+
+        List<FlashEffect> Effects = new List<FlashEffect>();
+        public ColorMatrix ColorMatrix
+        {
+            get
+            {
+                ColorMatrix colorMatrix = ColorMatrix.Identity;
+                foreach(var effect in Effects)
+                {
+                    colorMatrix *= effect.FlashFunction(effect.Frame.Slide);
+                }
+                return colorMatrix;
+            }
+        }
+
+        public void AddFlash(Func<float, ColorMatrix> flashFunction, int time)
+        {
+            Effects.Add(new FlashEffect(flashFunction, time));
+        }
+
+        public void AddFlash(ColorMatrix color, int time)
+        {
+            AddFlash((slide) => color, time);
+        }
+
+        public void AddFlash(ColorMatrix color, LerpHelper.Delegate lerp, int time)
+        {
+            AddFlash((slide) => ColorMatrix.Lerp(color, ColorMatrix.Identity, (float)lerp(0, 1, slide)), time);
+        }
+
+        public void Update()
+        {
+            foreach(var effect in Effects)
+            {
+                effect.Frame += 1;
+            }
+            Effects.RemoveAll(effect => effect.Frame.Done);
+        }
+    }
 
     [SerializeInfo]
     abstract class Creature : IEffectHolder, IGameObject, IHasPosition, IJsonSerializable
@@ -744,7 +797,9 @@ namespace RoguelikeEngine
 
         Vector2 IHasPosition.VisualPosition => VisualPosition();
         public virtual Vector2 VisualTarget => VisualPosition() + CenterOffset;
-       
+
+        public FlashHelper FlashHelper = new FlashHelper();
+
         public Func<Vector2> MaskTarget => () => VisualPosition() + Mask.GetRandomPixel(Random);
 
         public Creature(SceneGame world)
@@ -903,6 +958,7 @@ namespace RoguelikeEngine
             Frame++;
             UpdatePose();
             CurrentActions.Update();
+            FlashHelper.Update();
 
             /*if (Frame % 3 == 0 && Frame % 200 < 50)
             {

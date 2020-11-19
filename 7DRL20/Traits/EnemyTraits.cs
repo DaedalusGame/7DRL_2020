@@ -114,6 +114,36 @@ namespace RoguelikeEngine.Traits
         }
     }
 
+    class TraitDeathThroesTendril : TraitDeathThroes
+    {
+        public TraitDeathThroesTendril() : base("death_throes_tendril", "Acid Spurt Death Throes", $"Spills it's blood on death, dealing {Element.Acid.FormatString} damage in a 1 tile radius.", new Color(64, 64, 64))
+        {
+        }
+
+        public override IEnumerable<Wait> RoutineExplode(DeathEvent death)
+        {
+            Creature creature = death.Creature;
+            List<Wait> waits = new List<Wait>();
+            foreach(var minion in creature.GetSlaves().OfType<Creature>())
+            {
+                var explosion = new Skills.Explosion(minion, SkillUtil.GetCircularArea(minion, 1), minion.VisualTarget);
+                explosion.Attack = ExplosionAttack;
+                explosion.Fault = this;
+                waits.Add(explosion.Run());
+            }
+            yield return new WaitAll(waits);
+        }
+
+        private Attack ExplosionAttack(Creature attacker, IEffectHolder defender)
+        {
+            Attack attack = new Attack(attacker, defender);
+            attack.Fault = this;
+            attack.SetParameters(attacker.GetStat(Stat.HP) * 0.5, 0, 1);
+            attack.Elements.Add(Element.Acid, 1.0);
+            return attack;
+        }
+    }
+
     class TraitDeathThroesFireBlast : TraitDeathThroes
     {
         public TraitDeathThroesFireBlast() : base("death_throes_fire_blast", "Fire Blast Throes", $"Explodes on death, dealing {Element.Bludgeon.FormatString} and {Element.Fire.FormatString} damage in a 2 tile radius.", new Color(255, 64, 16))
@@ -185,7 +215,7 @@ namespace RoguelikeEngine.Traits
     {
         Element Element;
 
-        public TraitDeathThroesBlood(Element element) : base("death_throes_blood", "Blood Throes", "", new Color(192, 0, 0))
+        public TraitDeathThroesBlood(string id, Element element, Color color) : base(id, "Blood Throes", "", color)
         {
             Element = element;
             Description = new DynamicString(() => $"Spills its blood on death, dealing {Element} damage in a 1 tile radius.");

@@ -204,6 +204,11 @@ namespace RoguelikeEngine
               new Vector4(color.R / 255f, color.G / 255f, color.B / 255f, 0));
         }
 
+        public static ColorMatrix Flat(Color color, float alpha)
+        {
+            return Lerp(Identity, Flat(color), alpha);
+        }
+
         public Color Transform(Color color)
         {
             return new Color(Vector4.Transform(color.ToVector4(),Matrix.Transpose(Matrix))+Add);

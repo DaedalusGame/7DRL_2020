@@ -387,25 +387,20 @@ namespace RoguelikeEngine
             PrimitiveBatch.End();
         }
 
-        private float ReverseLerp(float n, float lower, float upper)
+        public void DrawCircle(SpriteReference sprite, SamplerState samplerState, Vector2 center, int precision, float angleStart, float angleEnd, float radius, float texOffset, int texPrecision, float start, float end)
         {
-            return (n - lower) / (upper - lower);
-        }
-
-        public void DrawCircle(SpriteReference sprite, Vector2 center, int precision, float angleStart, float angleEnd, float radius, float texOffset, int texPrecision, float start, float end)
-        {
-            PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: SamplerState.PointWrap, transform: WorldTransform, projection: Projection, effect: Shader);
+            PrimitiveBatch.Begin(PrimitiveType.TriangleStrip, texture: sprite.Texture, blendState: NonPremultiplied, rasterizerState: RasterizerState.CullNone, samplerState: samplerState, transform: WorldTransform, projection: Projection, effect: Shader);
 
             for (int i = 0; i < precision; i++)
             {
                 float angleSlide = (float)i / (precision - 1);
                 Vector2 offset = Util.AngleToVector(MathHelper.Lerp(angleStart, angleEnd, angleSlide));
-                var inside = center + offset * radius * MathHelper.Clamp(start, 0, 1);
+                var inside = center;// + offset * radius * MathHelper.Clamp(start, 0, 1);
                 var outside = center + offset * radius * MathHelper.Clamp(end, 0, 1);
 
                 var texHorizontal = texPrecision * angleSlide + texOffset;
-                var texInside = 1 - ReverseLerp(MathHelper.Clamp(start, 0, 1), start, end);
-                var texOutside = 1 - ReverseLerp(MathHelper.Clamp(end, 0, 1), start, end);
+                var texInside = 1 - Util.ReverseLerp(MathHelper.Clamp(0, 0, 1), start, end);
+                var texOutside = 1 - Util.ReverseLerp(MathHelper.Clamp(end, 0, 1), start, end);
 
                 PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(inside, 0), Color.White, new Vector2(texHorizontal, texInside)));
                 PrimitiveBatch.AddVertex(new VertexPositionColorTexture(new Vector3(outside, 0), Color.White, new Vector2(texHorizontal, texOutside)));

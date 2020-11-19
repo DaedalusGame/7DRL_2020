@@ -587,6 +587,11 @@ namespace RoguelikeEngine
             }
         }
 
+        public static float ReverseLerp(float n, float lower, float upper)
+        {
+            return (n - lower) / (upper - lower);
+        }
+
         public static T WithMin<T, V>(this IEnumerable<T> enumerable, Func<T, V> selector) where V : IComparable
         {
             return enumerable.Aggregate((i1, i2) => selector(i1).CompareTo(selector(i2)) < 0 ? i1 : i2);

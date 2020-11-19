@@ -92,7 +92,7 @@ namespace RoguelikeEngine.Skills
 
     class SkillDeployBomb : Skill
     {
-        int Count = 299;
+        int Count = 2;
 
         public SkillDeployBomb() : base("Deploy Bomb", "Creates bombs in adjacent tiles.", 0, 20, float.PositiveInfinity)
         {

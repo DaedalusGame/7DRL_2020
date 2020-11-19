@@ -114,7 +114,7 @@ namespace RoguelikeEngine.MapGeneration
                 CaveColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
                 BrickColor = new TileColor(new Color(129, 64, 41), new Color(224, 175, 158)),
                 WoodColor = new TileColor(new Color(80, 56, 41), new Color(185, 138, 87)),
-                Spawns = {  },
+                Spawns = { },
             };
         }
         public static GeneratorGroup MakeDirtCave(MapGenerator generator)

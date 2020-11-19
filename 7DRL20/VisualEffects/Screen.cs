@@ -40,6 +40,26 @@ namespace RoguelikeEngine.VisualEffects
         }
     }
 
+    class ScreenFlashSimple : ScreenFlash
+    {
+        public virtual Vector2 Position
+        {
+            get;
+            set;
+        }
+        ColorMatrix FlashColor;
+        LerpHelper.Delegate ColorLerp;
+
+        public override ColorMatrix Color => ColorMatrix.Lerp(ColorMatrix.Identity, FlashColor, (float)ColorLerp(1, 0, Frame.Slide));
+
+        public ScreenFlashSimple(SceneGame world, ColorMatrix color, LerpHelper.Delegate colorLerp, int time) : base(world, time)
+        {
+            FlashColor = color;
+            ColorLerp = colorLerp;
+        }
+    }
+
+
     class ScreenFlashLocal : ScreenFlash
     {
         public virtual Vector2 Position

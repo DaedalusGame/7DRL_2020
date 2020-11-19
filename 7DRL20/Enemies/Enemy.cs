@@ -65,6 +65,11 @@ namespace RoguelikeEngine.Enemies
             AllMovementTypes.Add(this);
         }
 
+        private static IEnumerable<Point> GetEmptyNeighbors()
+        {
+            return Enumerable.Empty<Point>();
+        }
+
         private static IEnumerable<Point> GetCardinalNeighbors()
         {
             yield return new Point(0, -1);
@@ -120,6 +125,10 @@ namespace RoguelikeEngine.Enemies
             GetNeighbors = GetCardinalNeighbors,
             GetTileCost = StandardCost,
             CanTraverse = StandardTraverse,
+        };
+        public static MovementType Stationary = new MovementType("stationary")
+        {
+            GetNeighbors = GetEmptyNeighbors,
         };
         public static MovementType Diagonal = new MovementType("diagonal")
         {
@@ -638,6 +647,8 @@ namespace RoguelikeEngine.Enemies
 
             Effect.ApplyInnate(new EffectStat(this, Stat.HP, 600));
             Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 25));
+
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.Stationary, 10));
 
             Skills.Add(new SkillCannonShot());
         }

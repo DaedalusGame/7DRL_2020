@@ -342,11 +342,16 @@ namespace RoguelikeEngine
             }
         }
 
+        protected void DrawLayer(SceneGame scene, SpriteReference baseSprite, SpriteReference layerSprite, int ox, int oy, TileColor color)
+        {
+            scene.SpriteBatch.Draw(baseSprite.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ox, oy, 16, 16), color.Background);
+            scene.SpriteBatch.Draw(layerSprite.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ox, oy, 16, 16), color.Foreground);
+        }
+
         protected void DrawFloor(SceneGame scene, SpriteReference baseSprite, SpriteReference layerSprite, int ox, int oy, TileColor color)
         {
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
-            scene.SpriteBatch.Draw(baseSprite.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ox, oy, 16, 16), color.Background);
-            scene.SpriteBatch.Draw(layerSprite.Texture, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), new Rectangle(ox, oy, 16, 16), color.Foreground);
+            DrawLayer(scene, baseSprite, layerSprite, ox, oy, color);
         }
 
         protected void DrawBrick(SceneGame scene, int ox, int oy, TileColor color)
@@ -410,6 +415,19 @@ namespace RoguelikeEngine
             var cracks = SpriteLoader.Instance.AddSprite("content/cracks");
             int frame = Math.Min((int)(slide * (cracks.SubImageCount)), cracks.SubImageCount-1);
             scene.DrawSprite(cracks, frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color, 0);
+        }
+
+        protected void DrawRose(SceneGame scene, SpriteReference baseSprite, SpriteReference layerSprite, int noiseValue, float chance, TileColor color)
+        {
+            if (Util.PositiveMod(noiseValue * 233, 1000) / 1000f < chance)
+            {
+                int i = Util.PositiveMod(noiseValue, 4);
+                int roseX = (i % 2) * 8;
+                int roseY = (i / 2) * 8;
+                int e = Util.PositiveMod(noiseValue * 17, 4);
+                scene.DrawSpriteExt(baseSprite, 0, new Vector2(16 * Parent.X + roseX, 16 * Parent.Y + roseY), baseSprite.Middle, e * MathHelper.PiOver2, Vector2.One, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+                scene.DrawSpriteExt(layerSprite, 0, new Vector2(16 * Parent.X + roseX, 16 * Parent.Y + roseY), layerSprite.Middle, e * MathHelper.PiOver2, Vector2.One, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
+            }
         }
 
         public virtual JToken WriteJson(Context context)
@@ -761,6 +779,46 @@ namespace RoguelikeEngine
 
             scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
             DrawCave(scene, 0, 0, color);
+        }
+    }
+
+    class FloorThorns : Tile
+    {
+        public override IEnumerable<TileFlag> Tags => FlagsFloor;
+
+        protected int Frame = Random.Next();
+
+        public FloorThorns() : base("Thorns")
+        {
+        }
+
+        [Construct("floor_thorns")]
+        public static FloorThorns Construct(Context context)
+        {
+            return new FloorThorns();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass drawPass)
+        {
+            var color = Group.CaveColor.ToFloor();
+
+            var thornBase = SpriteLoader.Instance.AddSprite("content/thorn_wall_base");
+            var thornLayer = SpriteLoader.Instance.AddSprite("content/thorn_wall_layer");
+            var thornFlowerBase = SpriteLoader.Instance.AddSprite("content/thorn_flower_base");
+            var thornFlowerLayer = SpriteLoader.Instance.AddSprite("content/thorn_flower_layer");
+
+            var thornColor = new TileColor(Color.DarkRed, Color.Orange);
+            var flowerColor = new TileColor(Color.OrangeRed, Color.LightYellow);
+
+            if (!IsVisible())
+                color = HiddenColor;
+
+            scene.SpriteBatch.Draw(scene.Pixel, new Rectangle(16 * Parent.X, 16 * Parent.Y, 16, 16), GetUnderColor(scene));
+            DrawCave(scene, 0, 0, color);
+            int ox = X * 16;
+            int oy = Y * 16;
+            DrawLayer(scene, thornBase, thornLayer, ox, oy, thornColor);
+            DrawRose(scene, thornFlowerBase, thornFlowerLayer, Frame, 0.6f, flowerColor);
         }
     }
 
@@ -1708,18 +1766,17 @@ namespace RoguelikeEngine
         }
     }
 
-
     class Coral : Tile
     {
         protected int Frame = Random.Next(1000);
         public override IEnumerable<TileFlag> Tags => FlagsFloor;
 
-        public static List<Color> Colors = new List<Color>()
+        public static List<TileColor> Colors = new List<TileColor>()
         {
-            Color.LightPink,
-            Color.LightSkyBlue,
-            Color.LightSeaGreen,
-            Color.Orange
+            new TileColor(Color.DarkRed, Color.LightPink),
+            new TileColor(Color.DarkSlateBlue, Color.LightSkyBlue),
+            new TileColor(Color.DarkGreen, Color.LightSeaGreen),
+            new TileColor(Color.DarkRed, Color.Orange),
         };
 
         public Coral() : base("Coral")
@@ -1761,9 +1818,18 @@ namespace RoguelikeEngine
 
         public virtual void DrawCoral(SceneGame scene)
         {
-            var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
+            DrawCoral(scene, Colors);
+        }
 
-            scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Colors[Frame % Colors.Count], 0);
+        public virtual void DrawCoral(SceneGame scene, IList<TileColor> colors)
+        {
+            var coralBase = SpriteLoader.Instance.AddSprite("content/env_coral_base");
+            var coralLayer = SpriteLoader.Instance.AddSprite("content/env_coral_layer");
+
+            var color = colors[Frame % colors.Count];
+
+            scene.DrawSprite(coralBase, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Background, 0);
+            scene.DrawSprite(coralLayer, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, color.Foreground, 0);
         }
 
         public void Destroy()
@@ -1774,14 +1840,14 @@ namespace RoguelikeEngine
 
     class AcidCoral : Coral
     {
-        public static List<Color> Colors = new List<Color>()
+        public static List<TileColor> Colors = new List<TileColor>()
         {
-            new Color(184, 177, 97),
-            new Color(157, 147, 87),
-            new Color(169, 186, 173),
-            new Color(190, 189, 165),
+            new TileColor(Color.DarkRed, new Color(184, 177, 97)),
+            new TileColor(Color.DarkSlateBlue, new Color(157, 147, 87)),
+            new TileColor(Color.DarkBlue, new Color(169, 186, 173)),
+            new TileColor(Color.Orange,  new Color(190, 189, 165)),
         };
-        
+
         public AcidCoral() : base("Acid Coral")
         {
         }
@@ -1794,9 +1860,7 @@ namespace RoguelikeEngine
 
         public override void DrawCoral(SceneGame scene)
         {
-            var coral = SpriteLoader.Instance.AddSprite("content/env_coral");
-
-            scene.DrawSprite(coral, Frame, new Vector2(16 * Parent.X, 16 * Parent.Y), Microsoft.Xna.Framework.Graphics.SpriteEffects.None, Colors[Frame % Colors.Count], 0);
+            DrawCoral(scene, Colors);
         }
     }
 

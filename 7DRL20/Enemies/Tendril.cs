@@ -144,6 +144,41 @@ namespace RoguelikeEngine.Enemies
         }
     }
 
+    class AbyssalTendrilBud : Enemy
+    {
+        public AbyssalTendrilBud(SceneGame world) : base(world)
+        {
+            Name = "Abyssal Tendril Bud";
+            Description = "Dread mummy";
+
+            Render = new CreatureStaticRender()
+            {
+                Color = ColorMatrix.Identity,
+                Sprite = SpriteLoader.Instance.AddSprite("abyssal_tendril_bud"),
+            };
+            Mask.Add(Point.Zero);
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 200));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 10));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Plant));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Abyssal));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.BloodThroesAcid));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathThroesTendril));
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.Stationary, 10));
+
+            Skills.Add(new SkillCreateTentacles());
+            Skills.Add(new SkillVenomBite());
+        }
+
+        [Construct("abyssal_tendril_bud")]
+        public static AbyssalTendrilBud Construct(Context context)
+        {
+            return new AbyssalTendrilBud(context.World);
+        }
+    }
+
     class AbyssalTendrilBush : Enemy
     {
         public AbyssalTendrilBush(SceneGame world) : base(world)
@@ -161,6 +196,8 @@ namespace RoguelikeEngine.Enemies
             Effect.ApplyInnate(new EffectFamily(this, Family.Abyssal));
 
             Effect.ApplyInnate(new EffectTrait(this, Trait.BloodThroesAcid));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathThroesTendril));
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.Stationary, 10));
 
             Skills.Add(new SkillCreateTentacles());
             Skills.Add(new SkillGrabbingTentacle());
@@ -172,6 +209,46 @@ namespace RoguelikeEngine.Enemies
         public static AbyssalTendrilBush Construct(Context context)
         {
             return new AbyssalTendrilBush(context.World);
+        }
+    }
+
+    class AbyssalTendrilTree : Enemy
+    {
+        public AbyssalTendrilTree(SceneGame world) : base(world)
+        {
+            Name = "Abyssal Tendril Tree";
+            Description = "Dread mummy";
+
+            Render = new CreatureStaticRender()
+            {
+                Color = ColorMatrix.Identity,
+                Sprite = SpriteLoader.Instance.AddSprite("abyssal_tendril_tree"),
+            };
+            Mask.Add(new Point(0, 0));
+            Mask.Add(new Point(0, 1));
+            Mask.Add(new Point(1, 0));
+            Mask.Add(new Point(1, 1));
+
+            Effect.ApplyInnate(new EffectStat(this, Stat.HP, 950));
+            Effect.ApplyInnate(new EffectStat(this, Stat.Attack, 50));
+
+            Effect.ApplyInnate(new EffectFamily(this, Family.Plant));
+            Effect.ApplyInnate(new EffectFamily(this, Family.Abyssal));
+
+            Effect.ApplyInnate(new EffectTrait(this, Trait.BloodThroesAcid));
+            Effect.ApplyInnate(new EffectTrait(this, Trait.DeathThroesTendril));
+            Effect.ApplyInnate(new EffectMovementType(this, MovementType.Stationary, 10));
+
+            Skills.Add(new SkillCreateTentacles());
+            Skills.Add(new SkillGrabbingTentacle());
+            Skills.Add(new SkillVenomBite());
+            Skills.Add(new SkillLick());
+        }
+
+        [Construct("abyssal_tendril_tree")]
+        public static AbyssalTendrilTree Construct(Context context)
+        {
+            return new AbyssalTendrilTree(context.World);
         }
     }
 }

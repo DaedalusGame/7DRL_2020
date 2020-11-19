@@ -146,6 +146,9 @@ namespace RoguelikeEngine.VisualEffects
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
+            if (Sprite == null)
+                return;
+
             if (ColorMatrix.HasValue)
             {
                 scene.PushSpriteBatch(shaderSetup: (matrix, projection) =>
@@ -231,6 +234,60 @@ namespace RoguelikeEngine.VisualEffects
         }
     }
 
+    class ParticleSpark : ParticleDynamic
+    {
+        List<Vector2> TrailPositions = new List<Vector2>();
+        public Vector2 Target;
+        public Color ColorEnd;
+        public LerpHelper.Delegate VelocityLerp;
+        public LerpHelper.Delegate ColorLerp;
+
+        public override Vector2 Position => base.Position + AnimateBetween(Target - base.Position, VelocityLerp);
+
+        public ParticleSpark(SceneGame world, int time) : base(world, time)
+        {
+        }
+
+        public override void Update()
+        {
+            TrailPositions.Add(Position);
+            if (TrailPositions.Count > 5)
+                TrailPositions.RemoveAt(0);
+            base.Update();
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            if (Sprite == null)
+                return;
+
+            if (ColorMatrix.HasValue)
+            {
+                scene.PushSpriteBatch(shaderSetup: (matrix, projection) =>
+                {
+                    scene.SetupColorMatrix(ColorMatrix.Value, matrix, projection);
+                });
+            }
+
+            Vector2 nextPosition = Position;
+
+            int i = 0;
+            foreach(var trailPos in TrailPositions)
+            {
+                Vector2 currentPosition = Vector2.Lerp(trailPos, nextPosition, 0.5f);
+                float lerpSlide = Util.ReverseLerp(Slide, 0.5f, 1.0f);
+                Color color = Color.Lerp(Color, ColorEnd, (float)i / (TrailPositions.Count - 1));
+                color = Color.Lerp(color, Color.TransparentBlack, (float)ColorLerp(0, 1, lerpSlide));
+                scene.DrawSpriteExt(Sprite, SubImage, currentPosition - Sprite.Middle, Sprite.Middle, Angle, new Vector2(Scale), Mirror, color, 0);
+                nextPosition = currentPosition;
+                i++;
+            }
+            
+            if (ColorMatrix.HasValue)
+                scene.PopSpriteBatch();
+        }
+    }
+
     class ParticleExplosion : ParticleDynamic
     {
         LerpHelper.Delegate SubImageLerp;
@@ -249,6 +306,33 @@ namespace RoguelikeEngine.VisualEffects
         }
     }
 
+    class ParticleCutter : ParticleDynamic
+    {
+        public float RotationStart;
+        public float RotationEnd;
+        public float ScaleEnd;
+        public float FadeSlide;
+        public LerpHelper.Delegate SubImageLerp = LerpHelper.Linear;
+        public LerpHelper.Delegate VelocityLerp = LerpHelper.Linear;
+        public LerpHelper.Delegate AngleLerp = LerpHelper.Linear;
+        public LerpHelper.Delegate ScaleLerp = LerpHelper.Linear;
+
+        public override int SubImage => Slide > FadeSlide ? (int)MathHelper.Clamp(Sprite.SubImageCount * (float)SubImageLerp(0, 1, Util.ReverseLerp(Slide, FadeSlide, 1)), 0, Sprite.SubImageCount - 1) : 0;
+        public override float Scale => ScaleTowards(base.Scale, ScaleEnd, ScaleLerp);
+        float Rotation => (float)AngleLerp(RotationStart, RotationEnd, Slide);
+
+        public ParticleCutter(SceneGame world, int time) : base(world, time)
+        {
+               
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            Angle += Rotation;
+        }
+    }
+
     class ParticleBlob : ParticleDynamic
     {
         Vector2 Velocity;
@@ -256,7 +340,7 @@ namespace RoguelikeEngine.VisualEffects
         LerpHelper.Delegate ScaleLerp;
 
         public override Vector2 Position => base.Position + AnimatePosition(Velocity, VelocityLerp);
-        public override float Scale => (float)ScaleLerp(base.Scale, 0, Scale);
+        public override float Scale => (float)ScaleLerp(base.Scale, 0, Slide);
 
         public ParticleBlob(SceneGame world, SpriteReference sprite, Vector2 velocity, LerpHelper.Delegate velocityLerp, LerpHelper.Delegate scaleLerp, int time) : base(world, time)
         {
@@ -267,14 +351,41 @@ namespace RoguelikeEngine.VisualEffects
         }
     }
 
-    class ParticleThrow : ParticleDynamic
+    class ParticleSpore : ParticleDynamic
     {
         Vector2 Target;
+        LerpHelper.Delegate VelocityLerp;
+        int OffsetX, OffsetY;
+
+        public override Vector2 Position => base.Position + this.AnimateBetween(Target - base.Position, VelocityLerp);
+
+        public ParticleSpore(SceneGame world, SpriteReference sprite, Vector2 start, Vector2 end, LerpHelper.Delegate velocityLerp, int time) : base(world, time)
+        {
+            Sprite = sprite;
+            Position = start;
+            Target = end;
+            VelocityLerp = velocityLerp;
+            OffsetX = Random.Next(sprite.Width);
+            OffsetY = Random.Next(sprite.Height);
+        }
+
+        public override void Draw(SceneGame scene, DrawPass pass)
+        {
+            scene.SpriteBatch.Draw(Sprite.Texture, Position - Sprite.Middle * Scale, new Rectangle(OffsetX, OffsetY, (int)(Sprite.Width * Scale), (int)(Sprite.Height * Scale)), Color);
+        }
+    }
+
+    class ParticleThrow : ParticleDynamic
+    {
+        public float ImageSpeed;
+        Vector2 Target;
         float Height;
+        public LerpHelper.Delegate SubImageLerp = LerpHelper.Linear;
         LerpHelper.Delegate VelocityLerp;
         LerpHelper.Delegate ScaleLerp;
         float FadeSlide;
 
+        public override int SubImage => base.SubImage + AnimateSubImage(ImageSpeed, SubImageLerp);
         public override Vector2 Position => base.Position + AnimateJump(Target - base.Position, Height, VelocityLerp);
         public override float Scale => Slide > FadeSlide ? (float)ScaleLerp(base.Scale, 0, (Slide - FadeSlide) / (1 - FadeSlide)) : base.Scale;
 
@@ -351,6 +462,13 @@ namespace RoguelikeEngine.VisualEffects
 
     class ParticleCircle : VisualEffect
     {
+        static SamplerState SamplerState = new SamplerState()
+        {
+            AddressU = TextureAddressMode.Wrap,
+            AddressV = TextureAddressMode.Clamp,
+            Filter = TextureFilter.Point,
+        };
+
         public SpriteReference Sprite;
 
         public virtual Vector2 Position
@@ -420,11 +538,8 @@ namespace RoguelikeEngine.VisualEffects
 
         public override void Draw(SceneGame scene, DrawPass pass)
         {
-            if (ColorMatrix.HasValue)
-            {
-                scene.SetupColorMatrix(ColorMatrix.Value, scene.WorldTransform, scene.Projection);
-            }
-            scene.DrawCircle(Sprite, Position, Precision, AngleStart, AngleEnd, Radius, TexOffset, TexPrecision, Start, End);
+            scene.SetupColorMatrix(ColorMatrix.HasValue ? ColorMatrix.Value : RoguelikeEngine.ColorMatrix.Identity, scene.WorldTransform, scene.Projection);
+            scene.DrawCircle(Sprite, SamplerState, Position, Precision, AngleStart, AngleEnd, Radius, TexOffset, TexPrecision, Start, End);
         }
 
         public override IEnumerable<DrawPass> GetDrawPasses()
@@ -449,6 +564,41 @@ namespace RoguelikeEngine.VisualEffects
             StartRadius = startRadius;
             InnerLerp = innerLerp;
             OuterLerp = outerLerp;
+        }
+    }
+
+    class ParticleWave : ParticleCircle
+    {
+        public float Thickness;
+        public float StartRadius;
+        public Color EndColor;
+        public LerpHelper.Delegate Lerp;
+        public LerpHelper.Delegate ColorLerp;
+
+        public override float Start => (float)Lerp(StartRadius, 1 - Thickness, Frame.Slide);
+        public override float End => (float)Lerp(StartRadius, 1 - Thickness, Frame.Slide) + Thickness;
+        public override Color Color => Color.Lerp(base.Color, EndColor, (float)ColorLerp(0, 1, Frame.Slide));
+
+        public ParticleWave(SceneGame world, float startRadius, float thickness, LerpHelper.Delegate lerp, LerpHelper.Delegate colorLerp, int time) : base(world, time)
+        {
+            Thickness = thickness;
+            StartRadius = startRadius;
+            Lerp = lerp;
+            ColorLerp = colorLerp;
+        }
+    }
+
+    class ParticleNuke : ParticleCircle
+    {
+        public Func<float, float> RadiusFunction;
+
+        float Thickness => Sprite.Height / Radius;
+        public override float Start => RadiusFunction(Frame.Slide) - Thickness;
+        public override float End => RadiusFunction(Frame.Slide);
+
+        public ParticleNuke(SceneGame world, Func<float, float> radiusFunc, int time) : base(world, time)
+        {
+            RadiusFunction = radiusFunc;
         }
     }
 }

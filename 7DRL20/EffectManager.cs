@@ -640,6 +640,12 @@ namespace RoguelikeEngine
             return false;
         }
 
+        public static IEnumerable<Family> GetFamilies(this IEffectHolder holder)
+        {
+            var effectGroups = holder.GetEffects<EffectFamily>().GroupBy(effect => effect.Family);
+            return effectGroups.Select(group => group.WithMax(effect => effect.Priority)).Where(effect => effect.Value).Select(effect => effect.Family);
+        }
+
         public static MovementTypeResult GetMovementType(this IEffectHolder holder)
         {
             MovementTypeResult result = new MovementTypeResult();
@@ -656,10 +662,14 @@ namespace RoguelikeEngine
             return result;
         }
 
-        public static IEnumerable<Family> GetFamilies(this IEffectHolder holder)
+        public static IEnumerable<IEffectHolder> GetSlaves(this IEffectHolder holder)
         {
-            var effectGroups = holder.GetEffects<EffectFamily>().GroupBy(effect => effect.Family);
-            return effectGroups.Select(group => group.WithMax(effect => effect.Priority)).Where(effect => effect.Value).Select(effect => effect.Family);
+            return holder.GetEffects<EffectSummon>().Where(effect => effect.Master == holder).Select(effect => effect.Slave);
+        }
+
+        public static IEnumerable<IEffectHolder> GetMasters(this IEffectHolder holder)
+        {
+            return holder.GetEffects<EffectSummon>().Where(effect => effect.Slave == holder).Select(effect => effect.Master);
         }
 
         public static void ClearPosition(this IEffectHolder subject)

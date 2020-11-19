@@ -78,7 +78,8 @@ namespace RoguelikeEngine.Traits
         public static Trait DeathThroesCrimson = new TraitDeathThroesCrimson();
         public static Trait DeathThroesFireBlast = new TraitDeathThroesFireBlast();
         //public static Trait DeathThroesUseLightning = new TraitDeathThroesSkill(new SkillLightning());
-        public static Trait BloodThroesAcid = new TraitDeathThroesBlood(Element.Acid);
+        public static Trait BloodThroesAcid = new TraitDeathThroesBlood("death_throes_blood_acid", Element.Acid, new Color(128, 255, 16));
+        public static Trait DeathThroesTendril = new TraitDeathThroesTendril();
         public static Trait DeathThroesDeathGolem = new TraitDeathThroesDeathGolem();
         public static Trait Broiling = new TraitBroil();
         public static Trait Overclock = new TraitOverclock();

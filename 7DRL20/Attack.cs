@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using RoguelikeEngine.Effects;
+using RoguelikeEngine.VisualEffects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -165,6 +166,36 @@ namespace RoguelikeEngine
 
     class Attack
     {
+        public delegate VisualPreset.AtCreature HitGenerator(SceneGame world);
+
+        public static Dictionary<Element, HitGenerator> ElementMap = new Dictionary<Element, HitGenerator>()
+        {
+            { Element.Bludgeon, (world) => new HitBludgeon(world) },
+            { Element.Slash, (world) => new HitSlash(world) },
+            { Element.Pierce, (world) => new HitPierce(world) },
+
+            { Element.Fire, (world) => new HitFire(world) },
+            { Element.Ice, (world) => new HitIce(world) },
+            { Element.Thunder, (world) => new HitThunder(world) },
+            { Element.Water, (world) => new HitWater(world) },
+            { Element.Wind, (world) => new HitWind(world) },
+            { Element.Earth, (world) => new HitEarth(world) },
+            { Element.Holy, (world) => new HitHoly(world) },
+            { Element.Dark, (world) => new HitDark(world) },
+
+            { Element.Poison, (world) => new HitPoison(world) },
+            { Element.Acid, (world) => new HitAcid(world) },
+            { Element.Bleed, (world) => new HitBlood(world) },
+
+            { Element.Hellfire, (world) => new HitHellfire(world) },
+            { Element.Light, (world) => new HitLight(world) },
+            { Element.Drought, (world) => new HitDrought(world) },
+            { Element.Inferno, (world) => new HitInferno(world) },
+            { Element.Blizzard, (world) => new HitBlizzard(world) },
+            { Element.BlackFlame, (world) => new HitBlackFlame(world) },
+            { Element.Arcane, (world) => new HitArcane(world) },
+        };
+
         public Creature Attacker;
         public IEffectHolder Defender;
 
@@ -187,6 +218,10 @@ namespace RoguelikeEngine
 
         public bool CheckDeath = true;
         public Vector2 HitDirection;
+
+        public List<VisualPreset.AtCreature> HitEffects = new List<VisualPreset.AtCreature>(); //Hit effects played on hit
+        public VisualPreset.AtCreature DamageEffect; //Damage spark effect played at a short delay
+        public bool NoStandardEffect; //Prevents standard element effects from being added
 
         List<Wait> Waits = new List<Wait>();
 
@@ -232,6 +267,13 @@ namespace RoguelikeEngine
             double total = FinalDamage.Sum(x => Math.Abs(x.Value));
             Effect.Apply(new EffectLastHit(Defender, Attacker, total));
 
+            if (Defender is Creature creature)
+            {
+                if (HitEffects.Empty() && !NoStandardEffect)
+                    GenerateHitEffects(creature);
+                Scheduler.Instance.Run(RoutineHitEffects(creature));
+            }
+
             waits.Clear();
             foreach (var effect in ExtraEffects)
             {
@@ -246,6 +288,35 @@ namespace RoguelikeEngine
 
             if(CheckDeath && Defender is Creature targetCreature)
                 targetCreature.CheckDead(HitDirection);
+        }
+
+        private IEnumerable<Wait> RoutineHitEffects(Creature creature)
+        {
+            foreach(var effect in HitEffects)
+            {
+                effect.Activate(creature);
+            }
+            yield return new WaitTime(10);
+            DamageEffect?.Activate(creature);
+        }
+
+        private void GenerateHitEffects(Creature creature)
+        {
+            if(DamageEffect == null)
+                DamageEffect = new HitDamageSpark(creature.World);
+
+            foreach (var damage in FinalDamage.OrderByDescending(x => x.Value))
+            {
+                if (damage.Value > 0)
+                {
+                    var func = ElementMap.GetOrDefault(damage.Key, null);
+                    if (func != null)
+                    {
+                        var hitEffect = func.Invoke(creature.World);
+                        HitEffects.Add(hitEffect);
+                    }
+                }
+            }
         }
 
         private void CalculateArmor()

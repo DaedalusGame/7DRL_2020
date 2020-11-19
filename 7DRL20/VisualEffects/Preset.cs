@@ -55,6 +55,15 @@ namespace RoguelikeEngine.VisualEffects
 
             public abstract void Activate(Func<Vector2> start, Func<Vector2> end);
         }
+
+        public abstract class AtCreature : VisualPreset
+        {
+            public AtCreature(SceneGame world) : base(world)
+            {
+            }
+
+            public abstract void Activate(Creature creature);
+        }
     }
 
     class Explosion : VisualPreset.AtPosition
