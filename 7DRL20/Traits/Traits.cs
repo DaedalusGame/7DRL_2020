@@ -359,7 +359,7 @@ namespace RoguelikeEngine.Traits
 
     class TraitCharged : Trait
     {
-        public TraitCharged() : base("charged", "Charged", "Arcs to nearby enemies in flight.", new Color(192, 255, 16))
+        public TraitCharged() : base("charged", "Charged", "Arrow arcs to nearby enemies in flight.", new Color(192, 255, 16))
         {
             Effect.Apply(new OnShoot(this, ShootArrow));
         }
@@ -383,7 +383,7 @@ namespace RoguelikeEngine.Traits
     {
         Random Random = new Random();
 
-        public TraitDischarge() : base("discharge", "Discharge", "Detonates on impact.", new Color(192, 255, 16))
+        public TraitDischarge() : base("discharge", "Discharge", "Arrow detonates on impact.", new Color(192, 255, 16))
         {
             Effect.Apply(new OnShoot(this, ShootArrow));
         }
@@ -588,7 +588,7 @@ namespace RoguelikeEngine.Traits
         {
             int traitLvl = attack.Attacker.GetTrait(this);
 
-            if (attack.Defender is Creature targetCreature && attack.ReactionLevel <= 0 && targetCreature.CurrentHP > 0 && attack.ExtraEffects.Any(effect => effect is AttackPhysical)) {
+            if (attack.Defender is Creature targetCreature && attack.ReactionLevel <= 0 && targetCreature.CurrentHP > 0 && attack.IsWeaponAttack()) {
                 var bullet = new BulletRock(attack.Attacker.World, SpriteLoader.Instance.AddSprite("content/rock_big"), attack.Attacker.VisualTarget, Material.Meteorite.ColorTransform, 0.1f, 10);
                 bullet.Move(targetCreature.VisualTarget, 10);
                 yield return attack.Attacker.WaitSome(10);
@@ -628,12 +628,15 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> Bleed(Attack attack)
         {
-            int traitLvl = attack.Attacker.GetTrait(this);
-
-            if (!attack.Defender.HasFamily(Family.Bloodless))
+            if (attack.IsWeaponAttack())
             {
-                attack.StatusEffects.Add(new BleedLesser() { Buildup = traitLvl * 0.3, Duration = new Slider(20) });
-                attack.StatusEffects.Add(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(10) });
+                int traitLvl = attack.Attacker.GetTrait(this);
+
+                if (!attack.Defender.HasFamily(Family.Bloodless))
+                {
+                    attack.StatusEffects.Add(new BleedLesser() { Buildup = traitLvl * 0.3, Duration = new Slider(20) });
+                    attack.StatusEffects.Add(new BleedGreater() { Buildup = traitLvl * 0.1, Duration = new Slider(10) });
+                }
             }
 
             yield return Wait.NoWait;
@@ -666,7 +669,7 @@ namespace RoguelikeEngine.Traits
 
         public IEnumerable<Wait> BloodShield(Attack attack)
         {
-            if (attack.ExtraEffects.Any(effect => effect is AttackPhysical))
+            if (attack.IsMeleeAttack())
             {
                 int traitLvl = attack.Defender.GetTrait(this);
 

@@ -590,6 +590,8 @@ namespace RoguelikeEngine
             AddPlateEffect(new EffectStat(this, Stat.Defense, 10));
             AddFullEffect(new EffectStat(this, Element.Bludgeon.Resistance, 5));
 
+            AddShieldEffect(new EffectStat(this, Stat.BlockChance, 0.15));
+            AddShieldEffect(new EffectStat(this, Stat.BlockValue, 10));
             AddShieldEffect(new EffectStat(this, Stat.Defense, 5));
             AddShieldEffect(new EffectStat(this, Element.Bludgeon.Resistance, 10));
 

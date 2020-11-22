@@ -337,6 +337,13 @@ namespace RoguelikeEngine
                 return $"x{value}";
         }
 
+        public static string FormatChance(Creature creature, double value)
+        {
+            value = MathHelper.Clamp((float)value, 0, 1);
+
+            return $"{((int)(Math.Round(value, 2) * 100)).ToString("#")}%";
+        }
+
         public static Stat Level = new Stat("level", "Level", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_level"));
         public static Stat HP = new Stat("hp", "HP", 0, 0, SpriteLoader.Instance.AddSprite("content/stat_hp"))
         {
@@ -356,6 +363,20 @@ namespace RoguelikeEngine
         public static Stat ArrowAttack = new Stat("arrow_attack", "Arrow Attack", 0, 10, SpriteLoader.Instance.AddSprite("content/stat_arrow_attack"));
         public static Stat ArrowRange = new Stat("arrow_range", "Arrow Range", 0, 11, SpriteLoader.Instance.AddSprite("content/stat_arrow_range"));
         public static Stat ArrowVolley = new Stat("arrow_volley", "Arrow Volley", 1, 12, SpriteLoader.Instance.AddSprite("content/stat_arrow_volley"));
+
+        public static Stat BlockChance = new Stat("block_chance", "Block Chance", 0, 13, SpriteLoader.Instance.AddSprite("content/stat_block_chance"))
+        {
+            Format = FormatChance,
+        };
+        public static Stat CritBlockChance = new Stat("crit_block_chance", "Critical Block Chance", 0, 14, SpriteLoader.Instance.AddSprite("content/stat_crit_block_chance"))
+        {
+            Format = FormatChance,
+        };
+        public static Stat BlockValue = new Stat("block_value", "Block Value", 0, 15, SpriteLoader.Instance.AddSprite("content/stat_block_value"));
+        public static Stat BlockRate = new Stat("block_rate", "Block Rate", 0, 16, SpriteLoader.Instance.AddSprite("content/stat_block_rate"))
+        {
+            Format = FormatRate,
+        };
 
         public static Stat Durability = new Stat("durability", "Durability", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_durability")) { Hidden = true };
         public static Stat Blood = new Stat("blood", "Blood", 0, -1, SpriteLoader.Instance.AddSprite("content/stat_blood"));
@@ -843,6 +864,7 @@ namespace RoguelikeEngine
             {
                 if (expGain.Value <= 0)
                     continue;
+                double actualGain = Math.Floor(expGain.Key.Experience + expGain.Value) - Math.Floor(expGain.Key.Experience);
                 expGain.Key.Experience += expGain.Value;
                 int orbs = (int)Math.Ceiling(Math.Log(expGain.Value, 3));
                 int time = orbs * 5 + 10;
@@ -850,7 +872,7 @@ namespace RoguelikeEngine
                 {
                     new ExperienceDrop(World, expGain.Key, VisualTarget, Util.AngleToVector(random.NextFloat() * MathHelper.TwoPi) * random.Next(10,40), random.Next(5, 10 + time / 3), random.Next(time / 2, time));
                 }
-                PopupHelper.Global.Add(new MessageExperience(expGain.Key, expGain.Value) { Frame = new Slider(time) });
+                PopupHelper.Global.Add(new MessageExperience(expGain.Key, actualGain) { Frame = new Slider(time) });
             }
         }
 

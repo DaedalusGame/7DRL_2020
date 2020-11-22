@@ -442,6 +442,41 @@ namespace RoguelikeEngine.VisualEffects
         }
     }
 
+    class HitChaos : VisualPreset.AtCreature
+    {
+        public HitChaos(SceneGame world) : base(world)
+        {
+        }
+
+        public override void Activate(Creature creature)
+        {
+            var arcane_explosion = SpriteLoader.Instance.AddSprite("content/pop_fire");
+            var flares = new List<SpriteReference>()
+            {
+                SpriteLoader.Instance.AddSprite("content/pop_chaos_pink"),
+                SpriteLoader.Instance.AddSprite("content/pop_chaos_green"),
+                SpriteLoader.Instance.AddSprite("content/pop_chaos_blue"),
+            };
+
+            var explosion = new ParticleExplosion(World, arcane_explosion, Vector2.Zero, LerpHelper.Linear, LerpHelper.Linear, 20)
+            {
+                Position = creature.VisualTarget,
+                Pass = DrawPass.EffectAdditive,
+            };
+            explosion.OnUpdate += (particle) =>
+            {
+                if (particle.Frame.Time % 2 == 0)
+                {
+                    var flare_explosion = new ParticleExplosion(World, flares.Pick(Random), Vector2.Zero, LerpHelper.Linear, LerpHelper.Linear, 10)
+                    {
+                        Position = creature.VisualPosition() + creature.Mask.GetRandomPixel(Random),
+                        Pass = DrawPass.EffectAdditive,
+                    };
+                }
+            };
+        }
+    }
+
     class HitPoison : VisualPreset.AtCreature
     {
         public HitPoison(SceneGame world) : base(world)

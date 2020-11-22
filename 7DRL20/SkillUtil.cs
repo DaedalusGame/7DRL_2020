@@ -225,6 +225,11 @@ namespace RoguelikeEngine
                 return false;
         }
 
+        public static bool IsMeleeAttack(this Attack attack)
+        {
+            return attack.ExtraEffects.Any(x => x is AttackPhysical);
+        }
+
         public static bool IsWeaponAttack(this Attack attack)
         {
             return attack.ExtraEffects.Any(x => x is AttackWeapon);

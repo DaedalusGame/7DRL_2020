@@ -280,6 +280,9 @@ namespace RoguelikeEngine
 
         public double GetCost(Point pos)
         {
+            if (pos.X < 0 || pos.X >= Map.Width || pos.Y < 0 || pos.Y >= Map.Height)
+                return double.PositiveInfinity;
+
             double totalCost = ResultCost[pos.X, pos.Y];
 
             if (totalCost > 0)

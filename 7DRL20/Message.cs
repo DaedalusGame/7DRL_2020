@@ -49,7 +49,7 @@ namespace RoguelikeEngine
 
         public MessageText(IEffectHolder holder, string text) : base(holder)
         {
-            TextInternal = Text;
+            TextInternal = text;
         }
     }
 

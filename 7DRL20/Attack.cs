@@ -164,6 +164,32 @@ namespace RoguelikeEngine
         }
     }
 
+    class AttackDamageStat : AttackSpecial
+    {
+        Stat Stat;
+        double Rate;
+
+        public AttackDamageStat(Stat stat, double rate)
+        {
+            Stat = stat;
+            Rate = rate;
+        }
+
+        public override Wait End(Attack attack)
+        {
+            var totalDamage = attack.FinalDamage.Sum(x => x.Value);
+
+            attack.Defender.TakeStatDamage(Rate * totalDamage, Stat);
+
+            return Wait.NoWait;
+        }
+
+        public override Wait Start(Attack attack)
+        {
+            return Wait.NoWait;
+        }
+    }
+
     class Attack
     {
         public delegate VisualPreset.AtCreature HitGenerator(SceneGame world);
@@ -194,10 +220,14 @@ namespace RoguelikeEngine
             { Element.Blizzard, (world) => new HitBlizzard(world) },
             { Element.BlackFlame, (world) => new HitBlackFlame(world) },
             { Element.Arcane, (world) => new HitArcane(world) },
+
+            { Element.Chaos, (world) => new HitChaos(world) },
         };
 
         public Creature Attacker;
         public IEffectHolder Defender;
+
+        Random Random = new Random(); //TODO: Remove random in favor of determinism
 
         public Dictionary<Element, double> Elements = new Dictionary<Element, double>();
         public List<StatusEffect> StatusEffects = new List<StatusEffect>();
@@ -206,10 +236,18 @@ namespace RoguelikeEngine
         public double Force = 0;
         public double AttackModifier = 1;
         public double DefenseModifier = 1;
+        public double ResistanceModifier = 1;
+
+        public bool IgnoreElementRate;
+        public bool Unblockable;
+
+        public bool Blocked;
+        public bool CritBlocked;
+        public Dictionary<Element, double> BlockedDamage = new Dictionary<Element, double>();
 
         public IEnumerable<Element> SplitElements => Deflected.Keys;
         public Dictionary<Element, double> Deflected = new Dictionary<Element, double>();
-
+        
         public IEffectHolder Fault;
         public int ReactionLevel;
         public double Damage;
@@ -229,6 +267,7 @@ namespace RoguelikeEngine
         {
             Attacker = attacker;
             Defender = defender;
+            DamageEffect = new HitDamageSpark(attacker.World);
         }
 
         public void SetParameters(double force, double attackMod, double defenseMod)
@@ -254,6 +293,23 @@ namespace RoguelikeEngine
             yield return new WaitAll(waits);
 
             FinalDamage = Elements.ToDictionary(pair => pair.Key, pair => CalculateSplitElement(pair.Key, pair.Value * Damage));
+
+            if(!Unblockable)
+            {
+                var blockChance = Defender.GetStat(Stat.BlockChance);
+                var critBlockChance = Defender.GetStat(Stat.CritBlockChance);
+
+                CheckBlock(blockChance, critBlockChance, ref Blocked, ref CritBlocked);
+            }
+
+            if (Blocked || CritBlocked)
+            {
+                var blockValue = Defender.GetStat(Stat.BlockValue);
+                var blockRate = Defender.GetStat(Stat.BlockRate);
+
+                BlockDamage(blockValue, blockRate);
+                PopupHelper.Add(new MessageText(Defender, "Blocked!"));
+            }
 
             foreach (var damage in FinalDamage)
             {
@@ -290,6 +346,33 @@ namespace RoguelikeEngine
                 targetCreature.CheckDead(HitDirection);
         }
 
+        private void CheckBlock(double blockChance, double critBlockChance, ref bool blocked, ref bool critBlocked)
+        {
+            var pickedValue = Random.NextDouble();
+
+            if (pickedValue < critBlockChance)
+                critBlocked = true;
+            if (pickedValue < blockChance)
+                blocked = true;
+        }
+
+        private void BlockDamage(double blockValue, double blockRate)
+        {
+            var positiveDamages = FinalDamage.Where(x => x.Value > 0).ToList();
+
+            var reducedDamage = blockValue + positiveDamages.Sum(x => x.Value) * blockRate;
+
+            var resistedDamages = Util.ProportionalSplit(positiveDamages.Select(x => x.Value), reducedDamage);
+            int i = 0;
+            foreach (var resist in resistedDamages)
+            {
+                var element = positiveDamages[i].Key;
+                BlockedDamage.Add(element, resist);
+                FinalDamage[element] = Math.Max(FinalDamage[element] - resist, 0);
+                i++;
+            }
+        }
+
         private IEnumerable<Wait> RoutineHitEffects(Creature creature)
         {
             foreach(var effect in HitEffects)
@@ -302,9 +385,6 @@ namespace RoguelikeEngine
 
         private void GenerateHitEffects(Creature creature)
         {
-            if(DamageEffect == null)
-                DamageEffect = new HitDamageSpark(creature.World);
-
             foreach (var damage in FinalDamage.OrderByDescending(x => x.Value))
             {
                 if (damage.Value > 0)
@@ -390,7 +470,9 @@ namespace RoguelikeEngine
         private double CalculateElementalDamagePart(Element element, double damage)
         {
             double damageRate = Defender.GetStat(element.DamageRate);
-            double resistance = Defender.GetStat(element.Resistance);
+            if (IgnoreElementRate)
+                damageRate = 1;
+            double resistance = Defender.GetStat(element.Resistance) * ResistanceModifier;
             double finalDamage = Math.Max(0, damage - resistance) * damageRate;
             Deflected[element] = Deflected.GetOrDefault(element, 0) + (damage - finalDamage); //Keep track of how much damage we reduced/increased
             return finalDamage;

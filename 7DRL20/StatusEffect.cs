@@ -173,6 +173,13 @@ namespace RoguelikeEngine
         {
         }
 
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new OnTurn(this, OnTick));
+        }
+
         [Construct("bleed_lesser")]
         public static BleedLesser Construct(Context context)
         {
@@ -188,15 +195,25 @@ namespace RoguelikeEngine
             }
         }
 
-        public override void Update()
+        private IEnumerable<Wait> OnTick(TurnEvent turn)
         {
-            base.Update();
+            Creature creature = turn.Creature;
+
             if (Stacks >= 1)
-            {
-                double damage = 2.5 * Math.Pow(2, Stacks - 1);
-                Creature.TakeDamage(damage, Element.Bleed);
-                Creature.TakeStatDamage(damage, Stat.Blood);
-            }
+                yield return creature.AttackSelf(BleedAttack);
+        }
+
+        private Attack BleedAttack(Creature attacker, IEffectHolder defender)
+        {
+            var damage = 2.5 * Math.Pow(2, Stacks - 1);
+
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(damage, 0, 0);
+            attack.Elements.Add(Element.Bleed, 1);
+            attack.ExtraEffects.Add(new AttackDamageStat(Stat.Blood, 1.0));
+            attack.DamageEffect = null;
+            attack.Unblockable = true;
+            return attack;
         }
 
         public override string ToString()
@@ -214,6 +231,13 @@ namespace RoguelikeEngine
         {
         }
 
+        public override void SetupEffects()
+        {
+            base.SetupEffects();
+
+            Effect.Apply(new OnTurn(this, OnTick));
+        }
+
         [Construct("bleed_greater")]
         public static BleedGreater Construct(Context context)
         {
@@ -224,6 +248,7 @@ namespace RoguelikeEngine
         {
             if (delta > 0)
             {
+                //TODO: Rewrite this so it uses an Attack
                 double damage = delta * 30;
                 Creature.TakeDamage(damage, Element.Bleed);
                 Creature.TakeStatDamage(damage, Stat.Blood);
@@ -238,15 +263,25 @@ namespace RoguelikeEngine
             base.OnStackChange(delta);
         }
 
-        public override void Update()
+        private IEnumerable<Wait> OnTick(TurnEvent turn)
         {
-            base.Update();
+            Creature creature = turn.Creature;
+
             if (Stacks >= 1)
-            {
-                double damage = 5;
-                Creature.TakeDamage(damage, Element.Bleed);
-                Creature.TakeStatDamage(damage, Stat.Blood);
-            }
+                yield return creature.AttackSelf(BleedAttack);
+        }
+
+        private Attack BleedAttack(Creature attacker, IEffectHolder defender)
+        {
+            var damage = 5;
+
+            Attack attack = new Attack(attacker, defender);
+            attack.SetParameters(damage, 0, 0);
+            attack.Elements.Add(Element.Bleed, 1);
+            attack.ExtraEffects.Add(new AttackDamageStat(Stat.Blood, 1.0));
+            attack.DamageEffect = null;
+            attack.Unblockable = true;
+            return attack;
         }
 
         public override string ToString()
@@ -463,6 +498,8 @@ namespace RoguelikeEngine
             Attack attack = new Attack(attacker, defender);
             attack.SetParameters(Math.Pow(2, Stacks - 1) * 5, 0, 1);
             attack.Elements.Add(Element.Poison, 1);
+            attack.DamageEffect = null;
+            attack.Unblockable = true;
             return attack;
         }
 
@@ -621,6 +658,8 @@ namespace RoguelikeEngine
             Attack attack = new Attack(attacker, defender);
             attack.SetParameters(Math.Pow(2, Stacks - 1) * 5, 0, 1);
             attack.Elements.Add(Element.Fire, 1);
+            attack.DamageEffect = null;
+            attack.Unblockable = true;
             return attack;
         }
 
